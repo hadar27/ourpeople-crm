@@ -18,6 +18,7 @@ import {
 import logo from "@/assets/logo.png";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { generateAlerts } from "@/lib/business-rules";
 
 const nav = [
   { to: "/dashboard", label: "לוח בקרה", icon: LayoutDashboard },
@@ -35,36 +36,41 @@ const nav = [
 
 export function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const alertCount = generateAlerts().filter((a) => a.severity !== "נמוכה").length;
 
   return (
     <div dir="rtl" className="min-h-screen flex w-full bg-[color:var(--surface)]">
       {/* Sidebar */}
-      <aside className="w-64 shrink-0 border-l border-border bg-sidebar flex flex-col">
-        <div className="h-16 flex items-center gap-3 px-5 border-b border-sidebar-border">
-          <img src={logo} alt="Our People" className="h-9 w-9 object-contain" width={36} height={36} />
-          <div className="leading-tight">
-            <div className="text-sm font-bold text-sidebar-foreground">Our People</div>
-            <div className="text-[11px] text-muted-foreground">פלטפורמת ניהול עמותה</div>
-          </div>
+      <aside className="w-72 shrink-0 border-l border-border bg-sidebar flex flex-col">
+        <div className="h-20 flex items-center justify-center px-5 border-b border-sidebar-border bg-white">
+          <Link to="/dashboard" className="block">
+            <img src={logo} alt="Our People — אנשים שלנו" className="h-12 w-auto object-contain" />
+          </Link>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
           {nav.map((item) => {
             const active = pathname === item.to || pathname.startsWith(item.to + "/");
             const Icon = item.icon;
+            const showBadge = item.to === "/alerts" && alertCount > 0;
             return (
               <Link
                 key={item.to}
                 to={item.to}
                 className={[
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
                   active
                     ? "bg-brand text-brand-foreground shadow-soft"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent",
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:translate-x-[-2px]",
                 ].join(" ")}
               >
                 <Icon className="h-4 w-4" />
-                <span>{item.label}</span>
+                <span className="flex-1">{item.label}</span>
+                {showBadge && (
+                  <span className="text-[10px] font-bold bg-rose-500 text-white rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+                    {alertCount}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -88,10 +94,14 @@ export function AppShell() {
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="חיפוש מהיר במערכת..." className="pr-9 bg-surface-muted border-transparent" />
           </div>
-          <button className="relative p-2 rounded-lg hover:bg-secondary text-foreground">
+          <Link to="/alerts" className="relative p-2 rounded-lg hover:bg-secondary text-foreground" aria-label="התראות">
             <Bell className="h-5 w-5" />
-            <span className="absolute top-1 left-1 h-2 w-2 rounded-full bg-destructive" />
-          </button>
+            {alertCount > 0 && (
+              <span className="absolute -top-0.5 -left-0.5 h-4 min-w-[16px] rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center px-1">
+                {alertCount}
+              </span>
+            )}
+          </Link>
           <div className="flex items-center gap-3 pr-4 border-r border-border">
             <Avatar className="h-9 w-9">
               <AvatarFallback className="bg-brand text-brand-foreground text-xs">שכ</AvatarFallback>

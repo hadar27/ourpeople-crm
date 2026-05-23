@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Mail, Lock, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
 import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/login")({
@@ -18,6 +19,11 @@ function LoginPage() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password) {
+      toast.error("יש למלא דוא״ל וסיסמה");
+      return;
+    }
+    toast.success("התחברת בהצלחה — מעביר ללוח הבקרה");
     navigate({ to: "/dashboard" });
   };
 
@@ -27,12 +33,8 @@ function LoginPage() {
       <div className="relative hidden lg:flex flex-col justify-between p-12 bg-brand-gradient text-white overflow-hidden">
         <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
         <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
-        <div className="relative flex items-center gap-3">
-          <img src={logo} alt="Our People" className="h-12 w-12 bg-white rounded-xl p-1.5" width={48} height={48} />
-          <div>
-            <div className="text-xl font-bold">Our People</div>
-            <div className="text-sm text-white/80">Nonprofit Management Suite</div>
-          </div>
+        <div className="relative flex items-center">
+          <img src={logo} alt="Our People" className="h-20 w-auto bg-white rounded-2xl p-3" />
         </div>
         <div className="relative max-w-md">
           <h1 className="text-4xl font-bold leading-tight">מערכת אחת לניהול כל הפעילות העמותתית.</h1>
@@ -53,9 +55,8 @@ function LoginPage() {
       {/* Form pane */}
       <div className="flex items-center justify-center p-6 md:p-12">
         <form onSubmit={submit} className="w-full max-w-md space-y-6">
-          <div className="lg:hidden flex items-center gap-3 mb-4">
-            <img src={logo} alt="Our People" className="h-10 w-10" width={40} height={40} />
-            <div className="font-bold text-lg">Our People</div>
+          <div className="lg:hidden flex items-center justify-center mb-6">
+            <img src={logo} alt="Our People" className="h-16 w-auto" />
           </div>
           <div>
             <h2 className="text-2xl font-bold">ברוכים השבים</h2>

@@ -8,6 +8,11 @@ import {
   AlertTriangle,
   ArrowUpRight,
   CalendarClock,
+  UserPlus,
+  FolderPlus,
+  GiftIcon,
+  Receipt,
+  Zap,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -25,7 +30,9 @@ import {
   Cell,
 } from "recharts";
 import { PageHeader, StatCard, StatusBadge } from "@/components/page-header";
-import { monthlyDonations, budgetVsActual, projectMix, alerts, donations } from "@/lib/mock-data";
+import { monthlyDonations, budgetVsActual, projectMix, donations } from "@/lib/mock-data";
+import { generateAlerts, moduleRoute } from "@/lib/business-rules";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/dashboard")({
   component: Dashboard,
@@ -33,7 +40,16 @@ export const Route = createFileRoute("/_app/dashboard")({
 
 const PIE_COLORS = ["#2563EB", "#1E3A8A", "#60A5FA", "#93C5FD", "#1D4ED8"];
 
+const quickActions = [
+  { label: "הוסף תורם", icon: UserPlus, to: "/donors" as const, msg: "טופס תורם חדש נפתח" },
+  { label: "צור פרויקט", icon: FolderPlus, to: "/projects" as const, msg: "טופס פרויקט חדש נפתח" },
+  { label: "תרומה חדשה", icon: GiftIcon, to: "/donations" as const, msg: "טופס תרומה נפתח" },
+  { label: "שייך מתנדבים", icon: HeartHandshake, to: "/volunteers" as const, msg: "מסך שיוך מתנדבים" },
+  { label: "צור הוצאה", icon: Receipt, to: "/finance" as const, msg: "טופס הוצאה נפתח" },
+];
+
 function Dashboard() {
+  const alerts = generateAlerts();
   return (
     <>
       <PageHeader
@@ -55,6 +71,31 @@ function Dashboard() {
         <StatCard label="פרויקטים פעילים" value="14" delta="2 בתכנון · 1 נסגר" icon={<TrendingUp className="h-5 w-5" />} />
         <StatCard label="ניצול תקציב שנתי" value="62%" delta="₪936K מתוך ₪1.5M" icon={<Wallet className="h-5 w-5" />} />
       </div>
+
+      {/* Quick Actions */}
+      <div className="card-elevated p-5 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-brand" /> פעולות מהירות</div>
+          <span className="text-xs text-muted-foreground">קיצורי דרך לפעולות יומיומיות</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {quickActions.map((qa) => {
+            const Icon = qa.icon;
+            return (
+              <Link
+                key={qa.label}
+                to={qa.to}
+                onClick={() => toast.info(qa.msg)}
+                className="group flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-border bg-surface-muted hover:bg-brand hover:text-white hover:border-brand transition-all"
+              >
+                <Icon className="h-6 w-6 text-brand group-hover:text-white transition-colors" />
+                <span className="text-xs font-medium text-center">{qa.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2 card-elevated p-5">
@@ -172,8 +213,10 @@ function Dashboard() {
           </thead>
           <tbody>
             {donations.slice(0, 5).map((d) => (
-              <tr key={d.id} className="border-t border-border">
-                <td className="py-3 font-medium">{d.donor}</td>
+              <tr key={d.id} className="border-t border-border hover:bg-surface-muted/60 cursor-pointer">
+                <td className="py-3 font-medium">
+                  <Link to="/donation/$id" params={{ id: d.id }} className="hover:text-brand">{d.donor}</Link>
+                </td>
                 <td className="py-3 text-muted-foreground">{d.project}</td>
                 <td className="py-3 font-semibold">₪{d.amount.toLocaleString()}</td>
                 <td className="py-3"><StatusBadge value={d.receipt} /></td>
