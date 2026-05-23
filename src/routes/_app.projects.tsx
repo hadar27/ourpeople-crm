@@ -53,7 +53,7 @@ function ProjectsPage() {
               <div className="rounded-lg bg-surface-muted p-2">
                 <div className="text-muted-foreground">בוצע</div>
                 <div className="font-semibold mt-0.5">₪{(p.spent / 1000).toFixed(0)}K</div>
-              </div>
+          </Link>
               <div className="rounded-lg bg-surface-muted p-2 flex flex-col">
                 <div className="text-muted-foreground flex items-center gap-1"><Users className="h-3 w-3" /> מתנדבים</div>
                 <div className="font-semibold mt-0.5">{p.volunteers}</div>
