@@ -213,8 +213,10 @@ function Dashboard() {
           </thead>
           <tbody>
             {donations.slice(0, 5).map((d) => (
-              <tr key={d.id} className="border-t border-border">
-                <td className="py-3 font-medium">{d.donor}</td>
+              <tr key={d.id} className="border-t border-border hover:bg-surface-muted/60 cursor-pointer">
+                <td className="py-3 font-medium">
+                  <Link to="/donation/$id" params={{ id: d.id }} className="hover:text-brand">{d.donor}</Link>
+                </td>
                 <td className="py-3 text-muted-foreground">{d.project}</td>
                 <td className="py-3 font-semibold">₪{d.amount.toLocaleString()}</td>
                 <td className="py-3"><StatusBadge value={d.receipt} /></td>
