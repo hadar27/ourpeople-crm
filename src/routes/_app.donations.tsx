@@ -40,7 +40,7 @@ function DonationsPage() {
         <div className="card-elevated p-4"><div className="text-xs text-muted-foreground">קבלות הופקו</div><div className="text-xl font-bold mt-1">41</div></div>
         <div className="card-elevated p-4"><div className="text-xs text-muted-foreground">קבלות חסרות</div><div className="text-xl font-bold mt-1 text-rose-600">6</div></div>
       </div>
-      <DataTable rows={donations} columns={columns} searchKeys={["donor", "project", "id"]} />
+      <DataTable rows={donations} columns={columns} searchKeys={["donor", "project", "id"]} getRowHref={(r) => `/donation/${r.id}`} />
     </>
   );
 }
