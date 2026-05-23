@@ -8,6 +8,11 @@ import {
   AlertTriangle,
   ArrowUpRight,
   CalendarClock,
+  UserPlus,
+  FolderPlus,
+  GiftIcon,
+  Receipt,
+  Zap,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -25,7 +30,9 @@ import {
   Cell,
 } from "recharts";
 import { PageHeader, StatCard, StatusBadge } from "@/components/page-header";
-import { monthlyDonations, budgetVsActual, projectMix, alerts, donations } from "@/lib/mock-data";
+import { monthlyDonations, budgetVsActual, projectMix, donations } from "@/lib/mock-data";
+import { generateAlerts, moduleRoute } from "@/lib/business-rules";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/dashboard")({
   component: Dashboard,
@@ -33,7 +40,16 @@ export const Route = createFileRoute("/_app/dashboard")({
 
 const PIE_COLORS = ["#2563EB", "#1E3A8A", "#60A5FA", "#93C5FD", "#1D4ED8"];
 
+const quickActions = [
+  { label: "הוסף תורם", icon: UserPlus, to: "/donors" as const, msg: "טופס תורם חדש נפתח" },
+  { label: "צור פרויקט", icon: FolderPlus, to: "/projects" as const, msg: "טופס פרויקט חדש נפתח" },
+  { label: "תרומה חדשה", icon: GiftIcon, to: "/donations" as const, msg: "טופס תרומה נפתח" },
+  { label: "שייך מתנדבים", icon: HeartHandshake, to: "/volunteers" as const, msg: "מסך שיוך מתנדבים" },
+  { label: "צור הוצאה", icon: Receipt, to: "/finance" as const, msg: "טופס הוצאה נפתח" },
+];
+
 function Dashboard() {
+  const alerts = generateAlerts();
   return (
     <>
       <PageHeader
