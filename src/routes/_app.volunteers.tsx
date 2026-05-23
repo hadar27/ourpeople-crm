@@ -49,7 +49,7 @@ function VolunteersPage() {
           </div>
         </div>
       </div>
-      <DataTable rows={volunteers} columns={columns} searchKeys={["name", "project", "availability"]} />
+      <DataTable rows={volunteers} columns={columns} searchKeys={["name", "project", "availability"]} getRowHref={(r) => `/volunteer/${r.id}`} />
     </>
   );
 }

@@ -41,7 +41,7 @@ function DonorsPage() {
         <div className="card-elevated p-4"><div className="text-xs text-muted-foreground">תרומה ממוצעת</div><div className="text-xl font-bold mt-1">₪3,240</div></div>
         <div className="card-elevated p-4"><div className="text-xs text-muted-foreground">פגישות החודש</div><div className="text-xl font-bold mt-1">22</div></div>
       </div>
-      <DataTable rows={donors} columns={columns} searchKeys={["name", "type"]} />
+      <DataTable rows={donors} columns={columns} searchKeys={["name", "type"]} getRowHref={(r) => `/donor/${r.id}`} />
     </>
   );
 }
