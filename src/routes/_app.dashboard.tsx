@@ -72,6 +72,31 @@ function Dashboard() {
         <StatCard label="ניצול תקציב שנתי" value="62%" delta="₪936K מתוך ₪1.5M" icon={<Wallet className="h-5 w-5" />} />
       </div>
 
+      {/* Quick Actions */}
+      <div className="card-elevated p-5 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-brand" /> פעולות מהירות</div>
+          <span className="text-xs text-muted-foreground">קיצורי דרך לפעולות יומיומיות</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {quickActions.map((qa) => {
+            const Icon = qa.icon;
+            return (
+              <Link
+                key={qa.label}
+                to={qa.to}
+                onClick={() => toast.info(qa.msg)}
+                className="group flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-border bg-surface-muted hover:bg-brand hover:text-white hover:border-brand transition-all"
+              >
+                <Icon className="h-6 w-6 text-brand group-hover:text-white transition-colors" />
+                <span className="text-xs font-medium text-center">{qa.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2 card-elevated p-5">
           <div className="flex items-center justify-between mb-4">
