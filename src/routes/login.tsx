@@ -19,6 +19,11 @@ function LoginPage() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password) {
+      toast.error("יש למלא דוא״ל וסיסמה");
+      return;
+    }
+    toast.success("התחברת בהצלחה — מעביר ללוח הבקרה");
     navigate({ to: "/dashboard" });
   };
 
