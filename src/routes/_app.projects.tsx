@@ -60,7 +60,7 @@ function ProjectsPage() {
                 <div className="font-semibold mt-0.5">{p.volunteers}</div>
               </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
 
