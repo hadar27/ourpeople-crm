@@ -1,9 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Plus, Users, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { Progress } from "@/components/ui/progress";
 import { projects, tasks } from "@/lib/mock-data";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/projects")({
   component: ProjectsPage,
@@ -16,7 +17,7 @@ function ProjectsPage() {
         title="ניהול פרויקטים"
         description="מבט כולל על כל הפרויקטים — סטטוס, תקציב, התקדמות ומשימות."
         actions={
-          <Button className="bg-brand hover:bg-brand-deep gap-1">
+          <Button className="bg-brand hover:bg-brand-deep gap-1" onClick={() => toast.success("פרויקט חדש נוצר בהצלחה")}>
             <Plus className="h-4 w-4" /> פרויקט חדש
           </Button>
         }
@@ -25,8 +26,12 @@ function ProjectsPage() {
       {/* Project cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
         {projects.map((p) => (
-          <div key={p.id} className="card-elevated p-5 hover:shadow-card transition-shadow">
-            <div className="flex items-start justify-between gap-2">
+          <Link
+            key={p.id}
+            to="/project/$id"
+            params={{ id: p.id }}
+            className="card-elevated p-5 hover:shadow-card hover:-translate-y-0.5 transition-all block"
+          >
               <div className="min-w-0">
                 <div className="text-xs text-muted-foreground">{p.id} · מנהל/ת: {p.manager}</div>
                 <div className="text-base font-bold truncate mt-0.5">{p.name}</div>
