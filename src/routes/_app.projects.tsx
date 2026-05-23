@@ -32,6 +32,7 @@ function ProjectsPage() {
             params={{ id: p.id }}
             className="card-elevated p-5 hover:shadow-card hover:-translate-y-0.5 transition-all block"
           >
+            <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <div className="text-xs text-muted-foreground">{p.id} · מנהל/ת: {p.manager}</div>
                 <div className="text-base font-bold truncate mt-0.5">{p.name}</div>
@@ -53,7 +54,7 @@ function ProjectsPage() {
               <div className="rounded-lg bg-surface-muted p-2">
                 <div className="text-muted-foreground">בוצע</div>
                 <div className="font-semibold mt-0.5">₪{(p.spent / 1000).toFixed(0)}K</div>
-          </Link>
+              </div>
               <div className="rounded-lg bg-surface-muted p-2 flex flex-col">
                 <div className="text-muted-foreground flex items-center gap-1"><Users className="h-3 w-3" /> מתנדבים</div>
                 <div className="font-semibold mt-0.5">{p.volunteers}</div>
