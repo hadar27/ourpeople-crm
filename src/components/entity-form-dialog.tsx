@@ -89,9 +89,6 @@ export function EntityFormDialog({
         <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-l from-brand-light/40 to-white rounded-t-2xl text-right">
           <DialogTitle className="text-xl font-bold text-brand-deep">{title}</DialogTitle>
           {description && <DialogDescription className="text-sm">{description}</DialogDescription>}
-          <DialogClose className="absolute left-4 top-4 rounded-full p-1.5 hover:bg-muted transition-colors">
-            <X className="h-4 w-4" />
-          </DialogClose>
         </DialogHeader>
 
         <div className="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
