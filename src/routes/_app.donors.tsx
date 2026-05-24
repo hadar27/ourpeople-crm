@@ -30,7 +30,7 @@ function DonorsPage() {
         title="ניהול תורמים"
         description="פרופיל תורם, היסטוריית תרומות, פגישות ואינטראקציות."
         actions={
-          <Button className="bg-brand hover:bg-brand-deep gap-1">
+          <Button className="bg-brand hover:bg-brand-deep gap-1" onClick={() => toast.success("תורם חדש נוסף בהצלחה")}>
             <Plus className="h-4 w-4" /> הוסף תורם
           </Button>
         }

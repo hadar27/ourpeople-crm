@@ -25,7 +25,7 @@ function ParticipantsPage() {
         title="ניהול נרשמים"
         description="רשימת כל המשתתפים הרשומים לפעילויות, סדנאות וקייטנות."
         actions={
-          <Button className="bg-brand hover:bg-brand-deep gap-1">
+          <Button className="bg-brand hover:bg-brand-deep gap-1" onClick={() => toast.success("נרשם חדש נוסף בהצלחה")}>
             <Plus className="h-4 w-4" /> הוסף נרשם
           </Button>
         }

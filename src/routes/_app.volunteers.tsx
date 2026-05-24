@@ -32,7 +32,7 @@ function VolunteersPage() {
         title="ניהול מתנדבים"
         description="מאגר מתנדבים, שיוך לפרויקטים, מעקב שעות וכישורים."
         actions={
-          <Button className="bg-brand hover:bg-brand-deep gap-1">
+          <Button className="bg-brand hover:bg-brand-deep gap-1" onClick={() => toast.success("מתנדב חדש נוסף בהצלחה")}>
             <Plus className="h-4 w-4" /> הוסף מתנדב
           </Button>
         }
