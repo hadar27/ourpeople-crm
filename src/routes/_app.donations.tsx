@@ -1,9 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
+import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { donations, type Donation } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/_app/donations")({
