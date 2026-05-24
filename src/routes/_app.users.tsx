@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Plus, Check, X } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
@@ -24,8 +25,8 @@ function UsersPage() {
         title="משתמשים והרשאות"
         description="ניהול משתמשי המערכת ומטריצת הרשאות לפי תפקידים."
         actions={
-          <Button className="bg-brand hover:bg-brand-deep gap-1">
-            <Plus className="h-4 w-4" /> משתמש חדש
+          <Button className="bg-brand hover:bg-brand-deep gap-1" onClick={() => toast.success("משתמש חדש נוסף בהצלחה")}>
+            <Plus className="h-4 w-4" /> הוסף משתמש
           </Button>
         }
       />

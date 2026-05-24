@@ -18,7 +18,7 @@ function ProjectsPage() {
         description="מבט כולל על כל הפרויקטים — סטטוס, תקציב, התקדמות ומשימות."
         actions={
           <Button className="bg-brand hover:bg-brand-deep gap-1" onClick={() => toast.success("פרויקט חדש נוצר בהצלחה")}>
-            <Plus className="h-4 w-4" /> פרויקט חדש
+            <Plus className="h-4 w-4" /> הוסף פרויקט
           </Button>
         }
       />

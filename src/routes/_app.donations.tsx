@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
@@ -26,8 +27,8 @@ function DonationsPage() {
         title="ניהול תרומות"
         description="כל הכניסות הכספיות מתורמים, קמפיינים ואירועים."
         actions={
-          <Button className="bg-brand hover:bg-brand-deep gap-1">
-            <Plus className="h-4 w-4" /> תרומה חדשה
+          <Button className="bg-brand hover:bg-brand-deep gap-1" onClick={() => toast.success("תרומה חדשה נקלטה בהצלחה")}>
+            <Plus className="h-4 w-4" /> קליטת תרומה
           </Button>
         }
       />

@@ -1,5 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader, StatCard, StatusBadge } from "@/components/page-header";
+import { Plus } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { Wallet, TrendingDown, TrendingUp, Receipt } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -37,7 +40,18 @@ const income = [
 function FinancePage() {
   return (
     <>
-      <PageHeader title="כספים — ERP" description="לוח בקרה פיננסי כולל הכנסות, הוצאות וניצול תקציב מול תכנון." />
+      <PageHeader title="כספים — ERP" description="לוח בקרה פיננסי כולל הכנסות, הוצאות וניצול תקציב מול תכנון."
+        actions={
+          <div className="flex items-center gap-2">
+            <Button className="bg-brand hover:bg-brand-deep gap-1" onClick={() => toast.success("הכנסה חדשה נקלטה בהצלחה")}>
+              <Plus className="h-4 w-4" /> הוסף הכנסה
+            </Button>
+            <Button className="bg-brand hover:bg-brand-deep gap-1" onClick={() => toast.success("הוצאה חדשה נקלטה בהצלחה")}>
+              <Plus className="h-4 w-4" /> הוסף הוצאה
+            </Button>
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <StatCard label="הכנסות השנה" value="₪1.42M" delta="▲ 9.2% מהתחזית" icon={<TrendingUp className="h-5 w-5" />} tone="brand" />

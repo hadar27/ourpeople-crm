@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
@@ -28,7 +29,7 @@ function SuppliersPage() {
         title="ניהול ספקים"
         description="ספקי המערכת, חוזים, חשבוניות ותשלומים."
         actions={
-          <Button className="bg-brand hover:bg-brand-deep gap-1">
+          <Button className="bg-brand hover:bg-brand-deep gap-1" onClick={() => toast.success("ספק חדש נוסף בהצלחה")}>
             <Plus className="h-4 w-4" /> הוסף ספק
           </Button>
         }
