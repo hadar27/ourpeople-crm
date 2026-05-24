@@ -1,5 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader, StatCard, StatusBadge } from "@/components/page-header";
+import { Plus } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { Wallet, TrendingDown, TrendingUp, Receipt } from "lucide-react";
 import {
   ResponsiveContainer,
