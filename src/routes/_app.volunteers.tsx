@@ -32,9 +32,19 @@ function VolunteersPage() {
         title="ניהול מתנדבים"
         description="מאגר מתנדבים, שיוך לפרויקטים, מעקב שעות וכישורים."
         actions={
-          <Button className="bg-brand hover:bg-brand-deep gap-1" onClick={() => toast.success("מתנדב חדש נוסף בהצלחה")}>
-            <Plus className="h-4 w-4" /> הוסף מתנדב
-          </Button>
+          <EntityFormDialog
+            triggerLabel="הוסף מתנדב"
+            title="הוספת מתנדב חדש"
+            description="הזן את פרטי המתנדב לצירוף למאגר."
+            successMessage="מתנדב חדש נוסף בהצלחה"
+            fields={[
+              { name: "fullName", label: "שם מלא", required: true },
+              { name: "phone", label: "טלפון", type: "tel", required: true },
+              { name: "availability", label: "זמינות", type: "select", required: true, options: ["בוקר", "צהריים", "ערב", "סופי שבוע", "גמיש"] },
+              { name: "project", label: "פרויקט משויך", type: "select", options: ["קייטנת קיץ", "סיוע למשפחות", "מועדון נוער", "תוכנית נשים", "ללא שיוך"] },
+              { name: "skills", label: "כישורים", colSpan: 2, placeholder: "הדרכה, נהיגה, תרגום..." },
+            ]}
+          />
         }
       />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
