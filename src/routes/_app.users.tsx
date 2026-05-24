@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Check, X } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Check, X } from "lucide-react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
+import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { users, permissionsMatrix, type User } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/_app/users")({
