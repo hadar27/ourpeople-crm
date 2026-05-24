@@ -25,9 +25,21 @@ function DonationsPage() {
         title="ניהול תרומות"
         description="כל הכניסות הכספיות מתורמים, קמפיינים ואירועים."
         actions={
-          <Button className="bg-brand hover:bg-brand-deep gap-1" onClick={() => toast.success("תרומה חדשה נקלטה בהצלחה")}>
-            <Plus className="h-4 w-4" /> קליטת תרומה
-          </Button>
+          <EntityFormDialog
+            triggerLabel="קליטת תרומה"
+            title="קליטת תרומה חדשה"
+            description="רישום תרומה למעקב כספי ולהנפקת קבלה."
+            successMessage="תרומה חדשה נקלטה בהצלחה"
+            fields={[
+              { name: "donor", label: "שם תורם", required: true },
+              { name: "amount", label: "סכום (₪)", type: "number", required: true },
+              { name: "project", label: "פרויקט מיועד", type: "select", options: ["קייטנת קיץ", "סיוע למשפחות", "מועדון נוער", "תוכנית נשים", "כללי"] },
+              { name: "method", label: "אופן תשלום", type: "select", required: true, options: ["העברה בנקאית", "אשראי", "מזומן", "צ׳ק", "הוראת קבע"] },
+              { name: "date", label: "תאריך", type: "date", required: true },
+              { name: "receipt", label: "סטטוס קבלה", type: "select", options: ["הונפקה", "ממתינה", "לא נדרשת"] },
+              { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
+            ]}
+          />
         }
       />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
