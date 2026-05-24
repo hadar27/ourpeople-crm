@@ -1,10 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Plus, Users, Calendar } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Users, Calendar } from "lucide-react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { Progress } from "@/components/ui/progress";
+import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { projects, tasks } from "@/lib/mock-data";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/projects")({
   component: ProjectsPage,
@@ -17,9 +16,20 @@ function ProjectsPage() {
         title="ניהול פרויקטים"
         description="מבט כולל על כל הפרויקטים — סטטוס, תקציב, התקדמות ומשימות."
         actions={
-          <Button className="bg-brand hover:bg-brand-deep gap-1" onClick={() => toast.success("פרויקט חדש נוצר בהצלחה")}>
-            <Plus className="h-4 w-4" /> הוסף פרויקט
-          </Button>
+          <EntityFormDialog
+            triggerLabel="הוסף פרויקט"
+            title="יצירת פרויקט חדש"
+            description="הגדרת פרויקט חדש עם תקציב, יעדים ולוחות זמנים."
+            successMessage="פרויקט חדש נוצר בהצלחה"
+            fields={[
+              { name: "name", label: "שם פרויקט", required: true, colSpan: 2 },
+              { name: "budget", label: "תקציב (₪)", type: "number", required: true },
+              { name: "status", label: "סטטוס", type: "select", required: true, options: ["תכנון", "פעיל", "מושהה", "הושלם"] },
+              { name: "startDate", label: "תאריך התחלה", type: "date", required: true },
+              { name: "endDate", label: "תאריך סיום", type: "date", required: true },
+              { name: "description", label: "תיאור", type: "textarea", colSpan: 2, placeholder: "מטרות הפרויקט וקהל היעד..." },
+            ]}
+          />
         }
       />
 
