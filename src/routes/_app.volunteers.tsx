@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Award } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Award } from "lucide-react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
+import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { volunteers, type Volunteer } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/_app/volunteers")({
