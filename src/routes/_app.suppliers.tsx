@@ -1,9 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
+import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { suppliers, type Supplier } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/_app/suppliers")({
@@ -29,9 +27,21 @@ function SuppliersPage() {
         title="ניהול ספקים"
         description="ספקי המערכת, חוזים, חשבוניות ותשלומים."
         actions={
-          <Button className="bg-brand hover:bg-brand-deep gap-1" onClick={() => toast.success("ספק חדש נוסף בהצלחה")}>
-            <Plus className="h-4 w-4" /> הוסף ספק
-          </Button>
+          <EntityFormDialog
+            triggerLabel="הוסף ספק"
+            title="הוספת ספק חדש"
+            description="רישום ספק חדש למאגר ולמערכת החוזים."
+            successMessage="ספק חדש נוסף בהצלחה"
+            fields={[
+              { name: "name", label: "שם הספק", required: true },
+              { name: "category", label: "קטגוריה", type: "select", required: true, options: ["מזון", "ציוד", "הסעות", "תקשורת", "שיווק", "אחר"] },
+              { name: "contact", label: "איש קשר", required: true },
+              { name: "phone", label: "טלפון", type: "tel", required: true },
+              { name: "email", label: "אימייל", type: "email" },
+              { name: "taxId", label: "ח.פ. / עוסק", placeholder: "123456789" },
+              { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
+            ]}
+          />
         }
       />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">

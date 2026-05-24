@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Check, X } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Check, X } from "lucide-react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
+import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { users, permissionsMatrix, type User } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/_app/users")({
@@ -25,9 +24,20 @@ function UsersPage() {
         title="משתמשים והרשאות"
         description="ניהול משתמשי המערכת ומטריצת הרשאות לפי תפקידים."
         actions={
-          <Button className="bg-brand hover:bg-brand-deep gap-1" onClick={() => toast.success("משתמש חדש נוסף בהצלחה")}>
-            <Plus className="h-4 w-4" /> הוסף משתמש
-          </Button>
+          <EntityFormDialog
+            triggerLabel="הוסף משתמש"
+            title="הוספת משתמש חדש"
+            description="יצירת חשבון משתמש ושיוך לתפקיד והרשאות."
+            successMessage="משתמש חדש נוסף בהצלחה"
+            fields={[
+              { name: "name", label: "שם מלא", required: true },
+              { name: "email", label: "דוא״ל", type: "email", required: true },
+              { name: "phone", label: "טלפון", type: "tel" },
+              { name: "role", label: "תפקיד", type: "select", required: true, options: ["מנהל מערכת", "מנהל פרויקטים", "כספים", "רכז תורמים", "רכז מתנדבים", "צפייה בלבד"] },
+              { name: "status", label: "סטטוס", type: "select", options: ["פעיל", "מושעה"] },
+              { name: "password", label: "סיסמה זמנית", required: true, placeholder: "תישלח באימייל" },
+            ]}
+          />
         }
       />
       <div className="mb-6">

@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader, StatCard, StatusBadge } from "@/components/page-header";
-import { Plus } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { Wallet, TrendingDown, TrendingUp, Receipt } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -43,12 +41,35 @@ function FinancePage() {
       <PageHeader title="כספים — ERP" description="לוח בקרה פיננסי כולל הכנסות, הוצאות וניצול תקציב מול תכנון."
         actions={
           <div className="flex items-center gap-2">
-            <Button className="bg-brand hover:bg-brand-deep gap-1" onClick={() => toast.success("הכנסה חדשה נקלטה בהצלחה")}>
-              <Plus className="h-4 w-4" /> הוסף הכנסה
-            </Button>
-            <Button className="bg-brand hover:bg-brand-deep gap-1" onClick={() => toast.success("הוצאה חדשה נקלטה בהצלחה")}>
-              <Plus className="h-4 w-4" /> הוסף הוצאה
-            </Button>
+            <EntityFormDialog
+              triggerLabel="הוסף הכנסה"
+              title="הוספת הכנסה חדשה"
+              description="רישום הכנסה למערכת ה-ERP."
+              successMessage="הכנסה חדשה נקלטה בהצלחה"
+              fields={[
+                { name: "source", label: "מקור הכנסה", required: true, colSpan: 2 },
+                { name: "amount", label: "סכום (₪)", type: "number", required: true },
+                { name: "date", label: "תאריך", type: "date", required: true },
+                { name: "category", label: "קטגוריה", type: "select", required: true, options: ["תרומה", "מענק", "אגרות נרשמים", "אחר"] },
+                { name: "project", label: "פרויקט", type: "select", options: ["כללי", "קייטנת קיץ", "סיוע למשפחות", "מועדון נוער"] },
+                { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
+              ]}
+            />
+            <EntityFormDialog
+              triggerLabel="הוסף הוצאה"
+              title="הוספת הוצאה חדשה"
+              description="רישום הוצאה לניצול תקציב הפרויקט."
+              successMessage="הוצאה חדשה נקלטה בהצלחה"
+              fields={[
+                { name: "category", label: "קטגוריה", type: "select", required: true, options: ["שכר ותפעול", "הסעות", "קייטרינג", "ציוד", "פרסום ושיווק", "אחר"] },
+                { name: "amount", label: "סכום (₪)", type: "number", required: true },
+                { name: "project", label: "פרויקט", type: "select", required: true, options: ["כללי", "קייטנת קיץ", "סדנת העצמה לנשים", "חירום ושיקום", "מועדון נוער"] },
+                { name: "supplier", label: "ספק", placeholder: "שם הספק" },
+                { name: "date", label: "תאריך", type: "date", required: true },
+                { name: "status", label: "סטטוס", type: "select", options: ["שולם", "ממתין", "מאושר"] },
+                { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
+              ]}
+            />
           </div>
         }
       />

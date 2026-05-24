@@ -1,9 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
+import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { donors, type Donor } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/_app/donors")({
@@ -31,9 +29,20 @@ function DonorsPage() {
         title="ניהול תורמים"
         description="פרופיל תורם, היסטוריית תרומות, פגישות ואינטראקציות."
         actions={
-          <Button className="bg-brand hover:bg-brand-deep gap-1" onClick={() => toast.success("תורם חדש נוסף בהצלחה")}>
-            <Plus className="h-4 w-4" /> הוסף תורם
-          </Button>
+          <EntityFormDialog
+            triggerLabel="הוסף תורם"
+            title="הוספת תורם חדש"
+            description="פרטי תורם לרישום במאגר התורמים."
+            successMessage="תורם חדש נוסף בהצלחה"
+            fields={[
+              { name: "name", label: "שם תורם", required: true },
+              { name: "phone", label: "טלפון", type: "tel", required: true },
+              { name: "email", label: "אימייל", type: "email" },
+              { name: "type", label: "סוג תורם", type: "select", required: true, options: ["פרטי", "עסקי", "קרן", "אנונימי"] },
+              { name: "interests", label: "תחומי עניין", colSpan: 2, placeholder: "חינוך, בריאות, רווחה..." },
+              { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
+            ]}
+          />
         }
       />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">

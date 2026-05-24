@@ -1,9 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
+import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { participants, type Participant } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/_app/participants")({
@@ -26,9 +24,21 @@ function ParticipantsPage() {
         title="ניהול נרשמים"
         description="רשימת כל המשתתפים הרשומים לפעילויות, סדנאות וקייטנות."
         actions={
-          <Button className="bg-brand hover:bg-brand-deep gap-1" onClick={() => toast.success("נרשם חדש נוסף בהצלחה")}>
-            <Plus className="h-4 w-4" /> הוסף נרשם
-          </Button>
+          <EntityFormDialog
+            triggerLabel="הוסף נרשם"
+            title="הוספת נרשם חדש"
+            description="הזן את פרטי המשתתף החדש לרישום במערכת."
+            successMessage="נרשם חדש נוסף בהצלחה"
+            fields={[
+              { name: "fullName", label: "שם מלא", required: true, placeholder: "ישראל ישראלי" },
+              { name: "idNumber", label: "תעודת זהות", required: true, placeholder: "123456789" },
+              { name: "phone", label: "טלפון", type: "tel", required: true, placeholder: "050-0000000" },
+              { name: "email", label: "אימייל", type: "email", placeholder: "name@example.com" },
+              { name: "activity", label: "פעילות", type: "select", required: true, options: ["קייטנת קיץ", "סדנה חינוכית", "תוכנית נשים", "מועדון נוער"] },
+              { name: "payment", label: "אמצעי תשלום", type: "select", options: ["מזומן", "אשראי", "העברה בנקאית", "צ׳ק"] },
+              { name: "notes", label: "הערות", type: "textarea", colSpan: 2, placeholder: "הערות נוספות..." },
+            ]}
+          />
         }
       />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
