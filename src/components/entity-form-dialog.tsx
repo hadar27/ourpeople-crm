@@ -18,6 +18,10 @@ export interface FormField {
   placeholder?: string;
   options?: string[];
   colSpan?: 1 | 2;
+  pattern?: RegExp;
+  patternMessage?: string;
+  maxLength?: number;
+  helper?: string;
 }
 
 interface EntityFormDialogProps {
@@ -27,6 +31,7 @@ interface EntityFormDialogProps {
   fields: FormField[];
   successMessage: string;
   triggerNode?: ReactNode;
+  customValidate?: (values: Record<string, string>) => string | null;
 }
 
 export function EntityFormDialog({
@@ -36,6 +41,7 @@ export function EntityFormDialog({
   fields,
   successMessage,
   triggerNode,
+  customValidate,
 }: EntityFormDialogProps) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -53,7 +59,8 @@ export function EntityFormDialog({
       const v = (values[f.name] ?? "").trim();
       if (f.required && !v) next[f.name] = "שדה חובה";
       else if (v && f.type === "email" && !/^\S+@\S+\.\S+$/.test(v)) next[f.name] = "אימייל לא תקין";
-      else if (v && f.type === "tel" && !/^[\d\-+\s()]{7,}$/.test(v)) next[f.name] = "טלפון לא תקין";
+      else if (v && f.pattern && !f.pattern.test(v)) next[f.name] = f.patternMessage ?? "ערך לא תקין";
+      else if (v && f.type === "tel" && !f.pattern && !/^[\d\-+\s()]{7,}$/.test(v)) next[f.name] = "טלפון לא תקין";
     }
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -63,6 +70,13 @@ export function EntityFormDialog({
     if (!validate()) {
       toast.error("יש למלא את כל שדות החובה");
       return;
+    }
+    if (customValidate) {
+      const err = customValidate(values);
+      if (err) {
+        toast.error(err);
+        return;
+      }
     }
     setSaving(true);
     await new Promise((r) => setTimeout(r, 700));
@@ -121,10 +135,12 @@ export function EntityFormDialog({
                   id={f.name}
                   type={f.type ?? "text"}
                   placeholder={f.placeholder}
+                  maxLength={f.maxLength}
                   value={values[f.name] ?? ""}
                   onChange={(e) => setField(f.name, e.target.value)}
                 />
               )}
+              {f.helper && !errors[f.name] && <p className="text-xs text-muted-foreground">{f.helper}</p>}
               {errors[f.name] && <p className="text-xs text-destructive">{errors[f.name]}</p>}
             </div>
           ))}

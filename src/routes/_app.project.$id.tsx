@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
-import { ArrowRight, Users, Wallet, Calendar, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ArrowRight, Users, Wallet, Calendar, CheckCircle2, AlertTriangle, UserCheck, Truck, PiggyBank } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/page-header";
-import { projects, tasks, donations, volunteers } from "@/lib/mock-data";
+import { GanttChart } from "@/components/gantt-chart";
+import { projects, tasks, donations, volunteers, projectExpenses, projectPhases, projectParticipantCounts } from "@/lib/mock-data";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/project/$id")({
@@ -31,8 +32,21 @@ function ProjectDetail() {
   const projectTasks = tasks.filter((t) => t.project === project.name);
   const projectDonations = donations.filter((d) => d.project === project.name || d.project.includes(project.name.split(" ")[0]));
   const projectVolunteers = volunteers.filter((v) => v.project === project.name || v.project.includes(project.name.split(" ")[0]));
+  const expenses = projectExpenses[project.id] ?? [];
+  const phases = projectPhases[project.id] ?? [];
+  const participantsCount = projectParticipantCounts[project.id] ?? 0;
+  const totalDonations = projectDonations.reduce((s, d) => s + d.amount, 0);
+  const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
+  const remainingBudget = project.budget - project.spent;
   const budgetRatio = Math.round((project.spent / project.budget) * 100);
   const health = budgetRatio > 90 ? "סיכון" : project.progress < 30 ? "בהתנעה" : "תקין";
+
+  // Expense by category
+  const byCategory = expenses.reduce<Record<string, number>>((acc, e) => {
+    acc[e.category] = (acc[e.category] ?? 0) + e.amount;
+    return acc;
+  }, {});
+  const relatedSuppliers = Array.from(new Set(expenses.map((e) => e.supplier).filter(Boolean))) as string[];
 
   return (
     <>
@@ -56,9 +70,11 @@ function ProjectDetail() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mt-6">
           <Metric icon={<Wallet className="h-4 w-4" />} label="תקציב" value={`₪${(project.budget/1000).toFixed(0)}K`} />
           <Metric icon={<Wallet className="h-4 w-4" />} label="בוצע" value={`₪${(project.spent/1000).toFixed(0)}K`} sub={`${budgetRatio}% ניצול`} tone={budgetRatio > 90 ? "danger" : "default"} />
+          <Metric icon={<PiggyBank className="h-4 w-4" />} label="יתרת תקציב" value={`₪${(remainingBudget/1000).toFixed(0)}K`} tone={remainingBudget < 0 ? "danger" : "default"} />
+          <Metric icon={<UserCheck className="h-4 w-4" />} label="נרשמים" value={String(participantsCount)} />
           <Metric icon={<Users className="h-4 w-4" />} label="מתנדבים" value={String(project.volunteers)} />
           <Metric icon={<Calendar className="h-4 w-4" />} label="התקדמות" value={`${project.progress}%`} />
         </div>
@@ -71,6 +87,114 @@ function ProjectDetail() {
           <Progress value={project.progress} className="h-2" />
         </div>
       </div>
+
+      {/* Financial breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="card-elevated p-5 lg:col-span-2">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="text-lg font-semibold">פירוט פיננסי</div>
+              <div className="text-xs text-muted-foreground">הוצאות לפי ספק וקטגוריה · סה״כ ₪{totalExpenses.toLocaleString()}</div>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => toast.success("ההוצאה נוספה לפרויקט")}>+ הוצאה</Button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-xs text-muted-foreground">
+                <tr className="border-b">
+                  <th className="text-right py-2 font-medium">קטגוריה</th>
+                  <th className="text-right py-2 font-medium">ספק</th>
+                  <th className="text-right py-2 font-medium">תאריך</th>
+                  <th className="text-right py-2 font-medium">סטטוס</th>
+                  <th className="text-left py-2 font-medium">סכום</th>
+                </tr>
+              </thead>
+              <tbody>
+                {expenses.length === 0 ? (
+                  <tr><td colSpan={5} className="text-center py-6 text-sm text-muted-foreground">טרם נרשמו הוצאות</td></tr>
+                ) : expenses.map((e, i) => (
+                  <tr key={i} className="border-b last:border-0 hover:bg-surface-muted/50">
+                    <td className="py-2 font-medium">{e.category}</td>
+                    <td className="py-2 text-muted-foreground">{e.supplier ?? "—"}</td>
+                    <td className="py-2 text-muted-foreground">{e.date}</td>
+                    <td className="py-2"><StatusBadge value={e.status} /></td>
+                    <td className="py-2 text-left font-semibold">₪{e.amount.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {Object.keys(byCategory).length > 0 && (
+            <div className="mt-4 pt-4 border-t">
+              <div className="text-xs font-semibold text-muted-foreground mb-2">פילוח לפי קטגוריה</div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {Object.entries(byCategory).map(([cat, amt]) => {
+                  const pct = Math.round((amt / totalExpenses) * 100);
+                  return (
+                    <div key={cat} className="rounded-lg bg-surface-muted p-2">
+                      <div className="flex justify-between text-xs">
+                        <span className="font-medium">{cat}</span>
+                        <span className="text-muted-foreground">{pct}%</span>
+                      </div>
+                      <div className="text-sm font-semibold mt-0.5">₪{amt.toLocaleString()}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          <div className="card-elevated p-5">
+            <div className="font-semibold mb-2 flex items-center gap-1.5"><PiggyBank className="h-4 w-4 text-brand" /> תרומות לפרויקט</div>
+            <div className="text-2xl font-bold text-brand-deep">₪{totalDonations.toLocaleString()}</div>
+            <div className="text-xs text-muted-foreground">{projectDonations.length} תרומות מיוחסות</div>
+            <ul className="mt-3 space-y-1.5">
+              {projectDonations.slice(0, 4).map((d) => (
+                <li key={d.id}>
+                  <Link to="/donation/$id" params={{ id: d.id }} className="flex items-center justify-between p-1.5 rounded-md hover:bg-surface-muted text-sm">
+                    <span className="truncate">{d.donor}</span>
+                    <span className="font-semibold">₪{d.amount.toLocaleString()}</span>
+                  </Link>
+                </li>
+              ))}
+              {projectDonations.length === 0 && <li className="text-xs text-muted-foreground">אין תרומות מיוחסות</li>}
+            </ul>
+          </div>
+
+          <div className="card-elevated p-5">
+            <div className="font-semibold mb-2 flex items-center gap-1.5"><Truck className="h-4 w-4 text-brand" /> ספקים קשורים ({relatedSuppliers.length})</div>
+            {relatedSuppliers.length === 0 ? (
+              <div className="text-xs text-muted-foreground">אין ספקים קשורים</div>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {relatedSuppliers.map((s) => (
+                  <span key={s} className="text-xs bg-secondary text-brand-deep px-2 py-1 rounded-md font-medium">{s}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Gantt */}
+      <div className="card-elevated p-5 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <div className="text-lg font-semibold">לוח זמני פרויקט (Gantt)</div>
+            <div className="text-xs text-muted-foreground">שלבים, אבני דרך, אחריות והתקדמות</div>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => toast.success("שלב חדש נוסף")}>+ שלב</Button>
+        </div>
+        {phases.length === 0 ? (
+          <div className="text-center py-8 text-sm text-muted-foreground">טרם הוגדרו שלבים לפרויקט</div>
+        ) : (
+          <GanttChart phases={phases} />
+        )}
+      </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="card-elevated p-5">
