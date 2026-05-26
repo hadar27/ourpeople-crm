@@ -41,6 +41,7 @@ export function EntityFormDialog({
   fields,
   successMessage,
   triggerNode,
+  customValidate,
 }: EntityFormDialogProps) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -58,7 +59,8 @@ export function EntityFormDialog({
       const v = (values[f.name] ?? "").trim();
       if (f.required && !v) next[f.name] = "שדה חובה";
       else if (v && f.type === "email" && !/^\S+@\S+\.\S+$/.test(v)) next[f.name] = "אימייל לא תקין";
-      else if (v && f.type === "tel" && !/^[\d\-+\s()]{7,}$/.test(v)) next[f.name] = "טלפון לא תקין";
+      else if (v && f.pattern && !f.pattern.test(v)) next[f.name] = f.patternMessage ?? "ערך לא תקין";
+      else if (v && f.type === "tel" && !f.pattern && !/^[\d\-+\s()]{7,}$/.test(v)) next[f.name] = "טלפון לא תקין";
     }
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -68,6 +70,13 @@ export function EntityFormDialog({
     if (!validate()) {
       toast.error("יש למלא את כל שדות החובה");
       return;
+    }
+    if (customValidate) {
+      const err = customValidate(values);
+      if (err) {
+        toast.error(err);
+        return;
+      }
     }
     setSaving(true);
     await new Promise((r) => setTimeout(r, 700));
