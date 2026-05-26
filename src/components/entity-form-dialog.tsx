@@ -18,6 +18,10 @@ export interface FormField {
   placeholder?: string;
   options?: string[];
   colSpan?: 1 | 2;
+  pattern?: RegExp;
+  patternMessage?: string;
+  maxLength?: number;
+  helper?: string;
 }
 
 interface EntityFormDialogProps {
@@ -27,6 +31,7 @@ interface EntityFormDialogProps {
   fields: FormField[];
   successMessage: string;
   triggerNode?: ReactNode;
+  customValidate?: (values: Record<string, string>) => string | null;
 }
 
 export function EntityFormDialog({
