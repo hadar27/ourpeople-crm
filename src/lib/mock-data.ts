@@ -1,25 +1,46 @@
 // Mock data for the Our People nonprofit ERP/CRM platform.
 // All data is in-memory only — no backend integration yet.
 
+export type RegistrationSource = "טופס דיגיטלי" | "QR" | "אתר" | "צוות פנימי" | "ייבוא Excel" | "API";
+export type RegistrationStatus = "מאושר" | "ממתין לתשלום" | "ממתין לאישור" | "טיוטה";
+export type ParticipantPayment = "שולם" | "שולם חלקית" | "לא שולם" | "לא נדרש תשלום";
+
 export type Participant = {
   id: string;
   name: string;
   idNumber: string;
   phone: string;
   activity: string;
-  status: "פעיל" | "ממתין" | "לא פעיל";
-  paymentStatus: "שולם" | "חלקי" | "לא שולם";
+  activityType: "חינמית" | "בתשלום";
+  status: RegistrationStatus;
+  paymentStatus: ParticipantPayment;
+  source: RegistrationSource;
+  registrationDate: string;
+  documentsComplete: boolean;
+  isNewImmigrant?: boolean;
+  immigrationYear?: number;
 };
 
+export const activitiesCatalog: { name: string; type: "חינמית" | "בתשלום"; price: number }[] = [
+  { name: "קייטנת קיץ", type: "בתשלום", price: 850 },
+  { name: "סדנת העצמה נשים", type: "בתשלום", price: 300 },
+  { name: "ליווי משפחות", type: "חינמית", price: 0 },
+  { name: "תכנית נוער", type: "בתשלום", price: 200 },
+  { name: "סיוע למשפחות עולים", type: "חינמית", price: 0 },
+  { name: "חירום ושיקום", type: "חינמית", price: 0 },
+  { name: "מועדון נוער", type: "חינמית", price: 0 },
+];
+
 export const participants: Participant[] = [
-  { id: "P-1001", name: "מירב כהן", idNumber: "302145678", phone: "0501234567", activity: "קייטנת קיץ", status: "פעיל", paymentStatus: "שולם" },
-  { id: "P-1002", name: "אחמד עבדאללה", idNumber: "315678234", phone: "0527788991", activity: "סדנת העצמה נשים", status: "פעיל", paymentStatus: "חלקי" },
-  { id: "P-1003", name: "נטלי לוי", idNumber: "208934512", phone: "0541239876", activity: "ליווי משפחות", status: "ממתין", paymentStatus: "לא שולם" },
-  { id: "P-1004", name: "יוסי בן דוד", idNumber: "311223344", phone: "0509988776", activity: "תכנית נוער", status: "פעיל", paymentStatus: "שולם" },
-  { id: "P-1005", name: "סוזן מרים", idNumber: "327654321", phone: "0533344556", activity: "סיוע למשפחות עולים", status: "לא פעיל", paymentStatus: "לא שולם" },
-  { id: "P-1006", name: "דנה אברמוב", idNumber: "318877665", phone: "0521122334", activity: "קייטנת קיץ", status: "פעיל", paymentStatus: "שולם" },
-  { id: "P-1007", name: "מוחמד חליל", idNumber: "330011223", phone: "0544455667", activity: "חירום ושיקום", status: "פעיל", paymentStatus: "חלקי" },
-  { id: "P-1008", name: "רחל פרידמן", idNumber: "298877665", phone: "0507788990", activity: "תכנית נוער", status: "פעיל", paymentStatus: "שולם" },
+  { id: "P-1001", name: "מירב כהן", idNumber: "302145678", phone: "0501234567", activity: "קייטנת קיץ", activityType: "בתשלום", status: "מאושר", paymentStatus: "שולם", source: "טופס דיגיטלי", registrationDate: "2025-05-12", documentsComplete: true },
+  { id: "P-1002", name: "אחמד עבדאללה", idNumber: "315678234", phone: "0527788991", activity: "סדנת העצמה נשים", activityType: "בתשלום", status: "ממתין לתשלום", paymentStatus: "שולם חלקית", source: "QR", registrationDate: "2025-05-18", documentsComplete: true },
+  { id: "P-1003", name: "נטלי לוי", idNumber: "208934512", phone: "0541239876", activity: "ליווי משפחות", activityType: "חינמית", status: "ממתין לאישור", paymentStatus: "לא נדרש תשלום", source: "אתר", registrationDate: "2025-05-20", documentsComplete: false },
+  { id: "P-1004", name: "יוסי בן דוד", idNumber: "311223344", phone: "0509988776", activity: "תכנית נוער", activityType: "בתשלום", status: "מאושר", paymentStatus: "שולם", source: "צוות פנימי", registrationDate: "2025-04-30", documentsComplete: true },
+  { id: "P-1005", name: "סוזן מרים", idNumber: "327654321", phone: "0533344556", activity: "סיוע למשפחות עולים", activityType: "חינמית", status: "ממתין לאישור", paymentStatus: "לא נדרש תשלום", source: "ייבוא Excel", registrationDate: "2025-05-05", documentsComplete: false, isNewImmigrant: true, immigrationYear: 2022 },
+  { id: "P-1006", name: "דנה אברמוב", idNumber: "318877665", phone: "0521122334", activity: "קייטנת קיץ", activityType: "בתשלום", status: "מאושר", paymentStatus: "שולם", source: "טופס דיגיטלי", registrationDate: "2025-05-15", documentsComplete: true, isNewImmigrant: true, immigrationYear: 2018 },
+  { id: "P-1007", name: "מוחמד חליל", idNumber: "330011223", phone: "0544455667", activity: "חירום ושיקום", activityType: "חינמית", status: "מאושר", paymentStatus: "לא נדרש תשלום", source: "API", registrationDate: "2025-05-21", documentsComplete: true },
+  { id: "P-1008", name: "רחל פרידמן", idNumber: "298877665", phone: "0507788990", activity: "תכנית נוער", activityType: "בתשלום", status: "ממתין לתשלום", paymentStatus: "לא שולם", source: "טופס דיגיטלי", registrationDate: "2025-05-22", documentsComplete: false },
+  { id: "P-1009", name: "אלינור בקר", idNumber: "320099887", phone: "0508877665", activity: "קייטנת קיץ", activityType: "בתשלום", status: "מאושר", paymentStatus: "שולם", source: "QR", registrationDate: "2025-05-23", documentsComplete: true, isNewImmigrant: true, immigrationYear: 2023 },
 ];
 
 export type Volunteer = {
