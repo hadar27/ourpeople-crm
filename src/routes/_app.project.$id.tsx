@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
-import { ArrowRight, Users, Wallet, Calendar, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ArrowRight, Users, Wallet, Calendar, CheckCircle2, AlertTriangle, UserCheck, Truck, PiggyBank } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/page-header";
-import { projects, tasks, donations, volunteers } from "@/lib/mock-data";
+import { GanttChart } from "@/components/gantt-chart";
+import { projects, tasks, donations, volunteers, projectExpenses, projectPhases, projectParticipantCounts } from "@/lib/mock-data";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/project/$id")({
