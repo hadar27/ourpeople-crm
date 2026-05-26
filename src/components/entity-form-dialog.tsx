@@ -135,10 +135,12 @@ export function EntityFormDialog({
                   id={f.name}
                   type={f.type ?? "text"}
                   placeholder={f.placeholder}
+                  maxLength={f.maxLength}
                   value={values[f.name] ?? ""}
                   onChange={(e) => setField(f.name, e.target.value)}
                 />
               )}
+              {f.helper && !errors[f.name] && <p className="text-xs text-muted-foreground">{f.helper}</p>}
               {errors[f.name] && <p className="text-xs text-destructive">{errors[f.name]}</p>}
             </div>
           ))}
