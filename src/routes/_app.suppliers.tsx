@@ -50,7 +50,12 @@ function SuppliersPage() {
         <div className="card-elevated p-4"><div className="text-xs text-muted-foreground">חשבוניות פתוחות</div><div className="text-xl font-bold mt-1 text-amber-600">7</div></div>
         <div className="card-elevated p-4"><div className="text-xs text-muted-foreground">יתרת תשלום</div><div className="text-xl font-bold mt-1">₪82,300</div></div>
       </div>
-      <DataTable rows={suppliers} columns={columns} searchKeys={["name", "category", "contact"]} />
+      <DataTable
+        rows={suppliers}
+        columns={columns}
+        searchKeys={["name", "category", "contact"]}
+        getRowHref={(r) => `/suppliers/${r.id}`}
+      />
     </>
   );
 }
