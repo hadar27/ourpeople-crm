@@ -19,6 +19,7 @@ import { Route as AppReportsRouteImport } from './routes/_app.reports'
 import { Route as AppProjectsRouteImport } from './routes/_app.projects'
 import { Route as AppParticipantsRouteImport } from './routes/_app.participants'
 import { Route as AppFinanceRouteImport } from './routes/_app.finance'
+import { Route as AppFamiliesRouteImport } from './routes/_app.families'
 import { Route as AppDonorsRouteImport } from './routes/_app.donors'
 import { Route as AppDonationsRouteImport } from './routes/_app.donations'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
@@ -26,6 +27,7 @@ import { Route as AppAlertsRouteImport } from './routes/_app.alerts'
 import { Route as AppVolunteerIdRouteImport } from './routes/_app.volunteer.$id'
 import { Route as AppSuppliersIdRouteImport } from './routes/_app.suppliers_.$id'
 import { Route as AppProjectIdRouteImport } from './routes/_app.project.$id'
+import { Route as AppFamiliesIdRouteImport } from './routes/_app.families_.$id'
 import { Route as AppDonorIdRouteImport } from './routes/_app.donor.$id'
 import { Route as AppDonationIdRouteImport } from './routes/_app.donation.$id'
 
@@ -78,6 +80,11 @@ const AppFinanceRoute = AppFinanceRouteImport.update({
   path: '/finance',
   getParentRoute: () => AppRoute,
 } as any)
+const AppFamiliesRoute = AppFamiliesRouteImport.update({
+  id: '/families',
+  path: '/families',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDonorsRoute = AppDonorsRouteImport.update({
   id: '/donors',
   path: '/donors',
@@ -113,6 +120,11 @@ const AppProjectIdRoute = AppProjectIdRouteImport.update({
   path: '/project/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppFamiliesIdRoute = AppFamiliesIdRouteImport.update({
+  id: '/families_/$id',
+  path: '/families/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDonorIdRoute = AppDonorIdRouteImport.update({
   id: '/donor/$id',
   path: '/donor/$id',
@@ -131,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AppDashboardRoute
   '/donations': typeof AppDonationsRoute
   '/donors': typeof AppDonorsRoute
+  '/families': typeof AppFamiliesRoute
   '/finance': typeof AppFinanceRoute
   '/participants': typeof AppParticipantsRoute
   '/projects': typeof AppProjectsRoute
@@ -140,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/volunteers': typeof AppVolunteersRoute
   '/donation/$id': typeof AppDonationIdRoute
   '/donor/$id': typeof AppDonorIdRoute
+  '/families/$id': typeof AppFamiliesIdRoute
   '/project/$id': typeof AppProjectIdRoute
   '/suppliers/$id': typeof AppSuppliersIdRoute
   '/volunteer/$id': typeof AppVolunteerIdRoute
@@ -151,6 +165,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AppDashboardRoute
   '/donations': typeof AppDonationsRoute
   '/donors': typeof AppDonorsRoute
+  '/families': typeof AppFamiliesRoute
   '/finance': typeof AppFinanceRoute
   '/participants': typeof AppParticipantsRoute
   '/projects': typeof AppProjectsRoute
@@ -160,6 +175,7 @@ export interface FileRoutesByTo {
   '/volunteers': typeof AppVolunteersRoute
   '/donation/$id': typeof AppDonationIdRoute
   '/donor/$id': typeof AppDonorIdRoute
+  '/families/$id': typeof AppFamiliesIdRoute
   '/project/$id': typeof AppProjectIdRoute
   '/suppliers/$id': typeof AppSuppliersIdRoute
   '/volunteer/$id': typeof AppVolunteerIdRoute
@@ -173,6 +189,7 @@ export interface FileRoutesById {
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/donations': typeof AppDonationsRoute
   '/_app/donors': typeof AppDonorsRoute
+  '/_app/families': typeof AppFamiliesRoute
   '/_app/finance': typeof AppFinanceRoute
   '/_app/participants': typeof AppParticipantsRoute
   '/_app/projects': typeof AppProjectsRoute
@@ -182,6 +199,7 @@ export interface FileRoutesById {
   '/_app/volunteers': typeof AppVolunteersRoute
   '/_app/donation/$id': typeof AppDonationIdRoute
   '/_app/donor/$id': typeof AppDonorIdRoute
+  '/_app/families_/$id': typeof AppFamiliesIdRoute
   '/_app/project/$id': typeof AppProjectIdRoute
   '/_app/suppliers_/$id': typeof AppSuppliersIdRoute
   '/_app/volunteer/$id': typeof AppVolunteerIdRoute
@@ -195,6 +213,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/donations'
     | '/donors'
+    | '/families'
     | '/finance'
     | '/participants'
     | '/projects'
@@ -204,6 +223,7 @@ export interface FileRouteTypes {
     | '/volunteers'
     | '/donation/$id'
     | '/donor/$id'
+    | '/families/$id'
     | '/project/$id'
     | '/suppliers/$id'
     | '/volunteer/$id'
@@ -215,6 +235,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/donations'
     | '/donors'
+    | '/families'
     | '/finance'
     | '/participants'
     | '/projects'
@@ -224,6 +245,7 @@ export interface FileRouteTypes {
     | '/volunteers'
     | '/donation/$id'
     | '/donor/$id'
+    | '/families/$id'
     | '/project/$id'
     | '/suppliers/$id'
     | '/volunteer/$id'
@@ -236,6 +258,7 @@ export interface FileRouteTypes {
     | '/_app/dashboard'
     | '/_app/donations'
     | '/_app/donors'
+    | '/_app/families'
     | '/_app/finance'
     | '/_app/participants'
     | '/_app/projects'
@@ -245,6 +268,7 @@ export interface FileRouteTypes {
     | '/_app/volunteers'
     | '/_app/donation/$id'
     | '/_app/donor/$id'
+    | '/_app/families_/$id'
     | '/_app/project/$id'
     | '/_app/suppliers_/$id'
     | '/_app/volunteer/$id'
@@ -328,6 +352,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppFinanceRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/families': {
+      id: '/_app/families'
+      path: '/families'
+      fullPath: '/families'
+      preLoaderRoute: typeof AppFamiliesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/donors': {
       id: '/_app/donors'
       path: '/donors'
@@ -377,6 +408,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProjectIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/families_/$id': {
+      id: '/_app/families_/$id'
+      path: '/families/$id'
+      fullPath: '/families/$id'
+      preLoaderRoute: typeof AppFamiliesIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/donor/$id': {
       id: '/_app/donor/$id'
       path: '/donor/$id'
@@ -399,6 +437,7 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppDonationsRoute: typeof AppDonationsRoute
   AppDonorsRoute: typeof AppDonorsRoute
+  AppFamiliesRoute: typeof AppFamiliesRoute
   AppFinanceRoute: typeof AppFinanceRoute
   AppParticipantsRoute: typeof AppParticipantsRoute
   AppProjectsRoute: typeof AppProjectsRoute
@@ -408,6 +447,7 @@ interface AppRouteChildren {
   AppVolunteersRoute: typeof AppVolunteersRoute
   AppDonationIdRoute: typeof AppDonationIdRoute
   AppDonorIdRoute: typeof AppDonorIdRoute
+  AppFamiliesIdRoute: typeof AppFamiliesIdRoute
   AppProjectIdRoute: typeof AppProjectIdRoute
   AppSuppliersIdRoute: typeof AppSuppliersIdRoute
   AppVolunteerIdRoute: typeof AppVolunteerIdRoute
@@ -418,6 +458,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppDonationsRoute: AppDonationsRoute,
   AppDonorsRoute: AppDonorsRoute,
+  AppFamiliesRoute: AppFamiliesRoute,
   AppFinanceRoute: AppFinanceRoute,
   AppParticipantsRoute: AppParticipantsRoute,
   AppProjectsRoute: AppProjectsRoute,
@@ -427,6 +468,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppVolunteersRoute: AppVolunteersRoute,
   AppDonationIdRoute: AppDonationIdRoute,
   AppDonorIdRoute: AppDonorIdRoute,
+  AppFamiliesIdRoute: AppFamiliesIdRoute,
   AppProjectIdRoute: AppProjectIdRoute,
   AppSuppliersIdRoute: AppSuppliersIdRoute,
   AppVolunteerIdRoute: AppVolunteerIdRoute,
@@ -442,3 +484,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
