@@ -14,6 +14,7 @@ import {
   Search,
   LogOut,
   ChevronDown,
+  Home,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ const nav = [
   { to: "/volunteers", label: "מתנדבים", icon: HeartHandshake },
   { to: "/donors", label: "תורמים", icon: HandCoins },
   { to: "/donations", label: "תרומות", icon: Gift },
+  { to: "/families", label: "מוטבים ומשפחות", icon: Home },
   { to: "/projects", label: "פרויקטים", icon: FolderKanban },
   { to: "/suppliers", label: "ספקים", icon: Truck },
   { to: "/finance", label: "כספים ERP", icon: Wallet },

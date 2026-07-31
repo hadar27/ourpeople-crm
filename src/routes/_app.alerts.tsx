@@ -24,7 +24,7 @@ function AlertsPage() {
         <div className="card-elevated p-4"><div className="text-xs text-muted-foreground">חמורות</div><div className="text-2xl font-bold mt-1 text-rose-600">{high}</div></div>
         <div className="card-elevated p-4"><div className="text-xs text-muted-foreground">בינוניות</div><div className="text-2xl font-bold mt-1 text-amber-600">{mid}</div></div>
         <div className="card-elevated p-4"><div className="text-xs text-muted-foreground">נמוכות</div><div className="text-2xl font-bold mt-1 text-brand">{low}</div></div>
-        <div className="card-elevated p-4 bg-soft-gradient"><div className="text-xs text-muted-foreground">חוקים פעילים</div><div className="text-2xl font-bold mt-1">5</div></div>
+        <div className="card-elevated p-4 bg-soft-gradient"><div className="text-xs text-muted-foreground">חוקים פעילים</div><div className="text-2xl font-bold mt-1">10</div></div>
       </div>
 
       <div className="card-elevated p-5">
