@@ -24,6 +24,7 @@ import { Route as AppDonationsRouteImport } from './routes/_app.donations'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppAlertsRouteImport } from './routes/_app.alerts'
 import { Route as AppVolunteerIdRouteImport } from './routes/_app.volunteer.$id'
+import { Route as AppSuppliersIdRouteImport } from './routes/_app.suppliers_.$id'
 import { Route as AppProjectIdRouteImport } from './routes/_app.project.$id'
 import { Route as AppDonorIdRouteImport } from './routes/_app.donor.$id'
 import { Route as AppDonationIdRouteImport } from './routes/_app.donation.$id'
@@ -102,6 +103,11 @@ const AppVolunteerIdRoute = AppVolunteerIdRouteImport.update({
   path: '/volunteer/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSuppliersIdRoute = AppSuppliersIdRouteImport.update({
+  id: '/suppliers_/$id',
+  path: '/suppliers/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProjectIdRoute = AppProjectIdRouteImport.update({
   id: '/project/$id',
   path: '/project/$id',
@@ -135,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/donation/$id': typeof AppDonationIdRoute
   '/donor/$id': typeof AppDonorIdRoute
   '/project/$id': typeof AppProjectIdRoute
+  '/suppliers/$id': typeof AppSuppliersIdRoute
   '/volunteer/$id': typeof AppVolunteerIdRoute
 }
 export interface FileRoutesByTo {
@@ -154,6 +161,7 @@ export interface FileRoutesByTo {
   '/donation/$id': typeof AppDonationIdRoute
   '/donor/$id': typeof AppDonorIdRoute
   '/project/$id': typeof AppProjectIdRoute
+  '/suppliers/$id': typeof AppSuppliersIdRoute
   '/volunteer/$id': typeof AppVolunteerIdRoute
 }
 export interface FileRoutesById {
@@ -175,6 +183,7 @@ export interface FileRoutesById {
   '/_app/donation/$id': typeof AppDonationIdRoute
   '/_app/donor/$id': typeof AppDonorIdRoute
   '/_app/project/$id': typeof AppProjectIdRoute
+  '/_app/suppliers_/$id': typeof AppSuppliersIdRoute
   '/_app/volunteer/$id': typeof AppVolunteerIdRoute
 }
 export interface FileRouteTypes {
@@ -196,6 +205,7 @@ export interface FileRouteTypes {
     | '/donation/$id'
     | '/donor/$id'
     | '/project/$id'
+    | '/suppliers/$id'
     | '/volunteer/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -215,6 +225,7 @@ export interface FileRouteTypes {
     | '/donation/$id'
     | '/donor/$id'
     | '/project/$id'
+    | '/suppliers/$id'
     | '/volunteer/$id'
   id:
     | '__root__'
@@ -235,6 +246,7 @@ export interface FileRouteTypes {
     | '/_app/donation/$id'
     | '/_app/donor/$id'
     | '/_app/project/$id'
+    | '/_app/suppliers_/$id'
     | '/_app/volunteer/$id'
   fileRoutesById: FileRoutesById
 }
@@ -351,6 +363,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppVolunteerIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/suppliers_/$id': {
+      id: '/_app/suppliers_/$id'
+      path: '/suppliers/$id'
+      fullPath: '/suppliers/$id'
+      preLoaderRoute: typeof AppSuppliersIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/project/$id': {
       id: '/_app/project/$id'
       path: '/project/$id'
@@ -390,6 +409,7 @@ interface AppRouteChildren {
   AppDonationIdRoute: typeof AppDonationIdRoute
   AppDonorIdRoute: typeof AppDonorIdRoute
   AppProjectIdRoute: typeof AppProjectIdRoute
+  AppSuppliersIdRoute: typeof AppSuppliersIdRoute
   AppVolunteerIdRoute: typeof AppVolunteerIdRoute
 }
 
@@ -408,6 +428,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDonationIdRoute: AppDonationIdRoute,
   AppDonorIdRoute: AppDonorIdRoute,
   AppProjectIdRoute: AppProjectIdRoute,
+  AppSuppliersIdRoute: AppSuppliersIdRoute,
   AppVolunteerIdRoute: AppVolunteerIdRoute,
 }
 
