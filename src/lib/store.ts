@@ -143,27 +143,53 @@ export function logActivity(entry: ActivityEntry) {
 }
 
 // ---------- Selectors ----------
-export const selectInteractions = (donorId: string) => (s: State) =>
-  s.interactions.filter((i) => i.donorId === donorId);
+// useSyncExternalStore requires a *stable* snapshot reference: a selector that
+// builds a new array/object on every call causes an infinite render loop.
+// memoSelector caches the last computed value per (state, cacheKey) pair.
+function memoSelector<T>(key: string, compute: (s: State) => T) {
+  let lastState: State | undefined;
+  let lastValue: T;
+  const cached = selectorCache.get(key) as ((s: State) => T) | undefined;
+  if (cached) return cached;
+  const fn = (s: State): T => {
+    if (lastState !== s) {
+      lastState = s;
+      lastValue = compute(s);
+    }
+    return lastValue;
+  };
+  selectorCache.set(key, fn as (s: State) => unknown);
+  return fn;
+}
 
-export const selectSupplierBundle = (supplierId: string) => (s: State) => ({
-  contracts: s.contracts.filter((c) => c.supplierId === supplierId),
-  purchaseOrders: s.purchaseOrders.filter((p) => p.supplierId === supplierId),
-  invoices: s.supplierInvoices.filter((i) => i.supplierId === supplierId),
-  payments: s.supplierPayments.filter((p) => p.supplierId === supplierId),
-  documents: s.documents.filter((d) => d.entityType === "supplier" && d.entityId === supplierId),
-  activity: s.activity.filter((a) => a.entityType === "supplier" && a.entityId === supplierId),
-});
+const selectorCache = new Map<string, (s: State) => unknown>();
 
-export const selectFamilyBundle = (familyId: string) => (s: State) => ({
-  members: s.familyMembers.filter((m) => m.familyId === familyId),
-  assistance: s.assistance.filter((a) => a.familyId === familyId),
-  documents: s.documents.filter((d) => d.entityType === "family" && d.entityId === familyId),
-  followUps: s.followUps.filter((f) => f.entityType === "family" && f.entityId === familyId),
-});
+export const selectInteractions = (donorId: string) =>
+  memoSelector(`interactions:${donorId}`, (s) => s.interactions.filter((i) => i.donorId === donorId));
 
-export const selectAllocations = (donationId: string) => (s: State) =>
-  s.allocations.filter((a) => a.donationId === donationId);
+export const selectSupplierBundle = (supplierId: string) =>
+  memoSelector(`supplier:${supplierId}`, (s) => ({
+    contracts: s.contracts.filter((c) => c.supplierId === supplierId),
+    purchaseOrders: s.purchaseOrders.filter((p) => p.supplierId === supplierId),
+    invoices: s.supplierInvoices.filter((i) => i.supplierId === supplierId),
+    payments: s.supplierPayments.filter((p) => p.supplierId === supplierId),
+    documents: s.documents.filter((d) => d.entityType === "supplier" && d.entityId === supplierId),
+    activity: s.activity.filter((a) => a.entityType === "supplier" && a.entityId === supplierId),
+  }));
+
+export const selectFamilyBundle = (familyId: string) =>
+  memoSelector(`family:${familyId}`, (s) => ({
+    members: s.familyMembers.filter((m) => m.familyId === familyId),
+    assistance: s.assistance.filter((a) => a.familyId === familyId),
+    documents: s.documents.filter((d) => d.entityType === "family" && d.entityId === familyId),
+    followUps: s.followUps.filter((f) => f.entityType === "family" && f.entityId === familyId),
+  }));
+
+export const selectAllocations = (donationId: string) =>
+  memoSelector(`allocations:${donationId}`, (s) =>
+    s.allocations.filter((a) => a.donationId === donationId),
+  );
+
 
 export function getSnapshot() {
   return state;
