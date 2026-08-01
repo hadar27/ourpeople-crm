@@ -29,7 +29,7 @@ function projectName(id?: string) {
 }
 
 function SupplierProfile() {
-  const { id } = useParams({ from: "/_app/suppliers_/$id" });
+  const { supplierId: id } = useParams({ from: "/_app/suppliers_/$supplierId" });
   const supplier = suppliers.find((s) => s.id === id);
   const bundle = useStore(selectSupplierBundle(id));
 
