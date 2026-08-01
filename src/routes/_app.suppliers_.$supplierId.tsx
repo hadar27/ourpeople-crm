@@ -19,7 +19,7 @@ import { daysBetween, isOverdue } from "@/lib/crm-seed";
 import { selectSupplierBundle, useStore } from "@/lib/store";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_app/suppliers_/$id")({
+export const Route = createFileRoute("/_app/suppliers_/$supplierId")({
   component: SupplierProfile,
 });
 
