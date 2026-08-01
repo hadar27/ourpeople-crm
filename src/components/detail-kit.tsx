@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
-import { Inbox } from "lucide-react";
+import { Inbox, SearchX } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
+
 
 export function MiniStat({
   label,
@@ -33,16 +36,23 @@ export function MiniStat({
 export function SectionCard({
   title,
   actions,
+  icon,
+  className = "",
   children,
 }: {
   title: string;
   actions?: ReactNode;
+  icon?: ReactNode;
+  className?: string;
   children: ReactNode;
 }) {
   return (
-    <div className="card-elevated p-5">
+    <div className={`card-elevated p-5 ${className}`}>
       <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-        <div className="text-lg font-semibold">{title}</div>
+        <div className="text-lg font-semibold inline-flex items-center gap-2">
+          {icon && <span className="text-brand">{icon}</span>}
+          {title}
+        </div>
         {actions}
       </div>
       {children}
@@ -59,6 +69,40 @@ export function EmptyState({ text, hint }: { text: string; hint?: string }) {
     </div>
   );
 }
+
+/** Friendly in-page "record not found" state — avoids the global error page. */
+export function RecordNotFound({
+  title,
+  description,
+  backTo,
+  backLabel,
+}: {
+  title: string;
+  description: string;
+  backTo:
+    | "/participants"
+    | "/suppliers"
+    | "/families"
+    | "/donors"
+    | "/donations"
+    | "/volunteers"
+    | "/projects";
+  backLabel: string;
+}) {
+  return (
+    <div className="card-elevated p-10 text-center max-w-xl mx-auto mt-10">
+      <div className="mx-auto h-12 w-12 rounded-xl bg-secondary text-brand-deep grid place-items-center mb-4">
+        <SearchX className="h-6 w-6" />
+      </div>
+      <h1 className="text-xl font-bold text-brand-deep mb-2">{title}</h1>
+      <p className="text-sm text-muted-foreground mb-6">{description}</p>
+      <Button asChild>
+        <Link to={backTo}>{backLabel}</Link>
+      </Button>
+    </div>
+  );
+}
+
 
 export type TimelineItem = {
   id: string;

@@ -13,13 +13,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/page-header";
-import { MiniStat, SectionCard, EmptyState, Timeline, type TimelineItem } from "@/components/detail-kit";
+import { MiniStat, SectionCard, EmptyState, RecordNotFound, Timeline, type TimelineItem } from "@/components/detail-kit";
 import { suppliers, projects } from "@/lib/mock-data";
 import { daysBetween, isOverdue } from "@/lib/crm-seed";
 import { selectSupplierBundle, useStore } from "@/lib/store";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_app/suppliers_/$id")({
+export const Route = createFileRoute("/_app/suppliers_/$supplierId")({
   component: SupplierProfile,
 });
 
@@ -29,15 +29,18 @@ function projectName(id?: string) {
 }
 
 function SupplierProfile() {
-  const { id } = useParams({ from: "/_app/suppliers_/$id" });
+  const { supplierId: id } = useParams({ from: "/_app/suppliers_/$supplierId" });
   const supplier = suppliers.find((s) => s.id === id);
   const bundle = useStore(selectSupplierBundle(id));
 
   if (!supplier) {
     return (
-      <div className="card-elevated p-8 text-center">
-        ספק לא נמצא. <Link to="/suppliers" className="text-brand">חזרה</Link>
-      </div>
+      <RecordNotFound
+        title="הספק לא נמצא"
+        description={`לא קיימת רשומת ספק עם המזהה ${id}. ייתכן שהרשומה נמחקה או שהקישור שגוי.`}
+        backTo="/suppliers"
+        backLabel="חזרה לרשימת הספקים"
+      />
     );
   }
 

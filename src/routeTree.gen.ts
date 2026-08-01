@@ -25,8 +25,9 @@ import { Route as AppDonationsRouteImport } from './routes/_app.donations'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppAlertsRouteImport } from './routes/_app.alerts'
 import { Route as AppVolunteerIdRouteImport } from './routes/_app.volunteer.$id'
-import { Route as AppSuppliersIdRouteImport } from './routes/_app.suppliers_.$id'
+import { Route as AppSuppliersSupplierIdRouteImport } from './routes/_app.suppliers_.$supplierId'
 import { Route as AppProjectIdRouteImport } from './routes/_app.project.$id'
+import { Route as AppParticipantsParticipantIdRouteImport } from './routes/_app.participants_.$participantId'
 import { Route as AppFamiliesIdRouteImport } from './routes/_app.families_.$id'
 import { Route as AppDonorIdRouteImport } from './routes/_app.donor.$id'
 import { Route as AppDonationIdRouteImport } from './routes/_app.donation.$id'
@@ -110,9 +111,9 @@ const AppVolunteerIdRoute = AppVolunteerIdRouteImport.update({
   path: '/volunteer/$id',
   getParentRoute: () => AppRoute,
 } as any)
-const AppSuppliersIdRoute = AppSuppliersIdRouteImport.update({
-  id: '/suppliers_/$id',
-  path: '/suppliers/$id',
+const AppSuppliersSupplierIdRoute = AppSuppliersSupplierIdRouteImport.update({
+  id: '/suppliers_/$supplierId',
+  path: '/suppliers/$supplierId',
   getParentRoute: () => AppRoute,
 } as any)
 const AppProjectIdRoute = AppProjectIdRouteImport.update({
@@ -120,6 +121,12 @@ const AppProjectIdRoute = AppProjectIdRouteImport.update({
   path: '/project/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppParticipantsParticipantIdRoute =
+  AppParticipantsParticipantIdRouteImport.update({
+    id: '/participants_/$participantId',
+    path: '/participants/$participantId',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppFamiliesIdRoute = AppFamiliesIdRouteImport.update({
   id: '/families_/$id',
   path: '/families/$id',
@@ -154,8 +161,9 @@ export interface FileRoutesByFullPath {
   '/donation/$id': typeof AppDonationIdRoute
   '/donor/$id': typeof AppDonorIdRoute
   '/families/$id': typeof AppFamiliesIdRoute
+  '/participants/$participantId': typeof AppParticipantsParticipantIdRoute
   '/project/$id': typeof AppProjectIdRoute
-  '/suppliers/$id': typeof AppSuppliersIdRoute
+  '/suppliers/$supplierId': typeof AppSuppliersSupplierIdRoute
   '/volunteer/$id': typeof AppVolunteerIdRoute
 }
 export interface FileRoutesByTo {
@@ -176,8 +184,9 @@ export interface FileRoutesByTo {
   '/donation/$id': typeof AppDonationIdRoute
   '/donor/$id': typeof AppDonorIdRoute
   '/families/$id': typeof AppFamiliesIdRoute
+  '/participants/$participantId': typeof AppParticipantsParticipantIdRoute
   '/project/$id': typeof AppProjectIdRoute
-  '/suppliers/$id': typeof AppSuppliersIdRoute
+  '/suppliers/$supplierId': typeof AppSuppliersSupplierIdRoute
   '/volunteer/$id': typeof AppVolunteerIdRoute
 }
 export interface FileRoutesById {
@@ -200,8 +209,9 @@ export interface FileRoutesById {
   '/_app/donation/$id': typeof AppDonationIdRoute
   '/_app/donor/$id': typeof AppDonorIdRoute
   '/_app/families_/$id': typeof AppFamiliesIdRoute
+  '/_app/participants_/$participantId': typeof AppParticipantsParticipantIdRoute
   '/_app/project/$id': typeof AppProjectIdRoute
-  '/_app/suppliers_/$id': typeof AppSuppliersIdRoute
+  '/_app/suppliers_/$supplierId': typeof AppSuppliersSupplierIdRoute
   '/_app/volunteer/$id': typeof AppVolunteerIdRoute
 }
 export interface FileRouteTypes {
@@ -224,8 +234,9 @@ export interface FileRouteTypes {
     | '/donation/$id'
     | '/donor/$id'
     | '/families/$id'
+    | '/participants/$participantId'
     | '/project/$id'
-    | '/suppliers/$id'
+    | '/suppliers/$supplierId'
     | '/volunteer/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -246,8 +257,9 @@ export interface FileRouteTypes {
     | '/donation/$id'
     | '/donor/$id'
     | '/families/$id'
+    | '/participants/$participantId'
     | '/project/$id'
-    | '/suppliers/$id'
+    | '/suppliers/$supplierId'
     | '/volunteer/$id'
   id:
     | '__root__'
@@ -269,8 +281,9 @@ export interface FileRouteTypes {
     | '/_app/donation/$id'
     | '/_app/donor/$id'
     | '/_app/families_/$id'
+    | '/_app/participants_/$participantId'
     | '/_app/project/$id'
-    | '/_app/suppliers_/$id'
+    | '/_app/suppliers_/$supplierId'
     | '/_app/volunteer/$id'
   fileRoutesById: FileRoutesById
 }
@@ -394,11 +407,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppVolunteerIdRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/suppliers_/$id': {
-      id: '/_app/suppliers_/$id'
-      path: '/suppliers/$id'
-      fullPath: '/suppliers/$id'
-      preLoaderRoute: typeof AppSuppliersIdRouteImport
+    '/_app/suppliers_/$supplierId': {
+      id: '/_app/suppliers_/$supplierId'
+      path: '/suppliers/$supplierId'
+      fullPath: '/suppliers/$supplierId'
+      preLoaderRoute: typeof AppSuppliersSupplierIdRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/project/$id': {
@@ -406,6 +419,13 @@ declare module '@tanstack/react-router' {
       path: '/project/$id'
       fullPath: '/project/$id'
       preLoaderRoute: typeof AppProjectIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/participants_/$participantId': {
+      id: '/_app/participants_/$participantId'
+      path: '/participants/$participantId'
+      fullPath: '/participants/$participantId'
+      preLoaderRoute: typeof AppParticipantsParticipantIdRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/families_/$id': {
@@ -448,8 +468,9 @@ interface AppRouteChildren {
   AppDonationIdRoute: typeof AppDonationIdRoute
   AppDonorIdRoute: typeof AppDonorIdRoute
   AppFamiliesIdRoute: typeof AppFamiliesIdRoute
+  AppParticipantsParticipantIdRoute: typeof AppParticipantsParticipantIdRoute
   AppProjectIdRoute: typeof AppProjectIdRoute
-  AppSuppliersIdRoute: typeof AppSuppliersIdRoute
+  AppSuppliersSupplierIdRoute: typeof AppSuppliersSupplierIdRoute
   AppVolunteerIdRoute: typeof AppVolunteerIdRoute
 }
 
@@ -469,8 +490,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppDonationIdRoute: AppDonationIdRoute,
   AppDonorIdRoute: AppDonorIdRoute,
   AppFamiliesIdRoute: AppFamiliesIdRoute,
+  AppParticipantsParticipantIdRoute: AppParticipantsParticipantIdRoute,
   AppProjectIdRoute: AppProjectIdRoute,
-  AppSuppliersIdRoute: AppSuppliersIdRoute,
+  AppSuppliersSupplierIdRoute: AppSuppliersSupplierIdRoute,
   AppVolunteerIdRoute: AppVolunteerIdRoute,
 }
 
