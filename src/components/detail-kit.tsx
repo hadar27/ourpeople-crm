@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
-import { Inbox } from "lucide-react";
+import { Inbox, SearchX } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
+
 
 export function MiniStat({
   label,
