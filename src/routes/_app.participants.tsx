@@ -107,6 +107,7 @@ function ParticipantsPage() {
         rows={participants}
         columns={columns}
         searchKeys={["name", "idNumber", "phone", "activity"]}
+        getRowHref={(r) => `/participants/${r.id}`}
       />
     </>
   );

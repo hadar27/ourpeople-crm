@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/page-header";
-import { MiniStat, SectionCard, EmptyState, Timeline, type TimelineItem } from "@/components/detail-kit";
+import { MiniStat, SectionCard, EmptyState, RecordNotFound, Timeline, type TimelineItem } from "@/components/detail-kit";
 import { suppliers, projects } from "@/lib/mock-data";
 import { daysBetween, isOverdue } from "@/lib/crm-seed";
 import { selectSupplierBundle, useStore } from "@/lib/store";
@@ -35,9 +35,12 @@ function SupplierProfile() {
 
   if (!supplier) {
     return (
-      <div className="card-elevated p-8 text-center">
-        ספק לא נמצא. <Link to="/suppliers" className="text-brand">חזרה</Link>
-      </div>
+      <RecordNotFound
+        title="הספק לא נמצא"
+        description={`לא קיימת רשומת ספק עם המזהה ${id}. ייתכן שהרשומה נמחקה או שהקישור שגוי.`}
+        backTo="/suppliers"
+        backLabel="חזרה לרשימת הספקים"
+      />
     );
   }
 
