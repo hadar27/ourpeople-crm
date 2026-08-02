@@ -103,6 +103,10 @@ export function setInteractionStatus(id: string, status: DonorInteraction["statu
   });
 }
 
+export function updateInteraction(id: string, patch: Partial<DonorInteraction>) {
+  patch({} as never);
+}
+
 export function addFollowUp(task: FollowUpTask) {
   patch({ followUps: [task, ...state.followUps] });
 }
