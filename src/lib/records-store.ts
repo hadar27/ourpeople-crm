@@ -200,7 +200,7 @@ export function updateRecord<K extends CollectionKey>(
   id: string,
   patch: Partial<Collections[K][number]>,
   labels: Record<string, string> = {},
-  entityLabel = key,
+  entityLabel: string = key,
 ): { ok: boolean; error?: string } {
   const list = state[key] as { id: string }[];
   const current = list.find((r) => r.id === id) as Record<string, unknown> | undefined;
