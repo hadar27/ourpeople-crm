@@ -3,7 +3,9 @@ import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { CalendarClock, CreditCard, UserPlus, FileWarning, Globe2, QrCode, Sparkles, Database, Upload, Users as UsersIcon } from "lucide-react";
-import { participants, activitiesCatalog, type Participant, type RegistrationSource } from "@/lib/mock-data";
+import { activitiesCatalog, type RegistrationSource } from "@/lib/mock-data";
+import { useCollection, type ParticipantRecord } from "@/lib/records-store";
+import { ParticipantEditButton } from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/participants")({
   component: ParticipantsPage,
@@ -26,7 +28,7 @@ function SourceBadge({ source }: { source: RegistrationSource }) {
   );
 }
 
-const columns: Column<Participant>[] = [
+const columns: Column<ParticipantRecord>[] = [
   { key: "name", header: "שם מלא", render: (r) => <span className="font-medium">{r.name}</span> },
   { key: "idNumber", header: "ת.ז." },
   { key: "phone", header: "טלפון" },
@@ -48,6 +50,7 @@ const columns: Column<Participant>[] = [
 ];
 
 function ParticipantsPage() {
+  const participants = useCollection("participants");
   // Operational KPIs derived from data
   const thisWeek = participants.length; // mock "upcoming this week"
   const needPayment = participants.filter((p) => p.paymentStatus === "לא שולם" || p.paymentStatus === "שולם חלקית").length;
@@ -108,6 +111,7 @@ function ParticipantsPage() {
         columns={columns}
         searchKeys={["name", "idNumber", "phone", "activity"]}
         getRowHref={(r) => `/participants/${r.id}`}
+        rowActions={(r) => <ParticipantEditButton record={r} />}
       />
     </>
   );

@@ -6,6 +6,7 @@ import { DataTable, type Column } from "@/components/data-table";
 import { FormDialog } from "@/components/form-dialog";
 import { addFamily, newId, useStore } from "@/lib/store";
 import type { AssistanceNeed, BeneficiaryFamily, FamilyStatus } from "@/lib/crm-types";
+import { FamilyEditButton } from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/families")({
   component: FamiliesPage,
@@ -132,6 +133,7 @@ function FamiliesPage() {
       </div>
 
       <DataTable
+        rowActions={(r) => <FamilyEditButton record={r as unknown as BeneficiaryFamily} />}
         rows={families as unknown as Record<string, unknown>[]}
         columns={columns}
         searchKeys={["familyName", "mainContact", "city", "countryOfOrigin", "assignedStaff"]}

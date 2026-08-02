@@ -3,13 +3,15 @@ import { Check, X } from "lucide-react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
-import { users, permissionsMatrix, type User } from "@/lib/mock-data";
+import { permissionsMatrix } from "@/lib/mock-data";
+import { useCollection, type UserRecord } from "@/lib/records-store";
+import { UserEditButton } from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/users")({
   component: UsersPage,
 });
 
-const columns: Column<User>[] = [
+const columns: Column<UserRecord>[] = [
   { key: "name", header: "שם", render: (r) => <span className="font-medium">{r.name}</span> },
   { key: "email", header: "דוא״ל", render: (r) => <span className="text-muted-foreground">{r.email}</span> },
   { key: "role", header: "תפקיד", render: (r) => <StatusBadge value={r.role} /> },
@@ -18,6 +20,7 @@ const columns: Column<User>[] = [
 ];
 
 function UsersPage() {
+  const users = useCollection("users");
   return (
     <>
       <PageHeader
@@ -41,7 +44,7 @@ function UsersPage() {
         }
       />
       <div className="mb-6">
-        <DataTable rows={users} columns={columns} searchKeys={["name", "email", "role"]} />
+        <DataTable rows={users} columns={columns} searchKeys={["name", "email", "role"]} rowActions={(r) => <UserEditButton record={r} />} />
       </div>
 
       <div className="card-elevated p-5">

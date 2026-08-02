@@ -14,7 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/page-header";
 import { MiniStat, SectionCard, EmptyState, RecordNotFound, Timeline, type TimelineItem } from "@/components/detail-kit";
-import { suppliers, projects } from "@/lib/mock-data";
+import { projects } from "@/lib/mock-data";
+import { useRecord } from "@/lib/records-store";
+import { SupplierEditButton } from "@/components/module-edit-dialogs";
+import { ChangeHistory } from "@/components/change-history";
 import { daysBetween, isOverdue } from "@/lib/crm-seed";
 import { selectSupplierBundle, useStore } from "@/lib/store";
 import { toast } from "sonner";
@@ -30,7 +33,7 @@ function projectName(id?: string) {
 
 function SupplierProfile() {
   const { supplierId: id } = useParams({ from: "/_app/suppliers_/$supplierId" });
-  const supplier = suppliers.find((s) => s.id === id);
+  const supplier = useRecord("suppliers", id);
   const bundle = useStore(selectSupplierBundle(id));
 
   if (!supplier) {
@@ -88,6 +91,7 @@ function SupplierProfile() {
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <SupplierEditButton record={supplier} />
             <Button variant="outline" onClick={() => toast.success("דוח ספק יוצא לאקסל")}>
               <FileText className="h-4 w-4 ml-1" /> דוח ספק
             </Button>

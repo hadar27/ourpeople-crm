@@ -18,12 +18,15 @@ export function DataTable<T extends Record<string, unknown>>({
   searchKeys,
   toolbar,
   getRowHref,
+  rowActions,
 }: {
   rows: T[];
   columns: Column<T>[];
   searchKeys: (keyof T)[];
   toolbar?: ReactNode;
   getRowHref?: (row: T) => string | undefined;
+  /** Rendered in a trailing cell, outside the row link (e.g. an edit button). */
+  rowActions?: (row: T) => ReactNode;
 }) {
   const [q, setQ] = useState("");
   const filtered = useMemo(() => {
@@ -70,6 +73,7 @@ export function DataTable<T extends Record<string, unknown>>({
                   {c.header}
                 </th>
               ))}
+              {rowActions && <th className="w-10 text-right font-medium px-4 py-3">פעולות</th>}
               {getRowHref && <th className="w-10" />}
             </tr>
           </thead>
@@ -104,6 +108,11 @@ export function DataTable<T extends Record<string, unknown>>({
                       )}
                     </td>
                   ))}
+                  {rowActions && (
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      {rowActions(row)}
+                    </td>
+                  )}
                   {href && (
                     <td className="px-2 py-3 text-muted-foreground">
                       <Link to={href} className="block">
@@ -116,7 +125,7 @@ export function DataTable<T extends Record<string, unknown>>({
             })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={columns.length + (getRowHref ? 1 : 0)} className="px-4 py-16 text-center">
+                <td colSpan={columns.length + (getRowHref ? 1 : 0) + (rowActions ? 1 : 0)} className="px-4 py-16 text-center">
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <Search className="h-8 w-8 opacity-40" />
                     <div className="font-medium">לא נמצאו תוצאות</div>

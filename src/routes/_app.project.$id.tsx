@@ -4,7 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/page-header";
 import { GanttChart } from "@/components/gantt-chart";
-import { projects, tasks, donations, volunteers, projectExpenses, projectPhases, projectParticipantCounts } from "@/lib/mock-data";
+import { tasks, donations, volunteers, projectExpenses, projectPhases, projectParticipantCounts } from "@/lib/mock-data";
+import { useRecord } from "@/lib/records-store";
+import { ProjectEditButton } from "@/components/module-edit-dialogs";
+import { ChangeHistory } from "@/components/change-history";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/project/$id")({
@@ -14,7 +17,7 @@ export const Route = createFileRoute("/_app/project/$id")({
 function ProjectDetail() {
   const { id } = useParams({ from: "/_app/project/$id" });
   const navigate = useNavigate();
-  const project = projects.find((p) => p.id === id);
+  const project = useRecord("projects", id);
 
   if (!project) {
     return (
@@ -65,7 +68,7 @@ function ProjectDetail() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => toast.success("הפרויקט עודכן בהצלחה")}>שמור שינויים</Button>
+            <ProjectEditButton record={project} />
             <Button className="bg-brand hover:bg-brand-deep" onClick={() => toast.info("פתיחת דוח פרויקט")}>צור דוח</Button>
           </div>
         </div>

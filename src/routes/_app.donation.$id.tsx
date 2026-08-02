@@ -4,7 +4,10 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/page-header";
 import { SectionCard, EmptyState } from "@/components/detail-kit";
 import { FormDialog } from "@/components/form-dialog";
-import { donations, donors, projects } from "@/lib/mock-data";
+import { projects } from "@/lib/mock-data";
+import { useCollection, useRecord } from "@/lib/records-store";
+import { DonationEditButton } from "@/components/module-edit-dialogs";
+import { ChangeHistory } from "@/components/change-history";
 import { TODAY } from "@/lib/crm-seed";
 import { addAllocation, newId, removeAllocation, selectAllocations, useStore } from "@/lib/store";
 import { toast } from "sonner";
@@ -15,7 +18,8 @@ export const Route = createFileRoute("/_app/donation/$id")({
 
 function DonationDetail() {
   const { id } = useParams({ from: "/_app/donation/$id" });
-  const d = donations.find((x) => x.id === id);
+  const d = useRecord("donations", id);
+  const donors = useCollection("donors");
   const allocations = useStore(selectAllocations(id));
 
   if (!d)
@@ -63,6 +67,7 @@ function DonationDetail() {
               </div>
             </div>
             <div className="flex gap-2">
+              <DonationEditButton record={d} />
               {d.receipt !== "הופק" && (
                 <Button variant="outline" onClick={() => toast.success("הקבלה הופקה ונשלחה לתורם")}>
                   <FileCheck2 className="h-4 w-4 ml-1" /> הפק קבלה
@@ -119,6 +124,7 @@ function DonationDetail() {
       </div>
 
       <div className="mt-6">
+        <ChangeHistory entityId={d.id} className="mb-6" />
         <SectionCard
           title="ייעוד התרומה לפרויקטים"
           actions={

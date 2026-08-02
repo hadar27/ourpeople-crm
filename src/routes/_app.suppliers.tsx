@@ -2,13 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
-import { suppliers, type Supplier } from "@/lib/mock-data";
+import { useCollection, type SupplierRecord } from "@/lib/records-store";
+import { SupplierEditButton } from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/suppliers")({
   component: SuppliersPage,
 });
 
-const columns: Column<Supplier>[] = [
+const columns: Column<SupplierRecord>[] = [
   { key: "name", header: "שם הספק", render: (r) => <span className="font-medium">{r.name}</span> },
   { key: "category", header: "קטגוריה" },
   { key: "contact", header: "איש קשר" },
@@ -21,6 +22,7 @@ const columns: Column<Supplier>[] = [
 ];
 
 function SuppliersPage() {
+  const suppliers = useCollection("suppliers");
   return (
     <>
       <PageHeader
@@ -55,6 +57,7 @@ function SuppliersPage() {
         columns={columns}
         searchKeys={["name", "category", "contact"]}
         getRowHref={(r) => `/suppliers/${r.id}`}
+        rowActions={(r) => <SupplierEditButton record={r} />}
       />
     </>
   );

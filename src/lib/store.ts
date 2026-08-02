@@ -103,6 +103,20 @@ export function setInteractionStatus(id: string, status: DonorInteraction["statu
   });
 }
 
+/** Update an existing interaction in place (id preserved). */
+export function updateInteraction(id: string, changes: Partial<DonorInteraction>) {
+  patch({
+    interactions: state.interactions.map((i) => (i.id === id ? { ...i, ...changes, id } : i)),
+  });
+}
+
+/** Update an existing family case file in place (id preserved). */
+export function updateFamily(id: string, changes: Partial<BeneficiaryFamily>) {
+  patch({
+    families: state.families.map((f) => (f.id === id ? { ...f, ...changes, id } : f)),
+  });
+}
+
 export function addFollowUp(task: FollowUpTask) {
   patch({ followUps: [task, ...state.followUps] });
 }

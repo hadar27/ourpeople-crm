@@ -13,7 +13,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/page-header";
 import { MiniStat, SectionCard, EmptyState, RecordNotFound } from "@/components/detail-kit";
-import { participants, activitiesCatalog, projects } from "@/lib/mock-data";
+import { activitiesCatalog, projects } from "@/lib/mock-data";
+import { useRecord } from "@/lib/records-store";
+import { ParticipantEditButton } from "@/components/module-edit-dialogs";
+import { ChangeHistory } from "@/components/change-history";
 
 export const Route = createFileRoute("/_app/participants_/$participantId")({
   component: ParticipantProfile,
@@ -29,7 +32,7 @@ export const Route = createFileRoute("/_app/participants_/$participantId")({
 
 function ParticipantProfile() {
   const { participantId } = useParams({ from: "/_app/participants_/$participantId" });
-  const participant = participants.find((p) => p.id === participantId);
+  const participant = useRecord("participants", participantId);
 
   if (!participant) {
     return (
@@ -69,6 +72,7 @@ function ParticipantProfile() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <ParticipantEditButton record={participant} />
           <StatusBadge value={participant.status} />
           <StatusBadge value={participant.paymentStatus} />
         </div>
@@ -84,6 +88,10 @@ function ParticipantProfile() {
           value={participant.documentsComplete ? "הושלמו" : "חסרים"}
           tone={participant.documentsComplete ? "good" : "warn"}
         />
+      </div>
+
+      <div className="mb-6">
+        <ChangeHistory entityId={participant.id} />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
