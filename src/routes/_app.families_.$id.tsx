@@ -112,6 +112,7 @@ function FamilyProfile() {
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <FamilyEditButton record={family} />
             <FormDialog
               trigger={
                 <Button className="bg-brand hover:bg-brand-deep gap-1">
@@ -152,6 +153,8 @@ function FamilyProfile() {
           </div>
         )}
       </div>
+
+      <ChangeHistory entityId={family.id} className="mb-6" />
 
       <Tabs defaultValue="aid" dir="rtl">
         <TabsList className="mb-4 flex-wrap h-auto">
