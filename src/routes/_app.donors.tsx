@@ -2,13 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
-import { donors, type Donor } from "@/lib/mock-data";
+import { useCollection, type DonorRecord } from "@/lib/records-store";
+import { DonorEditButton } from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/donors")({
   component: DonorsPage,
 });
 
-const columns: Column<Donor>[] = [
+const columns: Column<DonorRecord>[] = [
   { key: "name", header: "שם תורם", render: (r) => <span className="font-medium">{r.name}</span> },
   { key: "type", header: "סוג", render: (r) => <StatusBadge value={r.type} /> },
   { key: "totalDonated", header: "סך תרומות", render: (r) => <span className="font-semibold tabular-nums">₪{r.totalDonated.toLocaleString()}</span> },
@@ -23,6 +24,7 @@ const columns: Column<Donor>[] = [
 ];
 
 function DonorsPage() {
+  const donors = useCollection("donors");
   return (
     <>
       <PageHeader
@@ -51,7 +53,7 @@ function DonorsPage() {
         <div className="card-elevated p-4"><div className="text-xs text-muted-foreground">תרומה ממוצעת</div><div className="text-xl font-bold mt-1">₪3,240</div></div>
         <div className="card-elevated p-4"><div className="text-xs text-muted-foreground">פגישות החודש</div><div className="text-xl font-bold mt-1">22</div></div>
       </div>
-      <DataTable rows={donors} columns={columns} searchKeys={["name", "type"]} getRowHref={(r) => `/donor/${r.id}`} />
+      <DataTable rows={donors} columns={columns} searchKeys={["name", "type"]} getRowHref={(r) => `/donor/${r.id}`} rowActions={(r) => <DonorEditButton record={r} />} />
     </>
   );
 }

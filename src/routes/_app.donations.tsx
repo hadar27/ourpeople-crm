@@ -2,13 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
-import { donations, type Donation } from "@/lib/mock-data";
+import { useCollection, type DonationRecord } from "@/lib/records-store";
+import { DonationEditButton } from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/donations")({
   component: DonationsPage,
 });
 
-const columns: Column<Donation>[] = [
+const columns: Column<DonationRecord>[] = [
   { key: "id", header: "מזהה" },
   { key: "donor", header: "תורם", render: (r) => <span className="font-medium">{r.donor}</span> },
   { key: "amount", header: "סכום", render: (r) => <span className="font-semibold tabular-nums">₪{r.amount.toLocaleString()}</span> },
@@ -19,6 +20,7 @@ const columns: Column<Donation>[] = [
 ];
 
 function DonationsPage() {
+  const donations = useCollection("donations");
   return (
     <>
       <PageHeader
@@ -51,7 +53,7 @@ function DonationsPage() {
         <div className="card-elevated p-4"><div className="text-xs text-muted-foreground">קבלות הופקו</div><div className="text-xl font-bold mt-1">41</div></div>
         <div className="card-elevated p-4"><div className="text-xs text-muted-foreground">קבלות חסרות</div><div className="text-xl font-bold mt-1 text-rose-600">6</div></div>
       </div>
-      <DataTable rows={donations} columns={columns} searchKeys={["donor", "project", "id"]} getRowHref={(r) => `/donation/${r.id}`} />
+      <DataTable rows={donations} columns={columns} searchKeys={["donor", "project", "id"]} getRowHref={(r) => `/donation/${r.id}`} rowActions={(r) => <DonationEditButton record={r} />} />
     </>
   );
 }

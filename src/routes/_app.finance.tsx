@@ -15,27 +15,17 @@ import {
   Legend,
 } from "recharts";
 import { budgetVsActual, monthlyDonations } from "@/lib/mock-data";
+import { useCollection } from "@/lib/records-store";
+import { ExpenseEditButton, IncomeEditButton } from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/finance")({
   component: FinancePage,
 });
 
-const expenses = [
-  { id: "EX-1", category: "שכר ותפעול", amount: 84200, project: "כללי", date: "2025-05-10", status: "שולם" },
-  { id: "EX-2", category: "הסעות", amount: 12300, project: "קייטנת קיץ 2025", date: "2025-05-12", status: "שולם" },
-  { id: "EX-3", category: "קייטרינג", amount: 18900, project: "סדנת העצמה לנשים", date: "2025-05-14", status: "ממתין" },
-  { id: "EX-4", category: "ערכות חירום", amount: 32400, project: "חירום ושיקום", date: "2025-05-15", status: "שולם" },
-  { id: "EX-5", category: "פרסום ושיווק", amount: 6700, project: "כללי", date: "2025-05-16", status: "ממתין" },
-];
-
-const income = [
-  { id: "IN-1", source: "תרומה — קרן הירש", amount: 50000, date: "2025-05-12" },
-  { id: "IN-2", source: "תרומה — חברת טכנולגיה", amount: 80000, date: "2025-04-28" },
-  { id: "IN-3", source: 'תרומה — קרן "אור"', amount: 120000, date: "2025-05-10" },
-  { id: "IN-4", source: "אגרות נרשמים", amount: 24800, date: "2025-05-18" },
-];
 
 function FinancePage() {
+  const income = useCollection("incomes");
+  const expenses = useCollection("expenses");
   return (
     <>
       <PageHeader title="כספים — ERP" description="לוח בקרה פיננסי כולל הכנסות, הוצאות וניצול תקציב מול תכנון."
@@ -117,7 +107,7 @@ function FinancePage() {
           <div className="text-lg font-semibold mb-3">הכנסות אחרונות</div>
           <table className="w-full text-sm">
             <thead className="text-muted-foreground">
-              <tr className="text-right"><th className="py-2">מקור</th><th className="py-2">סכום</th><th className="py-2">תאריך</th></tr>
+              <tr className="text-right"><th className="py-2">מקור</th><th className="py-2">סכום</th><th className="py-2">תאריך</th><th className="py-2">פעולות</th></tr>
             </thead>
             <tbody>
               {income.map((i) => (
@@ -125,6 +115,7 @@ function FinancePage() {
                   <td className="py-3">{i.source}</td>
                   <td className="py-3 font-semibold">₪{i.amount.toLocaleString()}</td>
                   <td className="py-3 text-muted-foreground">{i.date}</td>
+                  <td className="py-3"><IncomeEditButton record={i} /></td>
                 </tr>
               ))}
             </tbody>
@@ -134,7 +125,7 @@ function FinancePage() {
           <div className="text-lg font-semibold mb-3">הוצאות אחרונות</div>
           <table className="w-full text-sm">
             <thead className="text-muted-foreground">
-              <tr className="text-right"><th className="py-2">קטגוריה</th><th className="py-2">פרויקט</th><th className="py-2">סכום</th><th className="py-2">סטטוס</th></tr>
+              <tr className="text-right"><th className="py-2">קטגוריה</th><th className="py-2">פרויקט</th><th className="py-2">סכום</th><th className="py-2">סטטוס</th><th className="py-2">פעולות</th></tr>
             </thead>
             <tbody>
               {expenses.map((e) => (
@@ -143,6 +134,7 @@ function FinancePage() {
                   <td className="py-3 text-muted-foreground">{e.project}</td>
                   <td className="py-3 font-semibold">₪{e.amount.toLocaleString()}</td>
                   <td className="py-3"><StatusBadge value={e.status} /></td>
+                  <td className="py-3"><ExpenseEditButton record={e} /></td>
                 </tr>
               ))}
             </tbody>

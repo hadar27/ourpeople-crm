@@ -3,13 +3,14 @@ import { Award } from "lucide-react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
-import { volunteers, type Volunteer } from "@/lib/mock-data";
+import { useCollection, type VolunteerRecord } from "@/lib/records-store";
+import { VolunteerEditButton } from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/volunteers")({
   component: VolunteersPage,
 });
 
-const columns: Column<Volunteer>[] = [
+const columns: Column<VolunteerRecord>[] = [
   { key: "name", header: "שם", render: (r) => <span className="font-medium">{r.name}</span> },
   { key: "availability", header: "זמינות" },
   { key: "project", header: "פרויקט משויך" },
@@ -26,6 +27,7 @@ const columns: Column<Volunteer>[] = [
 ];
 
 function VolunteersPage() {
+  const volunteers = useCollection("volunteers");
   return (
     <>
       <PageHeader
@@ -59,7 +61,7 @@ function VolunteersPage() {
           </div>
         </div>
       </div>
-      <DataTable rows={volunteers} columns={columns} searchKeys={["name", "project", "availability"]} getRowHref={(r) => `/volunteer/${r.id}`} />
+      <DataTable rows={volunteers} columns={columns} searchKeys={["name", "project", "availability"]} getRowHref={(r) => `/volunteer/${r.id}`} rowActions={(r) => <VolunteerEditButton record={r} />} />
     </>
   );
 }
