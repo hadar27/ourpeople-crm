@@ -2,7 +2,10 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { ArrowRight, Clock, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/page-header";
-import { volunteers, projects } from "@/lib/mock-data";
+import { projects } from "@/lib/mock-data";
+import { useRecord } from "@/lib/records-store";
+import { VolunteerEditButton } from "@/components/module-edit-dialogs";
+import { ChangeHistory } from "@/components/change-history";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/volunteer/$id")({
@@ -11,7 +14,7 @@ export const Route = createFileRoute("/_app/volunteer/$id")({
 
 function VolunteerDetail() {
   const { id } = useParams({ from: "/_app/volunteer/$id" });
-  const v = volunteers.find((x) => x.id === id);
+  const v = useRecord("volunteers", id);
   if (!v) return <div className="card-elevated p-8 text-center">מתנדב לא נמצא. <Link to="/volunteers" className="text-brand">חזרה</Link></div>;
   const project = projects.find((p) => p.name === v.project || v.project.includes(p.name.split(" ")[0]));
 
@@ -34,8 +37,8 @@ function VolunteerDetail() {
             </div>
           </div>
           <div className="flex gap-2">
+            <VolunteerEditButton record={v} />
             <Button variant="outline" onClick={() => toast.success("המתנדב שובץ מחדש")}>שייך לפרויקט</Button>
-            <Button className="bg-brand hover:bg-brand-deep" onClick={() => toast.success("המתנדב עודכן")}>שמור</Button>
           </div>
         </div>
 
@@ -66,6 +69,10 @@ function VolunteerDetail() {
             <div className="text-base font-bold mt-1">{v.status}</div>
           </div>
         </div>
+      </div>
+
+      <div className="mb-6">
+        <ChangeHistory entityId={v.id} />
       </div>
 
       <div className="card-elevated p-5">

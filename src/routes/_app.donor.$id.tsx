@@ -5,7 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/page-header";
 import { MiniStat, SectionCard, EmptyState, Timeline, type TimelineItem } from "@/components/detail-kit";
 import { FormDialog } from "@/components/form-dialog";
-import { donors, donations } from "@/lib/mock-data";
+import { useCollection, useRecord } from "@/lib/records-store";
+import { DonorEditButton, InteractionEditButton } from "@/components/module-edit-dialogs";
+import { ChangeHistory } from "@/components/change-history";
 import { isOverdue, TODAY } from "@/lib/crm-seed";
 import { addFollowUp, addInteraction, newId, selectInteractions, setInteractionStatus, useStore } from "@/lib/store";
 import type { DonorInteraction, InteractionType } from "@/lib/crm-types";
@@ -19,7 +21,8 @@ const CURRENT_STAFF = "שרה כהן";
 
 function DonorDetail() {
   const { id } = useParams({ from: "/_app/donor/$id" });
-  const donor = donors.find((d) => d.id === id);
+  const donor = useRecord("donors", id);
+  const donations = useCollection("donations");
   const interactions = useStore(selectInteractions(id));
 
   if (!donor) {
@@ -43,6 +46,7 @@ function DonorDetail() {
         <span className="text-xs bg-secondary text-brand-deep px-2 py-0.5 rounded-full">{i.type}</span>
         {i.subject}
         <StatusBadge value={i.status} />
+        <InteractionEditButton record={i} />
       </span>
     ),
     meta: `${i.staff} · ${i.date} ${i.time}`,
@@ -163,6 +167,7 @@ function DonorDetail() {
               fields={interactionFields}
               onSubmit={handleLog}
             />
+            <DonorEditButton record={donor} />
             <Button variant="outline" onClick={() => toast.success("שיחה נרשמה ביומן")}>
               <Phone className="h-4 w-4 ml-1" /> חיוג
             </Button>
@@ -195,6 +200,7 @@ function DonorDetail() {
         <TabsList className="mb-4">
           <TabsTrigger value="crm">היסטוריית קשר ({interactions.length})</TabsTrigger>
           <TabsTrigger value="donations">תרומות ({history.length})</TabsTrigger>
+          <TabsTrigger value="crm-history">היסטוריית שינויים</TabsTrigger>
           <TabsTrigger value="tasks">משימות המשך ({openFollowUps.length})</TabsTrigger>
         </TabsList>
 
@@ -202,6 +208,10 @@ function DonorDetail() {
           <SectionCard title="יומן אינטראקציות">
             <Timeline items={timeline} />
           </SectionCard>
+        </TabsContent>
+
+        <TabsContent value="crm-history">
+          <ChangeHistory entityId={donor.id} />
         </TabsContent>
 
         <TabsContent value="donations">
