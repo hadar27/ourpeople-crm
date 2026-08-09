@@ -1,12 +1,13 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Mail, Lock, ShieldCheck } from "lucide-react";
+import { Mail, Lock, ShieldCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -15,12 +16,20 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("sarah@ourpeople.org");
-  const [password, setPassword] = useState("••••••••");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       toast.error("יש למלא דוא״ל וסיסמה");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
       return;
     }
     toast.success("התחברת בהצלחה — מעביר ללוח הבקרה");
@@ -86,11 +95,22 @@ function LoginPage() {
             <a className="text-brand hover:underline cursor-pointer">שכחתי סיסמה</a>
           </div>
 
-          <Button type="submit" className="w-full h-11 bg-brand hover:bg-brand-deep">כניסה למערכת</Button>
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full h-11 bg-brand hover:bg-brand-deep"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin ml-2" /> מתחבר...
+              </>
+            ) : (
+              "כניסה למערכת"
+            )}
+          </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            המערכת מוגנת ועובדת על בסיס תפקידים והרשאות.{" "}
-            <Link to="/dashboard" className="text-brand hover:underline">דלגו לדמו</Link>
+            המערכת מוגנת ועובדת על בסיס תפקידים והרשאות.
           </p>
         </form>
       </div>

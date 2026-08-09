@@ -9,91 +9,46 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AppVolunteersRouteImport } from './routes/_app.volunteers'
-import { Route as AppUsersRouteImport } from './routes/_app.users'
-import { Route as AppSuppliersRouteImport } from './routes/_app.suppliers'
-import { Route as AppReportsRouteImport } from './routes/_app.reports'
-import { Route as AppProjectsRouteImport } from './routes/_app.projects'
-import { Route as AppParticipantsRouteImport } from './routes/_app.participants'
-import { Route as AppFinanceRouteImport } from './routes/_app.finance'
-import { Route as AppFamiliesRouteImport } from './routes/_app.families'
-import { Route as AppDonorsRouteImport } from './routes/_app.donors'
-import { Route as AppDonationsRouteImport } from './routes/_app.donations'
-import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppAlertsRouteImport } from './routes/_app.alerts'
-import { Route as AppVolunteerIdRouteImport } from './routes/_app.volunteer.$id'
-import { Route as AppSuppliersSupplierIdRouteImport } from './routes/_app.suppliers_.$supplierId'
-import { Route as AppProjectIdRouteImport } from './routes/_app.project.$id'
-import { Route as AppParticipantsParticipantIdRouteImport } from './routes/_app.participants_.$participantId'
-import { Route as AppFamiliesIdRouteImport } from './routes/_app.families_.$id'
-import { Route as AppDonorIdRouteImport } from './routes/_app.donor.$id'
+import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppDonationsRouteImport } from './routes/_app.donations'
+import { Route as AppDonorsRouteImport } from './routes/_app.donors'
+import { Route as AppFamiliesRouteImport } from './routes/_app.families'
+import { Route as AppFinanceRouteImport } from './routes/_app.finance'
+import { Route as AppParticipantsRouteImport } from './routes/_app.participants'
+import { Route as AppProjectsRouteImport } from './routes/_app.projects'
+import { Route as AppReportsRouteImport } from './routes/_app.reports'
+import { Route as AppSuppliersRouteImport } from './routes/_app.suppliers'
+import { Route as AppUsersRouteImport } from './routes/_app.users'
+import { Route as AppVolunteersRouteImport } from './routes/_app.volunteers'
 import { Route as AppDonationIdRouteImport } from './routes/_app.donation.$id'
+import { Route as AppDonorIdRouteImport } from './routes/_app.donor.$id'
+import { Route as AppFamiliesIdRouteImport } from './routes/_app.families_.$id'
+import { Route as AppParticipantsParticipantIdRouteImport } from './routes/_app.participants_.$participantId'
+import { Route as AppProjectIdRouteImport } from './routes/_app.project.$id'
+import { Route as AppSuppliersSupplierIdRouteImport } from './routes/_app.suppliers_.$supplierId'
+import { Route as AppVolunteerIdRouteImport } from './routes/_app.volunteer.$id'
 
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppVolunteersRoute = AppVolunteersRouteImport.update({
-  id: '/volunteers',
-  path: '/volunteers',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppUsersRoute = AppUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSuppliersRoute = AppSuppliersRouteImport.update({
-  id: '/suppliers',
-  path: '/suppliers',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppReportsRoute = AppReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppProjectsRoute = AppProjectsRouteImport.update({
-  id: '/projects',
-  path: '/projects',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppParticipantsRoute = AppParticipantsRouteImport.update({
-  id: '/participants',
-  path: '/participants',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppFinanceRoute = AppFinanceRouteImport.update({
-  id: '/finance',
-  path: '/finance',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppFamiliesRoute = AppFamiliesRouteImport.update({
-  id: '/families',
-  path: '/families',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppDonorsRoute = AppDonorsRouteImport.update({
-  id: '/donors',
-  path: '/donors',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppDonationsRoute = AppDonationsRouteImport.update({
-  id: '/donations',
-  path: '/donations',
+const AppAlertsRoute = AppAlertsRouteImport.update({
+  id: '/alerts',
+  path: '/alerts',
   getParentRoute: () => AppRoute,
 } as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
@@ -101,24 +56,69 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
-const AppAlertsRoute = AppAlertsRouteImport.update({
-  id: '/alerts',
-  path: '/alerts',
+const AppDonationsRoute = AppDonationsRouteImport.update({
+  id: '/donations',
+  path: '/donations',
   getParentRoute: () => AppRoute,
 } as any)
-const AppVolunteerIdRoute = AppVolunteerIdRouteImport.update({
-  id: '/volunteer/$id',
-  path: '/volunteer/$id',
+const AppDonorsRoute = AppDonorsRouteImport.update({
+  id: '/donors',
+  path: '/donors',
   getParentRoute: () => AppRoute,
 } as any)
-const AppSuppliersSupplierIdRoute = AppSuppliersSupplierIdRouteImport.update({
-  id: '/suppliers_/$supplierId',
-  path: '/suppliers/$supplierId',
+const AppFamiliesRoute = AppFamiliesRouteImport.update({
+  id: '/families',
+  path: '/families',
   getParentRoute: () => AppRoute,
 } as any)
-const AppProjectIdRoute = AppProjectIdRouteImport.update({
-  id: '/project/$id',
-  path: '/project/$id',
+const AppFinanceRoute = AppFinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppParticipantsRoute = AppParticipantsRouteImport.update({
+  id: '/participants',
+  path: '/participants',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProjectsRoute = AppProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsRoute = AppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSuppliersRoute = AppSuppliersRouteImport.update({
+  id: '/suppliers',
+  path: '/suppliers',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppUsersRoute = AppUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppVolunteersRoute = AppVolunteersRouteImport.update({
+  id: '/volunteers',
+  path: '/volunteers',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDonationIdRoute = AppDonationIdRouteImport.update({
+  id: '/donation/$id',
+  path: '/donation/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDonorIdRoute = AppDonorIdRouteImport.update({
+  id: '/donor/$id',
+  path: '/donor/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFamiliesIdRoute = AppFamiliesIdRouteImport.update({
+  id: '/families_/$id',
+  path: '/families/$id',
   getParentRoute: () => AppRoute,
 } as any)
 const AppParticipantsParticipantIdRoute =
@@ -127,19 +127,19 @@ const AppParticipantsParticipantIdRoute =
     path: '/participants/$participantId',
     getParentRoute: () => AppRoute,
   } as any)
-const AppFamiliesIdRoute = AppFamiliesIdRouteImport.update({
-  id: '/families_/$id',
-  path: '/families/$id',
+const AppProjectIdRoute = AppProjectIdRouteImport.update({
+  id: '/project/$id',
+  path: '/project/$id',
   getParentRoute: () => AppRoute,
 } as any)
-const AppDonorIdRoute = AppDonorIdRouteImport.update({
-  id: '/donor/$id',
-  path: '/donor/$id',
+const AppSuppliersSupplierIdRoute = AppSuppliersSupplierIdRouteImport.update({
+  id: '/suppliers_/$supplierId',
+  path: '/suppliers/$supplierId',
   getParentRoute: () => AppRoute,
 } as any)
-const AppDonationIdRoute = AppDonationIdRouteImport.update({
-  id: '/donation/$id',
-  path: '/donation/$id',
+const AppVolunteerIdRoute = AppVolunteerIdRouteImport.update({
+  id: '/volunteer/$id',
+  path: '/volunteer/$id',
   getParentRoute: () => AppRoute,
 } as any)
 
@@ -295,11 +295,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app': {
@@ -309,81 +309,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/volunteers': {
-      id: '/_app/volunteers'
-      path: '/volunteers'
-      fullPath: '/volunteers'
-      preLoaderRoute: typeof AppVolunteersRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/users': {
-      id: '/_app/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof AppUsersRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/suppliers': {
-      id: '/_app/suppliers'
-      path: '/suppliers'
-      fullPath: '/suppliers'
-      preLoaderRoute: typeof AppSuppliersRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/reports': {
-      id: '/_app/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof AppReportsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/projects': {
-      id: '/_app/projects'
-      path: '/projects'
-      fullPath: '/projects'
-      preLoaderRoute: typeof AppProjectsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/participants': {
-      id: '/_app/participants'
-      path: '/participants'
-      fullPath: '/participants'
-      preLoaderRoute: typeof AppParticipantsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/finance': {
-      id: '/_app/finance'
-      path: '/finance'
-      fullPath: '/finance'
-      preLoaderRoute: typeof AppFinanceRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/families': {
-      id: '/_app/families'
-      path: '/families'
-      fullPath: '/families'
-      preLoaderRoute: typeof AppFamiliesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/donors': {
-      id: '/_app/donors'
-      path: '/donors'
-      fullPath: '/donors'
-      preLoaderRoute: typeof AppDonorsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/donations': {
-      id: '/_app/donations'
-      path: '/donations'
-      fullPath: '/donations'
-      preLoaderRoute: typeof AppDonationsRouteImport
+    '/_app/alerts': {
+      id: '/_app/alerts'
+      path: '/alerts'
+      fullPath: '/alerts'
+      preLoaderRoute: typeof AppAlertsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/dashboard': {
@@ -393,46 +330,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/alerts': {
-      id: '/_app/alerts'
-      path: '/alerts'
-      fullPath: '/alerts'
-      preLoaderRoute: typeof AppAlertsRouteImport
+    '/_app/donations': {
+      id: '/_app/donations'
+      path: '/donations'
+      fullPath: '/donations'
+      preLoaderRoute: typeof AppDonationsRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/volunteer/$id': {
-      id: '/_app/volunteer/$id'
-      path: '/volunteer/$id'
-      fullPath: '/volunteer/$id'
-      preLoaderRoute: typeof AppVolunteerIdRouteImport
+    '/_app/donors': {
+      id: '/_app/donors'
+      path: '/donors'
+      fullPath: '/donors'
+      preLoaderRoute: typeof AppDonorsRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/suppliers_/$supplierId': {
-      id: '/_app/suppliers_/$supplierId'
-      path: '/suppliers/$supplierId'
-      fullPath: '/suppliers/$supplierId'
-      preLoaderRoute: typeof AppSuppliersSupplierIdRouteImport
+    '/_app/families': {
+      id: '/_app/families'
+      path: '/families'
+      fullPath: '/families'
+      preLoaderRoute: typeof AppFamiliesRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/project/$id': {
-      id: '/_app/project/$id'
-      path: '/project/$id'
-      fullPath: '/project/$id'
-      preLoaderRoute: typeof AppProjectIdRouteImport
+    '/_app/finance': {
+      id: '/_app/finance'
+      path: '/finance'
+      fullPath: '/finance'
+      preLoaderRoute: typeof AppFinanceRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/participants_/$participantId': {
-      id: '/_app/participants_/$participantId'
-      path: '/participants/$participantId'
-      fullPath: '/participants/$participantId'
-      preLoaderRoute: typeof AppParticipantsParticipantIdRouteImport
+    '/_app/participants': {
+      id: '/_app/participants'
+      path: '/participants'
+      fullPath: '/participants'
+      preLoaderRoute: typeof AppParticipantsRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/families_/$id': {
-      id: '/_app/families_/$id'
-      path: '/families/$id'
-      fullPath: '/families/$id'
-      preLoaderRoute: typeof AppFamiliesIdRouteImport
+    '/_app/projects': {
+      id: '/_app/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof AppProjectsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/reports': {
+      id: '/_app/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AppReportsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/suppliers': {
+      id: '/_app/suppliers'
+      path: '/suppliers'
+      fullPath: '/suppliers'
+      preLoaderRoute: typeof AppSuppliersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/users': {
+      id: '/_app/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof AppUsersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/volunteers': {
+      id: '/_app/volunteers'
+      path: '/volunteers'
+      fullPath: '/volunteers'
+      preLoaderRoute: typeof AppVolunteersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/donation/$id': {
+      id: '/_app/donation/$id'
+      path: '/donation/$id'
+      fullPath: '/donation/$id'
+      preLoaderRoute: typeof AppDonationIdRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/donor/$id': {
@@ -442,11 +414,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDonorIdRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/donation/$id': {
-      id: '/_app/donation/$id'
-      path: '/donation/$id'
-      fullPath: '/donation/$id'
-      preLoaderRoute: typeof AppDonationIdRouteImport
+    '/_app/families_/$id': {
+      id: '/_app/families_/$id'
+      path: '/families/$id'
+      fullPath: '/families/$id'
+      preLoaderRoute: typeof AppFamiliesIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/participants_/$participantId': {
+      id: '/_app/participants_/$participantId'
+      path: '/participants/$participantId'
+      fullPath: '/participants/$participantId'
+      preLoaderRoute: typeof AppParticipantsParticipantIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/project/$id': {
+      id: '/_app/project/$id'
+      path: '/project/$id'
+      fullPath: '/project/$id'
+      preLoaderRoute: typeof AppProjectIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/suppliers_/$supplierId': {
+      id: '/_app/suppliers_/$supplierId'
+      path: '/suppliers/$supplierId'
+      fullPath: '/suppliers/$supplierId'
+      preLoaderRoute: typeof AppSuppliersSupplierIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/volunteer/$id': {
+      id: '/_app/volunteer/$id'
+      path: '/volunteer/$id'
+      fullPath: '/volunteer/$id'
+      preLoaderRoute: typeof AppVolunteerIdRouteImport
       parentRoute: typeof AppRoute
     }
   }
@@ -506,3 +506,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

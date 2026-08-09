@@ -9,13 +9,14 @@ import {
   ShoppingCart,
   History,
   AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/page-header";
 import { MiniStat, SectionCard, EmptyState, RecordNotFound, Timeline, type TimelineItem } from "@/components/detail-kit";
 import { projects } from "@/lib/mock-data";
-import { useRecord } from "@/lib/records-store";
+import { useSupplier } from "@/lib/queries/suppliers";
 import { SupplierEditButton } from "@/components/module-edit-dialogs";
 import { ChangeHistory } from "@/components/change-history";
 import { daysBetween, isOverdue } from "@/lib/crm-seed";
@@ -33,8 +34,27 @@ function projectName(id?: string) {
 
 function SupplierProfile() {
   const { supplierId: id } = useParams({ from: "/_app/suppliers_/$supplierId" });
-  const supplier = useRecord("suppliers", id);
+  const { data: supplier, isLoading, isError, refetch } = useSupplier(id);
   const bundle = useStore(selectSupplierBundle(id));
+
+  if (isLoading) {
+    return (
+      <div className="card-elevated flex items-center justify-center gap-2 p-16 text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin" /> טוען פרטי ספק...
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="card-elevated flex flex-col items-center gap-3 p-16 text-center">
+        <div className="text-sm text-muted-foreground">אירעה שגיאה בטעינת הספק.</div>
+        <button onClick={() => refetch()} className="text-sm text-brand hover:underline">
+          נסה שוב
+        </button>
+      </div>
+    );
+  }
 
   if (!supplier) {
     return (

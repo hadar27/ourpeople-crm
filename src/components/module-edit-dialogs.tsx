@@ -43,6 +43,7 @@ import {
   volunteerLabels,
 } from "@/lib/edit-forms";
 import { selectAllocations, updateFamily, updateInteraction, useStore } from "@/lib/store";
+import { useUpdateSupplier } from "@/lib/queries/suppliers";
 import type {
   AssistanceNeed,
   BeneficiaryFamily,
@@ -370,6 +371,7 @@ export function ProjectEditButton({ record, triggerLabel }: { record: ProjectRec
 // ---------- Suppliers ----------
 export function SupplierEditButton({ record, triggerLabel }: { record: SupplierRecord } & Btn) {
   const allowed = useCanEdit("suppliers");
+  const updateSupplier = useUpdateSupplier();
   if (!allowed) return null;
   return (
     <RecordEditDialog
@@ -390,26 +392,32 @@ export function SupplierEditButton({ record, triggerLabel }: { record: SupplierR
         status: record.status,
         notes: record.notes ?? "",
       }}
-      onSave={(v) =>
-        updateRecord(
-          "suppliers",
-          record.id,
-          {
-            name: v.name,
-            contact: v.contact,
-            phone: v.phone || undefined,
-            email: v.email || undefined,
-            category: v.category,
-            address: v.address || undefined,
-            taxId: v.taxId || undefined,
-            paymentTerms: v.paymentTerms || undefined,
-            status: v.status as Supplier["status"],
-            notes: v.notes || undefined,
-          },
-          supplierLabels,
-          "ספק",
-        )
-      }
+      onSave={async (v) => {
+        const patch = {
+          name: v.name,
+          contact: v.contact,
+          phone: v.phone || undefined,
+          email: v.email || undefined,
+          category: v.category,
+          address: v.address || undefined,
+          taxId: v.taxId || undefined,
+          paymentTerms: v.paymentTerms || undefined,
+          status: v.status as Supplier["status"],
+          notes: v.notes || undefined,
+        };
+        try {
+          await updateSupplier.mutateAsync({ id: record.id, patch });
+          const changes = diffValues(
+            record as unknown as Record<string, unknown>,
+            patch as unknown as Record<string, unknown>,
+            supplierLabels,
+          );
+          logAudit("ספק", record.id, changes);
+          return { ok: true };
+        } catch (err) {
+          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+        }
+      }}
     />
   );
 }

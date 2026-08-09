@@ -1,4 +1,5 @@
-import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   Users,
@@ -20,6 +21,7 @@ import logo from "@/assets/logo.png";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { generateAlerts } from "@/lib/business-rules";
+import { useSession, signOut } from "@/lib/auth";
 
 const nav = [
   { to: "/dashboard", label: "לוח בקרה", icon: LayoutDashboard },
@@ -39,6 +41,30 @@ const nav = [
 export function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const alertCount = generateAlerts().filter((a) => a.severity !== "נמוכה").length;
+  const navigate = useNavigate();
+  const { session, loading } = useSession();
+
+  useEffect(() => {
+    if (!loading && !session) {
+      navigate({ to: "/login" });
+    }
+  }, [loading, session, navigate]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate({ to: "/login" });
+  };
+
+  if (loading || !session) {
+    return (
+      <div
+        dir="rtl"
+        className="min-h-screen flex items-center justify-center bg-[color:var(--surface)]"
+      >
+        <div className="text-sm text-muted-foreground">טוען...</div>
+      </div>
+    );
+  }
 
   return (
     <div dir="rtl" className="min-h-screen flex w-full bg-[color:var(--surface)]">
@@ -79,13 +105,13 @@ export function AppShell() {
         </nav>
 
         <div className="p-3 border-t border-sidebar-border">
-          <Link
-            to="/login"
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-accent"
+          <button
+            onClick={handleSignOut}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-accent"
           >
             <LogOut className="h-4 w-4" />
             התנתקות
-          </Link>
+          </button>
         </div>
       </aside>
 
