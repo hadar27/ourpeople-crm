@@ -9,7 +9,7 @@ import { useDonors } from "@/lib/queries/donors";
 import { useProjects } from "@/lib/queries/projects";
 import { DonationEditButton } from "@/components/module-edit-dialogs";
 import { TODAY } from "@/lib/crm-seed";
-import { addAllocation, newId, removeAllocation, selectAllocations, useStore } from "@/lib/store";
+import { useAllocationsForDonation, useCreateAllocation, useDeleteAllocation } from "@/lib/queries/allocations";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/donation/$id")({
@@ -21,7 +21,10 @@ function DonationDetail() {
   const { data: d, isLoading, isError, refetch } = useDonation(id);
   const { data: donors } = useDonors();
   const { data: projects } = useProjects();
-  const allocations = useStore(selectAllocations(id));
+  const { data: allocationsData } = useAllocationsForDonation(id);
+  const allocations = allocationsData ?? [];
+  const createAllocation = useCreateAllocation();
+  const deleteAllocation = useDeleteAllocation();
 
   if (isLoading) {
     return (
@@ -46,20 +49,23 @@ function DonationDetail() {
   const remaining = d.amount - allocated;
   const pct = Math.min(100, Math.round((allocated / d.amount) * 100));
 
-  const handleAllocate = (v: Record<string, string>) => {
+  const handleAllocate = async (v: Record<string, string>) => {
     const project = (projects ?? []).find((p) => p.name === v.projectId);
     if (!project) return "יש לבחור פרויקט";
     const amount = Number(v.amount);
     if (!amount || amount <= 0) return "יש להזין סכום חיובי";
     if (amount > remaining) return `ניתן לייעד עד ₪${remaining.toLocaleString()} — היתרה שטרם יועדה`;
-    addAllocation({
-      id: newId("AL"),
-      donationId: d.id,
-      projectId: project.id,
-      amount,
-      date: v.date || TODAY,
-      notes: v.notes || undefined,
-    });
+    try {
+      await createAllocation.mutateAsync({
+        donationId: d.id,
+        projectId: project.id,
+        amount,
+        date: v.date || TODAY,
+        notes: v.notes || undefined,
+      });
+    } catch (err) {
+      return err instanceof Error ? err.message : "השמירה נכשלה";
+    }
   };
 
   return (
@@ -206,9 +212,13 @@ function DonationDetail() {
                         <button
                           className="text-muted-foreground hover:text-destructive"
                           aria-label="בטל ייעוד"
-                          onClick={() => {
-                            removeAllocation(a.id);
-                            toast.success("הייעוד בוטל");
+                          onClick={async () => {
+                            try {
+                              await deleteAllocation.mutateAsync({ id: a.id, donationId: d.id });
+                              toast.success("הייעוד בוטל");
+                            } catch {
+                              toast.error("ביטול הייעוד נכשל");
+                            }
                           }}
                         >
                           <Trash2 className="h-4 w-4" />

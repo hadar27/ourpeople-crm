@@ -39,7 +39,7 @@ export function FormDialog({
   fields: FormField[];
   submitLabel?: string;
   successMessage: string;
-  onSubmit: (values: Record<string, string>) => void | string;
+  onSubmit: (values: Record<string, string>) => void | string | Promise<void | string>;
   defaultValues?: Record<string, string>;
 }) {
   const [open, setOpen] = useState(false);
@@ -71,8 +71,7 @@ export function FormDialog({
       return;
     }
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 500));
-    const err = onSubmit(values);
+    const err = await onSubmit(values);
     setSaving(false);
     if (typeof err === "string") {
       toast.error(err);

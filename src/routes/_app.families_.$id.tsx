@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { ArrowRight, Users, HandHeart, FileText, CalendarClock, Plus, CheckCircle2, Home } from "lucide-react";
+import { ArrowRight, Users, HandHeart, FileText, CalendarClock, Plus, CheckCircle2, Home, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/page-header";
@@ -7,16 +7,12 @@ import { MiniStat, SectionCard, EmptyState, Timeline, type TimelineItem } from "
 import { FormDialog } from "@/components/form-dialog";
 import { projects } from "@/lib/mock-data";
 import { isOverdue, TODAY } from "@/lib/crm-seed";
-import {
-  addAssistance,
-  addFamilyMember,
-  completeFollowUp,
-  newId,
-  selectFamilyBundle,
-  setAssistanceStatus,
-  useStore,
-} from "@/lib/store";
-import type { AssistanceNeed, AssistanceRecord, FamilyMember } from "@/lib/crm-types";
+import { selectFamilyBundle, useStore } from "@/lib/store";
+import { useFamily } from "@/lib/queries/families";
+import { useFamilyMembers, useCreateFamilyMember } from "@/lib/queries/family-members";
+import { useAssistanceForFamily, useCreateAssistance, useSetAssistanceStatus } from "@/lib/queries/assistance";
+import { useFollowUpsForEntity, useCompleteFollowUp } from "@/lib/queries/follow-ups";
+import type { AssistanceNeed } from "@/lib/crm-types";
 import { FamilyEditButton } from "@/components/module-edit-dialogs";
 import { toast } from "sonner";
 
@@ -28,23 +24,44 @@ const NEEDS: AssistanceNeed[] = ["מזון", "דיור", "תעסוקה", "חינ
 
 function FamilyProfile() {
   const { id } = useParams({ from: "/_app/families_/$id" });
-  const family = useStore((s) => s.families).find((f) => f.id === id);
+  const { data: family, isLoading, isError, refetch } = useFamily(id);
+  const { data: members } = useFamilyMembers(id);
+  const { data: assistance } = useAssistanceForFamily(id);
+  const { data: followUps } = useFollowUpsForEntity(id);
   const bundle = useStore(selectFamilyBundle(id));
+  const createFamilyMember = useCreateFamilyMember();
+  const createAssistance = useCreateAssistance();
+  const setAssistanceStatus = useSetAssistanceStatus();
+  const completeFollowUp = useCompleteFollowUp();
 
-  if (!family) {
+  if (isLoading) {
     return (
-      <div className="card-elevated p-8 text-center">
-        תיק משפחה לא נמצא. <Link to="/families" className="text-brand">חזרה</Link>
+      <div className="card-elevated flex items-center justify-center gap-2 p-16 text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin" /> טוען...
       </div>
     );
   }
 
-  const { members, assistance, documents, followUps } = bundle;
-  const sortedAid = [...assistance].sort((a, b) => (a.date < b.date ? 1 : -1));
+  if (isError || !family) {
+    return (
+      <div className="card-elevated p-8 text-center">
+        תיק משפחה לא נמצא. <Link to="/families" className="text-brand">חזרה</Link>
+        {isError && (
+          <button onClick={() => refetch()} className="block mx-auto mt-2 text-sm text-brand hover:underline">נסה שוב</button>
+        )}
+      </div>
+    );
+  }
+
+  const { documents } = bundle;
+  const membersList = members ?? [];
+  const assistanceList = assistance ?? [];
+  const followUpsList = followUps ?? [];
+  const sortedAid = [...assistanceList].sort((a, b) => (a.date < b.date ? 1 : -1));
   const totalAid = sortedAid.filter((a) => a.status !== "נדחה").reduce((s, a) => s + (a.amount ?? 0), 0);
   const pending = sortedAid.filter((a) => a.status === "ממתין");
-  const openTasks = followUps.filter((f) => f.status !== "הושלם");
-  const minors = members.filter((m) => m.status === "קטין").length;
+  const openTasks = followUpsList.filter((f) => f.status !== "הושלם");
+  const minors = membersList.filter((m) => m.status === "קטין").length;
 
   const timeline: TimelineItem[] = sortedAid.map((a) => ({
     id: a.id,
@@ -62,32 +79,36 @@ function FamilyProfile() {
     tone: a.status === "סופק" ? "good" : a.status === "ממתין" ? "warn" : a.status === "נדחה" ? "danger" : "brand",
   }));
 
-  const addAid = (v: Record<string, string>) => {
-    const rec: AssistanceRecord = {
-      id: newId("AS"),
-      familyId: family.id,
-      type: v.type as AssistanceNeed,
-      description: v.description,
-      amount: v.amount ? Number(v.amount) : undefined,
-      date: v.date || TODAY,
-      projectId: v.projectId ? projects.find((p) => p.name === v.projectId)?.id : undefined,
-      staff: v.staff,
-      status: "ממתין",
-    };
-    addAssistance(rec);
+  const addAid = async (v: Record<string, string>) => {
+    try {
+      await createAssistance.mutateAsync({
+        familyId: family.id,
+        type: v.type as AssistanceNeed,
+        description: v.description,
+        amount: v.amount ? Number(v.amount) : undefined,
+        date: v.date || TODAY,
+        projectId: v.projectId ? projects.find((p) => p.name === v.projectId)?.id : undefined,
+        staff: v.staff,
+        status: "ממתין",
+      });
+    } catch (err) {
+      return err instanceof Error ? err.message : "השמירה נכשלה";
+    }
   };
 
-  const addMember = (v: Record<string, string>) => {
-    const m: FamilyMember = {
-      id: newId("FM"),
-      familyId: family.id,
-      name: v.name,
-      relation: v.relation as FamilyMember["relation"],
-      birthYear: Number(v.birthYear),
-      status: v.status as FamilyMember["status"],
-      notes: v.notes || undefined,
-    };
-    addFamilyMember(m);
+  const addMember = async (v: Record<string, string>) => {
+    try {
+      await createFamilyMember.mutateAsync({
+        familyId: family.id,
+        name: v.name,
+        relation: v.relation as "ראש משפחה" | "בן/בת זוג" | "ילד/ה" | "הורה" | "אחר",
+        birthYear: Number(v.birthYear),
+        status: v.status as "מבוגר" | "קטין" | "סטודנט" | "גמלאי",
+        notes: v.notes || undefined,
+      });
+    } catch (err) {
+      return err instanceof Error ? err.message : "השמירה נכשלה";
+    }
   };
 
   return (
@@ -155,8 +176,8 @@ function FamilyProfile() {
 
       <Tabs defaultValue="aid" dir="rtl">
         <TabsList className="mb-4 flex-wrap h-auto">
-          <TabsTrigger value="aid">היסטוריית סיוע ({assistance.length})</TabsTrigger>
-          <TabsTrigger value="members">בני משפחה ({members.length})</TabsTrigger>
+          <TabsTrigger value="aid">היסטוריית סיוע ({assistanceList.length})</TabsTrigger>
+          <TabsTrigger value="members">בני משפחה ({membersList.length})</TabsTrigger>
           <TabsTrigger value="tasks">משימות ({openTasks.length})</TabsTrigger>
           <TabsTrigger value="docs">מסמכים ({documents.length})</TabsTrigger>
         </TabsList>
@@ -179,9 +200,13 @@ function FamilyProfile() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => {
-                        setAssistanceStatus(a.id, "אושר");
-                        toast.success("הבקשה אושרה");
+                      onClick={async () => {
+                        try {
+                          await setAssistanceStatus.mutateAsync({ id: a.id, status: "אושר" });
+                          toast.success("הבקשה אושרה");
+                        } catch {
+                          toast.error("העדכון נכשל");
+                        }
                       }}
                     >
                       <CheckCircle2 className="h-4 w-4 ml-1" /> אישור
@@ -216,7 +241,7 @@ function FamilyProfile() {
               />
             }
           >
-            {members.length === 0 ? (
+            {membersList.length === 0 ? (
               <EmptyState text="לא נרשמו בני משפחה" />
             ) : (
               <table className="w-full text-sm">
@@ -230,7 +255,7 @@ function FamilyProfile() {
                   </tr>
                 </thead>
                 <tbody>
-                  {members.map((m) => (
+                  {membersList.map((m) => (
                     <tr key={m.id} className="border-t border-border hover:bg-surface-muted">
                       <td className="py-3 font-medium">{m.name}</td>
                       <td className="py-3">{m.relation}</td>
@@ -270,9 +295,13 @@ function FamilyProfile() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => {
-                        completeFollowUp(t.id);
-                        toast.success("המשימה הושלמה");
+                      onClick={async () => {
+                        try {
+                          await completeFollowUp.mutateAsync(t.id);
+                          toast.success("המשימה הושלמה");
+                        } catch {
+                          toast.error("העדכון נכשל");
+                        }
                       }}
                     >
                       <CheckCircle2 className="h-4 w-4 ml-1" /> סיום

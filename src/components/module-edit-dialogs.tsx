@@ -12,6 +12,8 @@ import { useActivities } from "@/lib/queries/activities";
 import { useSuppliers, useUpdateSupplier, type SupplierRecord } from "@/lib/queries/suppliers";
 import { useUpdateIncome, type IncomeRecord } from "@/lib/queries/incomes";
 import { useUpdateExpense, type ExpenseRecord } from "@/lib/queries/expenses";
+import { useUpdateFamily, type FamilyRecord } from "@/lib/queries/families";
+import { useUpdateInteraction } from "@/lib/queries/interactions";
 import {
   donationFields,
   donorFields,
@@ -26,10 +28,9 @@ import {
   userFields,
   volunteerFields,
 } from "@/lib/edit-forms";
-import { selectAllocations, updateFamily, updateInteraction, useStore } from "@/lib/store";
+import { useAllocationsForDonation } from "@/lib/queries/allocations";
 import type {
   AssistanceNeed,
-  BeneficiaryFamily,
   DonorInteraction,
   FamilyStatus,
   InteractionStatus,
@@ -209,6 +210,7 @@ export function DonorEditButton({ record, triggerLabel }: { record: DonorRecord 
 // ---------- Donor interactions ----------
 export function InteractionEditButton({ record, triggerLabel }: { record: DonorInteraction } & Btn) {
   const allowed = useCanEdit("donors");
+  const updateInteraction = useUpdateInteraction();
   if (!allowed) return null;
   return (
     <RecordEditDialog
@@ -228,21 +230,27 @@ export function InteractionEditButton({ record, triggerLabel }: { record: DonorI
         followUpDate: record.followUpDate ?? "",
         status: record.status,
       }}
-      onSave={(v) => {
-        const patch = {
-          type: v.type as InteractionType,
-          date: v.date,
-          time: v.time,
-          staff: v.staff,
-          subject: v.subject,
-          summary: v.summary,
-          outcome: v.outcome,
-          followUpAction: v.followUpAction || undefined,
-          followUpDate: v.followUpDate || undefined,
-          status: v.status as InteractionStatus,
-        };
-        updateInteraction(record.id, patch);
-        return { ok: true };
+      onSave={async (v) => {
+        try {
+          await updateInteraction.mutateAsync({
+            id: record.id,
+            patch: {
+              type: v.type as InteractionType,
+              date: v.date,
+              time: v.time,
+              staff: v.staff,
+              subject: v.subject,
+              summary: v.summary,
+              outcome: v.outcome,
+              followUpAction: v.followUpAction || undefined,
+              followUpDate: v.followUpDate || undefined,
+              status: v.status as InteractionStatus,
+            },
+          });
+          return { ok: true };
+        } catch (err) {
+          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+        }
       }}
     />
   );
@@ -251,7 +259,8 @@ export function InteractionEditButton({ record, triggerLabel }: { record: DonorI
 // ---------- Donations ----------
 export function DonationEditButton({ record, triggerLabel }: { record: DonationRecord } & Btn) {
   const allowed = useCanEdit("donations");
-  const allocations = useStore(selectAllocations(record.id));
+  const { data: allocationsData } = useAllocationsForDonation(record.id);
+  const allocations = allocationsData ?? [];
   const updateDonation = useUpdateDonation();
   const { data: donors } = useDonors();
   const { data: projects } = useProjects();
@@ -425,8 +434,9 @@ export function SupplierEditButton({ record, triggerLabel }: { record: SupplierR
 }
 
 // ---------- Families ----------
-export function FamilyEditButton({ record, triggerLabel }: { record: BeneficiaryFamily } & Btn) {
+export function FamilyEditButton({ record, triggerLabel }: { record: FamilyRecord } & Btn) {
   const allowed = useCanEdit("families");
+  const updateFamily = useUpdateFamily();
   if (!allowed) return null;
   return (
     <RecordEditDialog
@@ -454,23 +464,29 @@ export function FamilyEditButton({ record, triggerLabel }: { record: Beneficiary
         if (!count || count < 1) return "מספר הנפשות חייב להיות לפחות 1.";
         return null;
       }}
-      onSave={(v) => {
-        const patch = {
-          familyName: v.familyName,
-          mainContact: v.mainContact,
-          phone: v.phone,
-          email: v.email || undefined,
-          city: v.city,
-          countryOfOrigin: v.countryOfOrigin,
-          immigrationDate: v.immigrationDate,
-          membersCount: Number(v.membersCount),
-          assignedStaff: v.assignedStaff,
-          status: v.status as FamilyStatus,
-          needs: splitList(v.needs) as AssistanceNeed[],
-          notes: v.notes || undefined,
-        };
-        updateFamily(record.id, patch);
-        return { ok: true };
+      onSave={async (v) => {
+        try {
+          await updateFamily.mutateAsync({
+            id: record.id,
+            patch: {
+              familyName: v.familyName,
+              mainContact: v.mainContact,
+              phone: v.phone,
+              email: v.email || undefined,
+              city: v.city,
+              countryOfOrigin: v.countryOfOrigin,
+              immigrationDate: v.immigrationDate,
+              membersCount: Number(v.membersCount),
+              assignedStaff: v.assignedStaff,
+              status: v.status as FamilyStatus,
+              needs: splitList(v.needs) as AssistanceNeed[],
+              notes: v.notes || undefined,
+            },
+          });
+          return { ok: true };
+        } catch (err) {
+          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+        }
       }}
     />
   );

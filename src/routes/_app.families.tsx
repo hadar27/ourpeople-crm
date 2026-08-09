@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Users, HeartHandshake, AlertTriangle, HandHeart, Plus } from "lucide-react";
+import { Users, HeartHandshake, AlertTriangle, HandHeart, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
 import { FormDialog } from "@/components/form-dialog";
-import { addFamily, newId, useStore } from "@/lib/store";
-import type { AssistanceNeed, BeneficiaryFamily, FamilyStatus } from "@/lib/crm-types";
+import { useFamilies, useCreateFamily, type FamilyRecord } from "@/lib/queries/families";
+import { useAllAssistance } from "@/lib/queries/assistance";
+import type { AssistanceNeed, FamilyStatus } from "@/lib/crm-types";
 import { FamilyEditButton } from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/families")({
@@ -46,33 +47,37 @@ const columns: Column<Record<string, unknown>>[] = [
 ];
 
 function FamiliesPage() {
-  const families = useStore((s) => s.families);
-  const assistance = useStore((s) => s.assistance);
+  const { data: families, isLoading, isError, refetch } = useFamilies();
+  const { data: assistance } = useAllAssistance();
+  const createFamily = useCreateFamily();
+  const list = families ?? [];
 
-  const active = families.filter((f) => f.status === "בטיפול פעיל" || f.status === "מלווה").length;
-  const atRisk = families.filter((f) => f.status === "בסיכון").length;
-  const people = families.reduce((s, f) => s + f.membersCount, 0);
-  const totalAid = assistance.filter((a) => a.status !== "נדחה").reduce((s, a) => s + (a.amount ?? 0), 0);
+  const active = list.filter((f) => f.status === "בטיפול פעיל" || f.status === "מלווה").length;
+  const atRisk = list.filter((f) => f.status === "בסיכון").length;
+  const people = list.reduce((s, f) => s + f.membersCount, 0);
+  const totalAid = (assistance ?? []).filter((a) => a.status !== "נדחה").reduce((s, a) => s + (a.amount ?? 0), 0);
 
-  const handleAdd = (v: Record<string, string>) => {
-    const fam: BeneficiaryFamily = {
-      id: newId("F"),
-      familyName: v.familyName,
-      mainContact: v.mainContact,
-      phone: v.phone,
-      email: v.email || undefined,
-      city: v.city,
-      countryOfOrigin: v.countryOfOrigin,
-      immigrationDate: v.immigrationDate || "—",
-      membersCount: Number(v.membersCount || 1),
-      needs: (v.needs ? v.needs.split(",").map((n) => n.trim()) : []).filter((n) =>
-        (NEEDS as string[]).includes(n),
-      ) as AssistanceNeed[],
-      status: (v.status as FamilyStatus) ?? "ממתינה לאישור",
-      assignedStaff: v.assignedStaff,
-      notes: v.notes || undefined,
-    };
-    addFamily(fam);
+  const handleAdd = async (v: Record<string, string>) => {
+    try {
+      await createFamily.mutateAsync({
+        familyName: v.familyName,
+        mainContact: v.mainContact,
+        phone: v.phone,
+        email: v.email || undefined,
+        city: v.city,
+        countryOfOrigin: v.countryOfOrigin,
+        immigrationDate: v.immigrationDate || "—",
+        membersCount: Number(v.membersCount || 1),
+        needs: (v.needs ? v.needs.split(",").map((n) => n.trim()) : []).filter((n) =>
+          (NEEDS as string[]).includes(n),
+        ) as AssistanceNeed[],
+        status: (v.status as FamilyStatus) ?? "ממתינה לאישור",
+        assignedStaff: v.assignedStaff,
+        notes: v.notes || undefined,
+      });
+    } catch (err) {
+      return err instanceof Error ? err.message : "השמירה נכשלה";
+    }
   };
 
   return (
@@ -116,7 +121,7 @@ function FamiliesPage() {
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <Kpi label="תיקי משפחה" value={String(families.length)} icon={<HeartHandshake className="h-4 w-4" />} />
+        <Kpi label="תיקי משפחה" value={String(list.length)} icon={<HeartHandshake className="h-4 w-4" />} />
         <Kpi label="בטיפול פעיל" value={String(active)} icon={<HandHeart className="h-4 w-4" />} />
         <Kpi label="נפשות בטיפול" value={String(people)} icon={<Users className="h-4 w-4" />} />
         <Kpi
@@ -132,13 +137,24 @@ function FamiliesPage() {
         <div className="text-xl font-bold">₪{totalAid.toLocaleString()}</div>
       </div>
 
-      <DataTable
-        rowActions={(r) => <FamilyEditButton record={r as unknown as BeneficiaryFamily} />}
-        rows={families as unknown as Record<string, unknown>[]}
-        columns={columns}
-        searchKeys={["familyName", "mainContact", "city", "countryOfOrigin", "assignedStaff"]}
-        getRowHref={(r) => `/families/${String(r.id)}`}
-      />
+      {isLoading ? (
+        <div className="card-elevated flex items-center justify-center gap-2 p-16 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" /> טוען משפחות...
+        </div>
+      ) : isError ? (
+        <div className="card-elevated flex flex-col items-center gap-3 p-16 text-center">
+          <div className="text-sm text-muted-foreground">אירעה שגיאה בטעינת המשפחות.</div>
+          <button onClick={() => refetch()} className="text-sm text-brand hover:underline">נסה שוב</button>
+        </div>
+      ) : (
+        <DataTable
+          rowActions={(r) => <FamilyEditButton record={r as unknown as FamilyRecord} />}
+          rows={list as unknown as Record<string, unknown>[]}
+          columns={columns}
+          searchKeys={["familyName", "mainContact", "city", "countryOfOrigin", "assignedStaff"]}
+          getRowHref={(r) => `/families/${String(r.id)}`}
+        />
+      )}
     </>
   );
 }
