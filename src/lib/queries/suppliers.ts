@@ -1,6 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import type { SupplierRecord } from "@/lib/records-store";
+
+export type SupplierRecord = {
+  id: string;
+  name: string;
+  category: string;
+  contact: string;
+  contracts: number;
+  openInvoices: number;
+  status: "פעיל" | "מושעה";
+  phone?: string;
+  email?: string;
+  address?: string;
+  taxId?: string;
+  paymentTerms?: string;
+  notes?: string;
+};
 
 type SupplierRow = {
   id: string;

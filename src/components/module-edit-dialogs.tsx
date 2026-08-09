@@ -2,48 +2,31 @@
 // current record and writes back through the record store (id preserved).
 import { RecordEditDialog } from "@/components/record-edit-dialog";
 import { useCanEdit } from "@/lib/permissions";
-import {
-  updateRecord,
-  useCollection,
-  diffValues,
-  logAudit,
-  type DonationRecord,
-  type DonorRecord,
-  type ExpenseRecord,
-  type IncomeRecord,
-  type ParticipantRecord,
-  type ProjectRecord,
-  type SupplierRecord,
-  type UserRecord,
-  type VolunteerRecord,
-} from "@/lib/records-store";
+import { useDonors, useUpdateDonor, type DonorRecord } from "@/lib/queries/donors";
+import { useProjects, useUpdateProject, type ProjectRecord } from "@/lib/queries/projects";
+import { useUpdateParticipant, type ParticipantRecord } from "@/lib/queries/participants";
+import { useUpdateVolunteer, type VolunteerRecord } from "@/lib/queries/volunteers";
+import { useUsers, useUpdateUser, type UserRecord } from "@/lib/queries/users";
+import { ANONYMOUS_DONOR, useUpdateDonation, type DonationRecord } from "@/lib/queries/donations";
+import { useActivities } from "@/lib/queries/activities";
+import { useSuppliers, useUpdateSupplier, type SupplierRecord } from "@/lib/queries/suppliers";
+import { useUpdateIncome, type IncomeRecord } from "@/lib/queries/incomes";
+import { useUpdateExpense, type ExpenseRecord } from "@/lib/queries/expenses";
 import {
   donationFields,
-  donationLabels,
   donorFields,
-  donorLabels,
   expenseFields,
-  expenseLabels,
   familyFields,
-  familyLabels,
   incomeFields,
-  incomeLabels,
   interactionFields,
-  interactionLabels,
   participantFields,
-  participantLabels,
   projectFields,
-  projectLabels,
   splitList,
   supplierFields,
-  supplierLabels,
   userFields,
-  userLabels,
   volunteerFields,
-  volunteerLabels,
 } from "@/lib/edit-forms";
 import { selectAllocations, updateFamily, updateInteraction, useStore } from "@/lib/store";
-import { useUpdateSupplier } from "@/lib/queries/suppliers";
 import type {
   AssistanceNeed,
   BeneficiaryFamily,
@@ -52,13 +35,15 @@ import type {
   InteractionStatus,
   InteractionType,
 } from "@/lib/crm-types";
-import type { Participant, Donation, Donor, Project, Supplier, User, Volunteer } from "@/lib/mock-data";
+import type { Supplier } from "@/lib/mock-data";
 
 type Btn = { triggerLabel?: string };
 
 // ---------- Participants ----------
 export function ParticipantEditButton({ record, triggerLabel }: { record: ParticipantRecord } & Btn) {
   const allowed = useCanEdit("participants");
+  const updateParticipant = useUpdateParticipant();
+  const { data: activities } = useActivities();
   if (!allowed) return null;
   return (
     <RecordEditDialog
@@ -91,28 +76,33 @@ export function ParticipantEditButton({ record, triggerLabel }: { record: Partic
         }
         return null;
       }}
-      onSave={(v) =>
-        updateRecord(
-          "participants",
-          record.id,
-          {
-            name: v.name,
-            idNumber: v.idNumber,
-            phone: v.phone,
-            email: v.email || undefined,
-            address: v.address || undefined,
-            city: v.city || undefined,
-            activity: v.activity,
-            source: v.source as Participant["source"],
-            status: v.status as Participant["status"],
-            paymentStatus: v.paymentStatus as Participant["paymentStatus"],
-            documentsComplete: v.documentsComplete === "הושלמו",
-            notes: v.notes || undefined,
-          },
-          participantLabels,
-          "נרשם",
-        )
-      }
+      onSave={async (v) => {
+        const def = (activities ?? []).find((a) => a.name === v.activity);
+        if (!def) return { ok: false, error: "פעילות לא תקינה" };
+        try {
+          await updateParticipant.mutateAsync({
+            id: record.id,
+            patch: {
+              name: v.name,
+              idNumber: v.idNumber,
+              phone: v.phone,
+              email: v.email || undefined,
+              address: v.address || undefined,
+              city: v.city || undefined,
+              activityId: def.id,
+              activityType: def.type,
+              source: v.source as ParticipantRecord["source"],
+              status: v.status as ParticipantRecord["status"],
+              paymentStatus: v.paymentStatus as ParticipantRecord["paymentStatus"],
+              documentsComplete: v.documentsComplete === "הושלמו",
+              notes: v.notes || undefined,
+            },
+          });
+          return { ok: true };
+        } catch (err) {
+          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+        }
+      }}
     />
   );
 }
@@ -120,6 +110,8 @@ export function ParticipantEditButton({ record, triggerLabel }: { record: Partic
 // ---------- Volunteers ----------
 export function VolunteerEditButton({ record, triggerLabel }: { record: VolunteerRecord } & Btn) {
   const allowed = useCanEdit("volunteers");
+  const updateVolunteer = useUpdateVolunteer();
+  const { data: activities } = useActivities();
   if (!allowed) return null;
   return (
     <RecordEditDialog
@@ -138,25 +130,29 @@ export function VolunteerEditButton({ record, triggerLabel }: { record: Voluntee
         skills: record.skills.join(", "),
         notes: record.notes ?? "",
       }}
-      onSave={(v) =>
-        updateRecord(
-          "volunteers",
-          record.id,
-          {
-            name: v.name,
-            phone: v.phone || undefined,
-            email: v.email || undefined,
-            availability: v.availability,
-            project: v.project,
-            hours: Number(v.hours) || 0,
-            status: v.status as Volunteer["status"],
-            skills: splitList(v.skills),
-            notes: v.notes || undefined,
-          },
-          volunteerLabels,
-          "מתנדב",
-        )
-      }
+      onSave={async (v) => {
+        const def = (activities ?? []).find((a) => a.name === v.project);
+        try {
+          await updateVolunteer.mutateAsync({
+            id: record.id,
+            patch: {
+              name: v.name,
+              phone: v.phone || undefined,
+              email: v.email || undefined,
+              availability: v.availability,
+              activityId: def?.id,
+              project: v.project,
+              hours: Number(v.hours) || 0,
+              status: v.status as VolunteerRecord["status"],
+              skills: splitList(v.skills),
+              notes: v.notes || undefined,
+            },
+          });
+          return { ok: true };
+        } catch (err) {
+          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+        }
+      }}
     />
   );
 }
@@ -164,6 +160,7 @@ export function VolunteerEditButton({ record, triggerLabel }: { record: Voluntee
 // ---------- Donors ----------
 export function DonorEditButton({ record, triggerLabel }: { record: DonorRecord } & Btn) {
   const allowed = useCanEdit("donors");
+  const updateDonor = useUpdateDonor();
   if (!allowed) return null;
   return (
     <RecordEditDialog
@@ -183,26 +180,28 @@ export function DonorEditButton({ record, triggerLabel }: { record: DonorRecord 
         interests: record.interests.join(", "),
         notes: record.notes ?? "",
       }}
-      onSave={(v) =>
-        updateRecord(
-          "donors",
-          record.id,
-          {
-            name: v.name,
-            contact: v.contact || undefined,
-            phone: v.phone || undefined,
-            email: v.email || undefined,
-            type: v.type as Donor["type"],
-            address: v.address || undefined,
-            preferredChannel: v.preferredChannel || undefined,
-            status: v.status as Donor["status"],
-            interests: splitList(v.interests),
-            notes: v.notes || undefined,
-          },
-          donorLabels,
-          "תורם",
-        )
-      }
+      onSave={async (v) => {
+        try {
+          await updateDonor.mutateAsync({
+            id: record.id,
+            patch: {
+              name: v.name,
+              contact: v.contact || undefined,
+              phone: v.phone || undefined,
+              email: v.email || undefined,
+              type: v.type as DonorRecord["type"],
+              address: v.address || undefined,
+              preferredChannel: v.preferredChannel || undefined,
+              status: v.status as DonorRecord["status"],
+              interests: splitList(v.interests),
+              notes: v.notes || undefined,
+            },
+          });
+          return { ok: true };
+        } catch (err) {
+          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+        }
+      }}
     />
   );
 }
@@ -242,14 +241,7 @@ export function InteractionEditButton({ record, triggerLabel }: { record: DonorI
           followUpDate: v.followUpDate || undefined,
           status: v.status as InteractionStatus,
         };
-        const changes = diffValues(
-          record as unknown as Record<string, unknown>,
-          patch as unknown as Record<string, unknown>,
-          interactionLabels,
-        );
         updateInteraction(record.id, patch);
-        logAudit("אינטראקציה", record.id, changes);
-        logAudit("אינטראקציה", record.donorId, changes);
         return { ok: true };
       }}
     />
@@ -260,6 +252,10 @@ export function InteractionEditButton({ record, triggerLabel }: { record: DonorI
 export function DonationEditButton({ record, triggerLabel }: { record: DonationRecord } & Btn) {
   const allowed = useCanEdit("donations");
   const allocations = useStore(selectAllocations(record.id));
+  const updateDonation = useUpdateDonation();
+  const { data: donors } = useDonors();
+  const { data: projects } = useProjects();
+  const { data: activities } = useActivities();
   if (!allowed) return null;
   const allocated = allocations.reduce((s, a) => s + a.amount, 0);
   return (
@@ -290,24 +286,33 @@ export function DonationEditButton({ record, triggerLabel }: { record: DonationR
           return `לא ניתן להקטין את סכום התרומה מתחת ל-₪${allocated.toLocaleString()} שכבר יועדו לפרויקטים.`;
         return null;
       }}
-      onSave={(v) =>
-        updateRecord(
-          "donations",
-          record.id,
-          {
-            donor: v.donor,
-            amount: Number(v.amount),
-            project: v.project,
-            method: v.method as Donation["method"],
-            date: v.date,
-            receipt: v.receipt as Donation["receipt"],
-            reference: v.reference || undefined,
-            notes: v.notes || undefined,
-          },
-          donationLabels,
-          "תרומה",
-        )
-      }
+      onSave={async (v) => {
+        const isAnonymous = v.donor === ANONYMOUS_DONOR;
+        const donor = (donors ?? []).find((d) => d.name === v.donor);
+        const project = (projects ?? []).find((p) => p.name === v.project);
+        const activity = (activities ?? []).find((a) => a.name === v.project);
+        try {
+          await updateDonation.mutateAsync({
+            id: record.id,
+            patch: {
+              donorId: donor?.id,
+              isAnonymous,
+              amount: Number(v.amount),
+              projectId: project?.id,
+              activityId: activity?.id,
+              project: v.project,
+              method: v.method as DonationRecord["method"],
+              date: v.date,
+              receipt: v.receipt as DonationRecord["receipt"],
+              reference: v.reference || undefined,
+              notes: v.notes || undefined,
+            },
+          });
+          return { ok: true };
+        } catch (err) {
+          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+        }
+      }}
     />
   );
 }
@@ -315,6 +320,7 @@ export function DonationEditButton({ record, triggerLabel }: { record: DonationR
 // ---------- Projects ----------
 export function ProjectEditButton({ record, triggerLabel }: { record: ProjectRecord } & Btn) {
   const allowed = useCanEdit("projects");
+  const updateProject = useUpdateProject();
   if (!allowed) return null;
   return (
     <RecordEditDialog
@@ -344,26 +350,28 @@ export function ProjectEditButton({ record, triggerLabel }: { record: ProjectRec
           return "תאריך הסיום חייב להיות אחרי תאריך ההתחלה.";
         return null;
       }}
-      onSave={(v) =>
-        updateRecord(
-          "projects",
-          record.id,
-          {
-            name: v.name,
-            description: v.description || undefined,
-            status: v.status as Project["status"],
-            manager: v.manager,
-            startDate: v.startDate || undefined,
-            endDate: v.endDate || undefined,
-            budget: Number(v.budget),
-            requiredVolunteers: Number(v.requiredVolunteers) || undefined,
-            suppliers: v.suppliers || undefined,
-            notes: v.notes || undefined,
-          },
-          projectLabels,
-          "פרויקט",
-        )
-      }
+      onSave={async (v) => {
+        try {
+          await updateProject.mutateAsync({
+            id: record.id,
+            patch: {
+              name: v.name,
+              description: v.description || undefined,
+              status: v.status as ProjectRecord["status"],
+              manager: v.manager,
+              startDate: v.startDate || undefined,
+              endDate: v.endDate || undefined,
+              budget: Number(v.budget),
+              requiredVolunteers: Number(v.requiredVolunteers) || undefined,
+              suppliers: v.suppliers || undefined,
+              notes: v.notes || undefined,
+            },
+          });
+          return { ok: true };
+        } catch (err) {
+          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+        }
+      }}
     />
   );
 }
@@ -407,12 +415,6 @@ export function SupplierEditButton({ record, triggerLabel }: { record: SupplierR
         };
         try {
           await updateSupplier.mutateAsync({ id: record.id, patch });
-          const changes = diffValues(
-            record as unknown as Record<string, unknown>,
-            patch as unknown as Record<string, unknown>,
-            supplierLabels,
-          );
-          logAudit("ספק", record.id, changes);
           return { ok: true };
         } catch (err) {
           return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
@@ -467,13 +469,7 @@ export function FamilyEditButton({ record, triggerLabel }: { record: Beneficiary
           needs: splitList(v.needs) as AssistanceNeed[],
           notes: v.notes || undefined,
         };
-        const changes = diffValues(
-          record as unknown as Record<string, unknown>,
-          patch as unknown as Record<string, unknown>,
-          familyLabels,
-        );
         updateFamily(record.id, patch);
-        logAudit("משפחה", record.id, changes);
         return { ok: true };
       }}
     />
@@ -483,6 +479,8 @@ export function FamilyEditButton({ record, triggerLabel }: { record: Beneficiary
 // ---------- Income ----------
 export function IncomeEditButton({ record, triggerLabel }: { record: IncomeRecord } & Btn) {
   const allowed = useCanEdit("finance");
+  const updateIncome = useUpdateIncome();
+  const { data: projects } = useProjects();
   if (!allowed) return null;
   return (
     <RecordEditDialog
@@ -503,25 +501,29 @@ export function IncomeEditButton({ record, triggerLabel }: { record: IncomeRecor
         notes: record.notes ?? "",
       }}
       customValidate={(v) => (Number(v.amount) > 0 ? null : "יש להזין סכום חיובי.")}
-      onSave={(v) =>
-        updateRecord(
-          "incomes",
-          record.id,
-          {
-            category: v.category,
-            amount: Number(v.amount),
-            date: v.date,
-            source: v.source,
-            donationId: v.donationId || undefined,
-            project: v.project || undefined,
-            method: v.method || undefined,
-            reference: v.reference || undefined,
-            notes: v.notes || undefined,
-          },
-          incomeLabels,
-          "הכנסה",
-        )
-      }
+      onSave={async (v) => {
+        const project = (projects ?? []).find((p) => p.name === v.project);
+        try {
+          await updateIncome.mutateAsync({
+            id: record.id,
+            patch: {
+              category: v.category,
+              amount: Number(v.amount),
+              date: v.date,
+              source: v.source,
+              donationId: v.donationId || undefined,
+              projectId: project?.id,
+              project: v.project || undefined,
+              method: v.method || undefined,
+              reference: v.reference || undefined,
+              notes: v.notes || undefined,
+            },
+          });
+          return { ok: true };
+        } catch (err) {
+          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+        }
+      }}
     />
   );
 }
@@ -529,6 +531,9 @@ export function IncomeEditButton({ record, triggerLabel }: { record: IncomeRecor
 // ---------- Expenses ----------
 export function ExpenseEditButton({ record, triggerLabel }: { record: ExpenseRecord } & Btn) {
   const allowed = useCanEdit("finance");
+  const updateExpense = useUpdateExpense();
+  const { data: projects } = useProjects();
+  const { data: suppliers } = useSuppliers();
   if (!allowed) return null;
   return (
     <RecordEditDialog
@@ -554,25 +559,31 @@ export function ExpenseEditButton({ record, triggerLabel }: { record: ExpenseRec
           return "לא ניתן לסמן הוצאה כשולמה ללא חשבונית.";
         return null;
       }}
-      onSave={(v) =>
-        updateRecord(
-          "expenses",
-          record.id,
-          {
-            category: v.category,
-            amount: Number(v.amount),
-            date: v.date,
-            supplier: v.supplier || undefined,
-            project: v.project,
-            status: v.status,
-            receiptStatus: v.receiptStatus || undefined,
-            reference: v.reference || undefined,
-            notes: v.notes || undefined,
-          },
-          expenseLabels,
-          "הוצאה",
-        )
-      }
+      onSave={async (v) => {
+        const project = (projects ?? []).find((p) => p.name === v.project);
+        const supplier = (suppliers ?? []).find((s) => s.name === v.supplier);
+        try {
+          await updateExpense.mutateAsync({
+            id: record.id,
+            patch: {
+              category: v.category,
+              amount: Number(v.amount),
+              date: v.date,
+              supplierId: supplier?.id,
+              supplier: v.supplier || "",
+              projectId: project?.id,
+              project: v.project,
+              status: v.status,
+              receiptStatus: v.receiptStatus || undefined,
+              reference: v.reference || undefined,
+              notes: v.notes || undefined,
+            },
+          });
+          return { ok: true };
+        } catch (err) {
+          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+        }
+      }}
     />
   );
 }
@@ -580,9 +591,10 @@ export function ExpenseEditButton({ record, triggerLabel }: { record: ExpenseRec
 // ---------- Users & permissions ----------
 export function UserEditButton({ record, triggerLabel }: { record: UserRecord } & Btn) {
   const allowed = useCanEdit("users");
-  const allUsers = useCollection("users");
+  const { data: allUsers } = useUsers();
+  const updateUser = useUpdateUser();
   if (!allowed) return null;
-  const activeAdmins = allUsers.filter((u) => u.role === "מנהל מערכת" && u.status === "פעיל");
+  const activeAdmins = (allUsers ?? []).filter((u) => u.role === "מנהל מערכת" && u.status === "פעיל");
   const isOnlyActiveAdmin =
     record.role === "מנהל מערכת" && record.status === "פעיל" && activeAdmins.length === 1;
   return (
@@ -604,21 +616,23 @@ export function UserEditButton({ record, triggerLabel }: { record: UserRecord } 
           return "לא ניתן להסיר את הרשאת מנהל המערכת האחרונה הפעילה במערכת.";
         return null;
       }}
-      onSave={(v) =>
-        updateRecord(
-          "users",
-          record.id,
-          {
-            name: v.name,
-            email: v.email,
-            role: v.role as User["role"],
-            status: v.status as User["status"],
-            permissions: v.permissions || undefined,
-          },
-          userLabels,
-          "משתמש",
-        )
-      }
+      onSave={async (v) => {
+        try {
+          await updateUser.mutateAsync({
+            id: record.id,
+            patch: {
+              name: v.name,
+              email: v.email,
+              role: v.role as UserRecord["role"],
+              status: v.status as UserRecord["status"],
+              permissions: v.permissions || undefined,
+            },
+          });
+          return { ok: true };
+        } catch (err) {
+          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+        }
+      }}
     />
   );
 }

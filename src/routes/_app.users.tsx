@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, X } from "lucide-react";
+import { Check, X, Loader2 } from "lucide-react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { permissionsMatrix } from "@/lib/mock-data";
-import { useCollection, type UserRecord } from "@/lib/records-store";
+import { useUsers, useCreateUser, type UserRecord } from "@/lib/queries/users";
 import { UserEditButton } from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/users")({
@@ -20,7 +20,8 @@ const columns: Column<UserRecord>[] = [
 ];
 
 function UsersPage() {
-  const users = useCollection("users");
+  const { data: users, isLoading, isError, refetch } = useUsers();
+  const createUser = useCreateUser();
   return (
     <>
       <PageHeader
@@ -36,15 +37,40 @@ function UsersPage() {
               { name: "name", label: "שם מלא", required: true },
               { name: "email", label: "דוא״ל", type: "email", required: true },
               { name: "phone", label: "טלפון", type: "tel" },
-              { name: "role", label: "תפקיד", type: "select", required: true, options: ["מנהל מערכת", "מנהל פרויקטים", "כספים", "רכז תורמים", "רכז מתנדבים", "צפייה בלבד"] },
+              { name: "role", label: "תפקיד", type: "select", required: true, options: ["מנהל מערכת", "הנהלה", "מנהל כספים", "מנהל מתנדבים", "מנהל קשרי תורמים"] },
               { name: "status", label: "סטטוס", type: "select", options: ["פעיל", "מושעה"] },
-              { name: "password", label: "סיסמה זמנית", required: true, placeholder: "תישלח באימייל" },
+              { name: "password", label: "סיסמה זמנית", required: true, placeholder: "תישלח באימייל", helper: "רשומה זו היא ספריית אנשי צוות בלבד — אינה יוצרת חשבון התחברות אמיתי" },
             ]}
+            onCreate={async (v) => {
+              try {
+                await createUser.mutateAsync({
+                  name: v.name,
+                  email: v.email,
+                  role: v.role as UserRecord["role"],
+                  status: (v.status || "פעיל") as UserRecord["status"],
+                  lastLogin: "",
+                });
+                return { ok: true };
+              } catch (err) {
+                return { ok: false, error: err instanceof Error ? err.message : "השמירה נכשלה" };
+              }
+            }}
           />
         }
       />
       <div className="mb-6">
-        <DataTable rows={users} columns={columns} searchKeys={["name", "email", "role"]} rowActions={(r) => <UserEditButton record={r} />} />
+        {isLoading ? (
+          <div className="card-elevated flex items-center justify-center gap-2 p-16 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" /> טוען משתמשים...
+          </div>
+        ) : isError ? (
+          <div className="card-elevated flex flex-col items-center gap-3 p-16 text-center">
+            <div className="text-sm text-muted-foreground">אירעה שגיאה בטעינת המשתמשים.</div>
+            <button onClick={() => refetch()} className="text-sm text-brand hover:underline">נסה שוב</button>
+          </div>
+        ) : (
+          <DataTable rows={users ?? []} columns={columns} searchKeys={["name", "email", "role"]} rowActions={(r) => <UserEditButton record={r} />} />
+        )}
       </div>
 
       <div className="card-elevated p-5">

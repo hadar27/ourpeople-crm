@@ -5,9 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/page-header";
 import { MiniStat, SectionCard, EmptyState, Timeline, type TimelineItem } from "@/components/detail-kit";
 import { FormDialog } from "@/components/form-dialog";
-import { useCollection, useRecord } from "@/lib/records-store";
+import { useDonor } from "@/lib/queries/donors";
+import { useDonations } from "@/lib/queries/donations";
 import { DonorEditButton, InteractionEditButton } from "@/components/module-edit-dialogs";
-import { ChangeHistory } from "@/components/change-history";
 import { isOverdue, TODAY } from "@/lib/crm-seed";
 import { addFollowUp, addInteraction, newId, selectInteractions, setInteractionStatus, useStore } from "@/lib/store";
 import type { DonorInteraction, InteractionType } from "@/lib/crm-types";
@@ -21,11 +21,15 @@ const CURRENT_STAFF = "שרה כהן";
 
 function DonorDetail() {
   const { id } = useParams({ from: "/_app/donor/$id" });
-  const donor = useRecord("donors", id);
-  const donations = useCollection("donations");
+  const { data: donor, isLoading, isError } = useDonor(id);
+  const { data: donations } = useDonations();
   const interactions = useStore(selectInteractions(id));
 
-  if (!donor) {
+  if (isLoading) {
+    return <div className="card-elevated p-8 text-center text-muted-foreground">טוען...</div>;
+  }
+
+  if (isError || !donor) {
     return (
       <div className="card-elevated p-8 text-center">
         תורם לא נמצא. <Link to="/donors" className="text-brand">חזרה</Link>
@@ -33,7 +37,7 @@ function DonorDetail() {
     );
   }
 
-  const history = donations.filter((d) => d.donor === donor.name);
+  const history = (donations ?? []).filter((d) => d.donorId === donor.id);
   const sorted = [...interactions].sort((a, b) => (a.date < b.date ? 1 : -1));
   const openFollowUps = sorted.filter((i) => i.followUpDate && i.status !== "הושלם");
   const overdue = openFollowUps.filter((i) => isOverdue(i.followUpDate));
@@ -200,7 +204,6 @@ function DonorDetail() {
         <TabsList className="mb-4">
           <TabsTrigger value="crm">היסטוריית קשר ({interactions.length})</TabsTrigger>
           <TabsTrigger value="donations">תרומות ({history.length})</TabsTrigger>
-          <TabsTrigger value="crm-history">היסטוריית שינויים</TabsTrigger>
           <TabsTrigger value="tasks">משימות המשך ({openFollowUps.length})</TabsTrigger>
         </TabsList>
 
@@ -208,10 +211,6 @@ function DonorDetail() {
           <SectionCard title="יומן אינטראקציות">
             <Timeline items={timeline} />
           </SectionCard>
-        </TabsContent>
-
-        <TabsContent value="crm-history">
-          <ChangeHistory entityId={donor.id} />
         </TabsContent>
 
         <TabsContent value="donations">

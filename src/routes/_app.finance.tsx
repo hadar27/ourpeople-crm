@@ -15,7 +15,10 @@ import {
   Legend,
 } from "recharts";
 import { budgetVsActual, monthlyDonations } from "@/lib/mock-data";
-import { useCollection } from "@/lib/records-store";
+import { useIncomes, useCreateIncome, GENERAL_PROJECT as GENERAL_PROJECT_INCOME } from "@/lib/queries/incomes";
+import { useExpenses, useCreateExpense, GENERAL_PROJECT as GENERAL_PROJECT_EXPENSE } from "@/lib/queries/expenses";
+import { useProjects } from "@/lib/queries/projects";
+import { useSuppliers } from "@/lib/queries/suppliers";
 import { ExpenseEditButton, IncomeEditButton } from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/finance")({
@@ -24,8 +27,14 @@ export const Route = createFileRoute("/_app/finance")({
 
 
 function FinancePage() {
-  const income = useCollection("incomes");
-  const expenses = useCollection("expenses");
+  const { data: income } = useIncomes();
+  const { data: expenses } = useExpenses();
+  const { data: projects } = useProjects();
+  const { data: suppliers } = useSuppliers();
+  const createIncome = useCreateIncome();
+  const createExpense = useCreateExpense();
+  const projectOptions = [GENERAL_PROJECT_INCOME, ...(projects ?? []).map((p) => p.name)];
+  const supplierOptions = (suppliers ?? []).map((s) => s.name);
   return (
     <>
       <PageHeader title="כספים — ERP" description="לוח בקרה פיננסי כולל הכנסות, הוצאות וניצול תקציב מול תכנון."
@@ -41,9 +50,26 @@ function FinancePage() {
                 { name: "amount", label: "סכום (₪)", type: "number", required: true },
                 { name: "date", label: "תאריך", type: "date", required: true },
                 { name: "category", label: "קטגוריה", type: "select", required: true, options: ["תרומה", "מענק", "אגרות נרשמים", "אחר"] },
-                { name: "project", label: "פרויקט", type: "select", options: ["כללי", "קייטנת קיץ", "סיוע למשפחות", "מועדון נוער"] },
+                { name: "project", label: "פרויקט", type: "select", options: projectOptions },
                 { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
               ]}
+              onCreate={async (v) => {
+                const project = (projects ?? []).find((p) => p.name === v.project);
+                try {
+                  await createIncome.mutateAsync({
+                    source: v.source,
+                    amount: Number(v.amount) || 0,
+                    date: v.date,
+                    category: v.category,
+                    projectId: project?.id,
+                    project: v.project || GENERAL_PROJECT_INCOME,
+                    notes: v.notes || undefined,
+                  });
+                  return { ok: true };
+                } catch (err) {
+                  return { ok: false, error: err instanceof Error ? err.message : "השמירה נכשלה" };
+                }
+              }}
             />
             <EntityFormDialog
               triggerLabel="הוסף הוצאה"
@@ -53,12 +79,32 @@ function FinancePage() {
               fields={[
                 { name: "category", label: "קטגוריה", type: "select", required: true, options: ["שכר ותפעול", "הסעות", "קייטרינג", "ציוד", "פרסום ושיווק", "אחר"] },
                 { name: "amount", label: "סכום (₪)", type: "number", required: true },
-                { name: "project", label: "פרויקט", type: "select", required: true, options: ["כללי", "קייטנת קיץ", "סדנת העצמה לנשים", "חירום ושיקום", "מועדון נוער"] },
-                { name: "supplier", label: "ספק", placeholder: "שם הספק" },
+                { name: "project", label: "פרויקט", type: "select", required: true, options: [GENERAL_PROJECT_EXPENSE, ...(projects ?? []).map((p) => p.name)] },
+                { name: "supplier", label: "ספק", type: "select", options: supplierOptions },
                 { name: "date", label: "תאריך", type: "date", required: true },
-                { name: "status", label: "סטטוס", type: "select", options: ["שולם", "ממתין", "מאושר"] },
+                { name: "status", label: "סטטוס", type: "select", options: ["שולם", "ממתין", "חלקי"] },
                 { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
               ]}
+              onCreate={async (v) => {
+                const project = (projects ?? []).find((p) => p.name === v.project);
+                const supplier = (suppliers ?? []).find((s) => s.name === v.supplier);
+                try {
+                  await createExpense.mutateAsync({
+                    category: v.category,
+                    amount: Number(v.amount) || 0,
+                    date: v.date,
+                    supplierId: supplier?.id,
+                    supplier: v.supplier || "",
+                    projectId: project?.id,
+                    project: v.project || GENERAL_PROJECT_EXPENSE,
+                    status: v.status || "ממתין",
+                    notes: v.notes || undefined,
+                  });
+                  return { ok: true };
+                } catch (err) {
+                  return { ok: false, error: err instanceof Error ? err.message : "השמירה נכשלה" };
+                }
+              }}
             />
           </div>
         }
@@ -110,7 +156,7 @@ function FinancePage() {
               <tr className="text-right"><th className="py-2">מקור</th><th className="py-2">סכום</th><th className="py-2">תאריך</th><th className="py-2">פעולות</th></tr>
             </thead>
             <tbody>
-              {income.map((i) => (
+              {(income ?? []).map((i) => (
                 <tr key={i.id} className="border-t border-border">
                   <td className="py-3">{i.source}</td>
                   <td className="py-3 font-semibold">₪{i.amount.toLocaleString()}</td>
@@ -128,7 +174,7 @@ function FinancePage() {
               <tr className="text-right"><th className="py-2">קטגוריה</th><th className="py-2">פרויקט</th><th className="py-2">סכום</th><th className="py-2">סטטוס</th><th className="py-2">פעולות</th></tr>
             </thead>
             <tbody>
-              {expenses.map((e) => (
+              {(expenses ?? []).map((e) => (
                 <tr key={e.id} className="border-t border-border">
                   <td className="py-3">{e.category}</td>
                   <td className="py-3 text-muted-foreground">{e.project}</td>

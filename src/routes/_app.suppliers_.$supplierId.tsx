@@ -18,7 +18,6 @@ import { MiniStat, SectionCard, EmptyState, RecordNotFound, Timeline, type Timel
 import { projects } from "@/lib/mock-data";
 import { useSupplier } from "@/lib/queries/suppliers";
 import { SupplierEditButton } from "@/components/module-edit-dialogs";
-import { ChangeHistory } from "@/components/change-history";
 import { daysBetween, isOverdue } from "@/lib/crm-seed";
 import { selectSupplierBundle, useStore } from "@/lib/store";
 import { toast } from "sonner";

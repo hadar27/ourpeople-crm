@@ -3,8 +3,7 @@ import { Loader2 } from "lucide-react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
-import type { SupplierRecord } from "@/lib/records-store";
-import { useSuppliers, useCreateSupplier } from "@/lib/queries/suppliers";
+import { useSuppliers, useCreateSupplier, type SupplierRecord } from "@/lib/queries/suppliers";
 import { SupplierEditButton } from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/suppliers")({

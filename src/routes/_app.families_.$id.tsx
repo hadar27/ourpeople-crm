@@ -18,7 +18,6 @@ import {
 } from "@/lib/store";
 import type { AssistanceNeed, AssistanceRecord, FamilyMember } from "@/lib/crm-types";
 import { FamilyEditButton } from "@/components/module-edit-dialogs";
-import { ChangeHistory } from "@/components/change-history";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/families_/$id")({
@@ -153,8 +152,6 @@ function FamilyProfile() {
           </div>
         )}
       </div>
-
-      <ChangeHistory entityId={family.id} className="mb-6" />
 
       <Tabs defaultValue="aid" dir="rtl">
         <TabsList className="mb-4 flex-wrap h-auto">

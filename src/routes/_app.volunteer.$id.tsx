@@ -1,11 +1,10 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { ArrowRight, Clock, Award } from "lucide-react";
+import { ArrowRight, Clock, Award, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/page-header";
 import { projects } from "@/lib/mock-data";
-import { useRecord } from "@/lib/records-store";
+import { useVolunteer } from "@/lib/queries/volunteers";
 import { VolunteerEditButton } from "@/components/module-edit-dialogs";
-import { ChangeHistory } from "@/components/change-history";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/volunteer/$id")({
@@ -14,8 +13,9 @@ export const Route = createFileRoute("/_app/volunteer/$id")({
 
 function VolunteerDetail() {
   const { id } = useParams({ from: "/_app/volunteer/$id" });
-  const v = useRecord("volunteers", id);
-  if (!v) return <div className="card-elevated p-8 text-center">מתנדב לא נמצא. <Link to="/volunteers" className="text-brand">חזרה</Link></div>;
+  const { data: v, isLoading, isError } = useVolunteer(id);
+  if (isLoading) return <div className="card-elevated p-8 text-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin inline-block" /></div>;
+  if (isError || !v) return <div className="card-elevated p-8 text-center">מתנדב לא נמצא. <Link to="/volunteers" className="text-brand">חזרה</Link></div>;
   const project = projects.find((p) => p.name === v.project || v.project.includes(p.name.split(" ")[0]));
 
   return (
@@ -69,10 +69,6 @@ function VolunteerDetail() {
             <div className="text-base font-bold mt-1">{v.status}</div>
           </div>
         </div>
-      </div>
-
-      <div className="mb-6">
-        <ChangeHistory entityId={v.id} />
       </div>
 
       <div className="card-elevated p-5">

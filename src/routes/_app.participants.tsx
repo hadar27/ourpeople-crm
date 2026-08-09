@@ -2,9 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
-import { CalendarClock, CreditCard, UserPlus, FileWarning, Globe2, QrCode, Sparkles, Database, Upload, Users as UsersIcon } from "lucide-react";
-import { activitiesCatalog, type RegistrationSource } from "@/lib/mock-data";
-import { useCollection, type ParticipantRecord } from "@/lib/records-store";
+import { CalendarClock, CreditCard, UserPlus, FileWarning, Globe2, QrCode, Sparkles, Database, Upload, Users as UsersIcon, Loader2 } from "lucide-react";
+import { useActivities } from "@/lib/queries/activities";
+import {
+  useParticipants,
+  useCreateParticipant,
+  type ParticipantRecord,
+  type RegistrationSource,
+} from "@/lib/queries/participants";
 import { ParticipantEditButton } from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/participants")({
@@ -50,15 +55,19 @@ const columns: Column<ParticipantRecord>[] = [
 ];
 
 function ParticipantsPage() {
-  const participants = useCollection("participants");
-  // Operational KPIs derived from data
-  const thisWeek = participants.length; // mock "upcoming this week"
-  const needPayment = participants.filter((p) => p.paymentStatus === "לא שולם" || p.paymentStatus === "שולם חלקית").length;
-  const recent = participants.filter((p) => new Date(p.registrationDate) >= new Date("2025-05-18")).length;
-  const missingDocs = participants.filter((p) => !p.documentsComplete).length;
-  const newImmigrants = participants.filter((p) => p.isNewImmigrant).length;
+  const { data: participants, isLoading, isError, refetch } = useParticipants();
+  const { data: activities } = useActivities();
+  const createParticipant = useCreateParticipant();
 
-  const activityNames = activitiesCatalog.map((a) => a.name);
+  // Operational KPIs derived from data
+  const list = participants ?? [];
+  const thisWeek = list.length; // mock "upcoming this week"
+  const needPayment = list.filter((p) => p.paymentStatus === "לא שולם" || p.paymentStatus === "שולם חלקית").length;
+  const recent = list.filter((p) => new Date(p.registrationDate) >= new Date("2025-05-18")).length;
+  const missingDocs = list.filter((p) => !p.documentsComplete).length;
+  const newImmigrants = list.filter((p) => p.isNewImmigrant).length;
+
+  const activityNames = (activities ?? []).map((a) => a.name);
 
   return (
     <>
@@ -73,7 +82,7 @@ function ParticipantsPage() {
             successMessage="המשתתף נרשם בהצלחה במערכת"
             customValidate={(v) => {
               const activity = v["activity"];
-              const def = activitiesCatalog.find((a) => a.name === activity);
+              const def = (activities ?? []).find((a) => a.name === activity);
               if (def?.type === "בתשלום") {
                 const pay = v["paymentStatus"];
                 if (!pay || pay === "לא שולם" || pay === "שולם חלקית") {
@@ -94,25 +103,63 @@ function ParticipantsPage() {
               { name: "immigrationYear", label: "שנת עלייה (אם רלוונטי)", type: "number", placeholder: "לדוגמה: 2022" },
               { name: "notes", label: "הערות", type: "textarea", colSpan: 2, placeholder: "הערות נוספות..." },
             ]}
+            onCreate={async (v) => {
+              const def = (activities ?? []).find((a) => a.name === v.activity);
+              if (!def) return { ok: false, error: "פעילות לא תקינה" };
+              try {
+                await createParticipant.mutateAsync({
+                  name: v.fullName,
+                  idNumber: v.idNumber,
+                  phone: v.phone,
+                  email: v.email || undefined,
+                  activityId: def.id,
+                  activityType: def.type,
+                  source: v.source as RegistrationSource,
+                  paymentStatus: v.paymentStatus as ParticipantRecord["paymentStatus"],
+                  status: "ממתין לאישור",
+                  registrationDate: new Date().toISOString().slice(0, 10),
+                  documentsComplete: v.documents === "הושלמו",
+                  immigrationYear: v.immigrationYear ? Number(v.immigrationYear) : undefined,
+                  isNewImmigrant: !!v.immigrationYear,
+                  notes: v.notes || undefined,
+                });
+                return { ok: true };
+              } catch (err) {
+                return { ok: false, error: err instanceof Error ? err.message : "השמירה נכשלה" };
+              }
+            }}
           />
         }
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
-        <Op icon={<CalendarClock className="h-4 w-4" />} label="פעילויות בשבוע הקרוב" value={String(thisWeek)} tone="brand" />
-        <Op icon={<CreditCard className="h-4 w-4" />} label="ממתינים להשלמת תשלום" value={String(needPayment)} tone="warn" />
-        <Op icon={<UserPlus className="h-4 w-4" />} label="נרשמו לאחרונה" value={String(recent)} />
-        <Op icon={<FileWarning className="h-4 w-4" />} label="חסרים מסמכים" value={String(missingDocs)} tone="warn" />
-        <Op icon={<UsersIcon className="h-4 w-4" />} label="עולים חדשים החודש" value={String(newImmigrants)} />
-      </div>
+      {isLoading ? (
+        <div className="card-elevated flex items-center justify-center gap-2 p-16 text-muted-foreground mb-6">
+          <Loader2 className="h-5 w-5 animate-spin" /> טוען נרשמים...
+        </div>
+      ) : isError ? (
+        <div className="card-elevated flex flex-col items-center gap-3 p-16 text-center mb-6">
+          <div className="text-sm text-muted-foreground">אירעה שגיאה בטעינת הנרשמים.</div>
+          <button onClick={() => refetch()} className="text-sm text-brand hover:underline">נסה שוב</button>
+        </div>
+      ) : (
+      <>
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
+          <Op icon={<CalendarClock className="h-4 w-4" />} label="פעילויות בשבוע הקרוב" value={String(thisWeek)} tone="brand" />
+          <Op icon={<CreditCard className="h-4 w-4" />} label="ממתינים להשלמת תשלום" value={String(needPayment)} tone="warn" />
+          <Op icon={<UserPlus className="h-4 w-4" />} label="נרשמו לאחרונה" value={String(recent)} />
+          <Op icon={<FileWarning className="h-4 w-4" />} label="חסרים מסמכים" value={String(missingDocs)} tone="warn" />
+          <Op icon={<UsersIcon className="h-4 w-4" />} label="עולים חדשים החודש" value={String(newImmigrants)} />
+        </div>
 
-      <DataTable
-        rows={participants}
-        columns={columns}
-        searchKeys={["name", "idNumber", "phone", "activity"]}
-        getRowHref={(r) => `/participants/${r.id}`}
-        rowActions={(r) => <ParticipantEditButton record={r} />}
-      />
+        <DataTable
+          rows={list}
+          columns={columns}
+          searchKeys={["name", "idNumber", "phone", "activity"]}
+          getRowHref={(r) => `/participants/${r.id}`}
+          rowActions={(r) => <ParticipantEditButton record={r} />}
+        />
+      </>
+      )}
     </>
   );
 }

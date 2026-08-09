@@ -13,10 +13,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/page-header";
 import { MiniStat, SectionCard, EmptyState, RecordNotFound } from "@/components/detail-kit";
-import { activitiesCatalog, projects } from "@/lib/mock-data";
-import { useRecord } from "@/lib/records-store";
+import { projects } from "@/lib/mock-data";
+import { useParticipant } from "@/lib/queries/participants";
 import { ParticipantEditButton } from "@/components/module-edit-dialogs";
-import { ChangeHistory } from "@/components/change-history";
+import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_app/participants_/$participantId")({
   component: ParticipantProfile,
@@ -32,7 +32,24 @@ export const Route = createFileRoute("/_app/participants_/$participantId")({
 
 function ParticipantProfile() {
   const { participantId } = useParams({ from: "/_app/participants_/$participantId" });
-  const participant = useRecord("participants", participantId);
+  const { data: participant, isLoading, isError, refetch } = useParticipant(participantId);
+
+  if (isLoading) {
+    return (
+      <div className="card-elevated flex items-center justify-center gap-2 p-16 text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin" /> טוען...
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="card-elevated flex flex-col items-center gap-3 p-16 text-center">
+        <div className="text-sm text-muted-foreground">אירעה שגיאה בטעינת הנרשם.</div>
+        <button onClick={() => refetch()} className="text-sm text-brand hover:underline">נסה שוב</button>
+      </div>
+    );
+  }
 
   if (!participant) {
     return (
@@ -45,8 +62,7 @@ function ParticipantProfile() {
     );
   }
 
-  const activityDef = activitiesCatalog.find((a) => a.name === participant.activity);
-  const price = activityDef?.price ?? 0;
+  const price = participant.activityPrice;
   const relatedProject = projects.find((p) => p.name.includes(participant.activity));
 
   const paidFully = participant.paymentStatus === "שולם" || participant.paymentStatus === "לא נדרש תשלום";
@@ -88,10 +104,6 @@ function ParticipantProfile() {
           value={participant.documentsComplete ? "הושלמו" : "חסרים"}
           tone={participant.documentsComplete ? "good" : "warn"}
         />
-      </div>
-
-      <div className="mb-6">
-        <ChangeHistory entityId={participant.id} />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
