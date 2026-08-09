@@ -2,7 +2,7 @@
 
 Tracking the migration of this app off its in-memory mock stores (`src/lib/records-store.ts`, `src/lib/store.ts`) onto real Supabase tables. Architecture: direct-from-browser `supabase-js` client (no custom backend), RLS with `to authenticated` policies, explicit `GRANT`s on every table, react-query data-access hooks in `src/lib/queries/*.ts` mirroring the pattern established by `queries/suppliers.ts`.
 
-Full schema lives in `supabase/migrations/0001_full_migration.sql`. Design rationale and phase plan: `.claude/plans/binary-weaving-hammock.md`.
+Full schema lives in `supabase/migrations/0001_full_migration.sql`.
 
 ## Done
 
@@ -14,11 +14,13 @@ Full schema lives in `supabase/migrations/0001_full_migration.sql`. Design ratio
 
 **Phase 1 — core entities** (`queries/{activities,donors,projects,participants,volunteers,users,donations,incomes,expenses}.ts`): all 8 records-store.ts collections migrated to real CRUD, including previously-broken "add" dialogs that were no-op stubs. New `activities` table replaces the old free-text activity fields. `records-store.ts` deleted.
 
-**Phase 2 — relational entities** (`queries/{families,family-members,assistance,interactions,follow-ups,allocations}.ts`): families, family members, assistance requests, donor interactions, follow-up tasks, and donation↔project allocations (the app's only hard-delete path) all migrated. `store.ts` is now scoped down to exactly its Phase 3 remainder.
+**Phase 2 — relational entities** (`queries/{families,family-members,assistance,interactions,follow-ups,allocations}.ts`): families, family members, assistance requests, donor interactions, follow-up tasks, and donation↔project allocations (the app's only hard-delete path) all migrated.
 
-Typecheck and lint are clean as of this point.
+**Phase 3 — read-only migration** (`queries/{contracts,purchase-orders,supplier-invoices,supplier-payments,documents,activity-log,tasks,project-expenses,project-phases}.ts`): contracts, purchase orders, supplier invoices/payments and the activity/document timelines on the supplier and family detail pages, the Kanban tasks board (`_app.projects.tsx`, `_app.project.$id.tsx`), and project expenses/Gantt phases all now read live Supabase data instead of `store.ts`'s bundles or `mock-data.ts` maps. No new create/edit UI was added for these — read-only, as scoped. Project/supplier name labels on these records are resolved via embedded Supabase joins (e.g. `*, projects(name)`) rather than mock-data lookups.
 
-**Git status**: Phase 1 is committed (`phase1`). **Phase 2 changes are uncommitted** — commit before further work if you want it preserved.
+**Phase 4 — cleanup**: `business-rules.ts`'s five `getSnapshot()` reads (interactions/followUps/families/assistance/allocations) now read the static `crm-seed.ts` arrays directly, freezing them at seed values. `src/lib/store.ts` deleted (no remaining dependents). Pruned from `src/lib/mock-data.ts`: `Participant`/`participants`, `Donor`/`donors`, `Task`/`tasks`, `ProjectExpenseLine`/`projectExpenses`, `GanttPhase`/`projectPhases`, `activitiesCatalog`, `isValidIsraeliId`/`isValidPhone` — all fully superseded and unreferenced. Kept: `projects`/`volunteers`/`donations`/`suppliers` (still read statically by `business-rules.ts`), `users` (mocked signed-in user in `permissions.ts`), `alerts`/`monthlyDonations`/`budgetVsActual`/`projectMix`/`projectParticipantCounts`/`permissionsMatrix`/`reportsCatalog` (already-deferred, per below), plus the `Supplier`/`Alert`/`User` types still referenced elsewhere.
+
+Typecheck (`tsc --noEmit`) is clean. `npm run lint` reports pre-existing `prettier/prettier` formatting debt across the whole repo (including files untouched by this migration) — not introduced by this work and out of scope to fix here. `npm run build` fails in this sandbox on a pre-existing Node.js version mismatch (Node 20.9 vs. Vite's required 20.19+/22.12+), also unrelated to this migration.
 
 ## Deferred by explicit decision (not a gap to fix later without discussion)
 
@@ -26,15 +28,4 @@ Dashboard charts, the reports page, and `business-rules.ts`'s alert engine inten
 
 ## Next steps
 
-**Phase 3 — read-only migration** (no new create/edit UI, just move data + swap reads):
-- Contracts, purchase orders, supplier invoices/payments — bundle used by `_app.suppliers_.$supplierId.tsx` via `store.ts`'s `selectSupplierBundle`.
-- Documents, activity log — used by both the supplier detail page and `_app.families_.$id.tsx`'s documents tab.
-- Kanban tasks board — `_app.projects.tsx`, currently reading `tasks` from `mock-data.ts`.
-- Project expenses / Gantt phases — `_app.project.$id.tsx`, currently reading `projectExpenses`/`projectPhases` maps from `mock-data.ts`.
-
-**Phase 4 — cleanup** (after Phase 3):
-- Repoint `business-rules.ts`'s five live `getSnapshot()` reads (interactions/followUps/families/assistance/allocations) at the static `crm-seed.ts` arrays instead — freezes them at seed values (matching the already-accepted staleness elsewhere) so `store.ts` has no remaining dependents.
-- Delete `src/lib/store.ts`.
-- Prune the now-superseded seed arrays from `src/lib/mock-data.ts` (participants, volunteers, donors, donations, projects, users, tasks, suppliers) — but keep `projects`/`volunteers`/`donations`/`suppliers` if `business-rules.ts` still reads them statically, plus everything already deferred (`alerts`, `monthlyDonations`, `budgetVsActual`, `projectMix`, `projectParticipantCounts`, `permissionsMatrix`, `reportsCatalog`) and any validators/types still in use.
-
-Recommend starting a fresh chat for Phase 3, pointing it at this file plus the plan file for context.
+None outstanding from this migration plan — all four phases are complete. Any further work (dashboard/reports live-wiring, upgrading the sandbox Node/Vite versions) would be a new, separately-scoped effort.

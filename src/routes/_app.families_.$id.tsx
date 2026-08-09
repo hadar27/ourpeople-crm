@@ -7,11 +7,11 @@ import { MiniStat, SectionCard, EmptyState, Timeline, type TimelineItem } from "
 import { FormDialog } from "@/components/form-dialog";
 import { projects } from "@/lib/mock-data";
 import { isOverdue, TODAY } from "@/lib/crm-seed";
-import { selectFamilyBundle, useStore } from "@/lib/store";
 import { useFamily } from "@/lib/queries/families";
 import { useFamilyMembers, useCreateFamilyMember } from "@/lib/queries/family-members";
 import { useAssistanceForFamily, useCreateAssistance, useSetAssistanceStatus } from "@/lib/queries/assistance";
 import { useFollowUpsForEntity, useCompleteFollowUp } from "@/lib/queries/follow-ups";
+import { useDocumentsForEntity } from "@/lib/queries/documents";
 import type { AssistanceNeed } from "@/lib/crm-types";
 import { FamilyEditButton } from "@/components/module-edit-dialogs";
 import { toast } from "sonner";
@@ -28,7 +28,7 @@ function FamilyProfile() {
   const { data: members } = useFamilyMembers(id);
   const { data: assistance } = useAssistanceForFamily(id);
   const { data: followUps } = useFollowUpsForEntity(id);
-  const bundle = useStore(selectFamilyBundle(id));
+  const { data: documentsData } = useDocumentsForEntity("family", id);
   const createFamilyMember = useCreateFamilyMember();
   const createAssistance = useCreateAssistance();
   const setAssistanceStatus = useSetAssistanceStatus();
@@ -53,7 +53,7 @@ function FamilyProfile() {
     );
   }
 
-  const { documents } = bundle;
+  const documents = documentsData ?? [];
   const membersList = members ?? [];
   const assistanceList = assistance ?? [];
   const followUpsList = followUps ?? [];

@@ -4,8 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/page-header";
 import { GanttChart } from "@/components/gantt-chart";
-import { tasks, donations, volunteers, projectExpenses, projectPhases, projectParticipantCounts } from "@/lib/mock-data";
+import { donations, volunteers, projectParticipantCounts } from "@/lib/mock-data";
 import { useProject } from "@/lib/queries/projects";
+import { useTasksForProject } from "@/lib/queries/tasks";
+import { useProjectExpenses } from "@/lib/queries/project-expenses";
+import { useProjectPhases } from "@/lib/queries/project-phases";
 import { ProjectEditButton } from "@/components/module-edit-dialogs";
 import { toast } from "sonner";
 
@@ -17,6 +20,9 @@ function ProjectDetail() {
   const { id } = useParams({ from: "/_app/project/$id" });
   const navigate = useNavigate();
   const { data: project, isLoading, isError, refetch } = useProject(id);
+  const { data: tasksData } = useTasksForProject(project?.id);
+  const { data: expensesData } = useProjectExpenses(project?.id);
+  const { data: phasesData } = useProjectPhases(project?.id);
 
   if (isLoading) {
     return (
@@ -48,11 +54,11 @@ function ProjectDetail() {
     );
   }
 
-  const projectTasks = tasks.filter((t) => t.project === project.name);
+  const projectTasks = tasksData ?? [];
   const projectDonations = donations.filter((d) => d.project === project.name || d.project.includes(project.name.split(" ")[0]));
   const projectVolunteers = volunteers.filter((v) => v.project === project.name || v.project.includes(project.name.split(" ")[0]));
-  const expenses = projectExpenses[project.id] ?? [];
-  const phases = projectPhases[project.id] ?? [];
+  const expenses = expensesData ?? [];
+  const phases = phasesData ?? [];
   const participantsCount = projectParticipantCounts[project.id] ?? 0;
   const totalDonations = projectDonations.reduce((s, d) => s + d.amount, 0);
   const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);

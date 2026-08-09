@@ -15,26 +15,30 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/page-header";
 import { MiniStat, SectionCard, EmptyState, RecordNotFound, Timeline, type TimelineItem } from "@/components/detail-kit";
-import { projects } from "@/lib/mock-data";
 import { useSupplier } from "@/lib/queries/suppliers";
+import { useContractsForSupplier } from "@/lib/queries/contracts";
+import { usePurchaseOrdersForSupplier } from "@/lib/queries/purchase-orders";
+import { useSupplierInvoicesForSupplier } from "@/lib/queries/supplier-invoices";
+import { useSupplierPaymentsForSupplier } from "@/lib/queries/supplier-payments";
+import { useDocumentsForEntity } from "@/lib/queries/documents";
+import { useActivityLogForEntity } from "@/lib/queries/activity-log";
 import { SupplierEditButton } from "@/components/module-edit-dialogs";
 import { daysBetween, isOverdue } from "@/lib/crm-seed";
-import { selectSupplierBundle, useStore } from "@/lib/store";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/suppliers_/$supplierId")({
   component: SupplierProfile,
 });
 
-function projectName(id?: string) {
-  if (!id) return "—";
-  return projects.find((p) => p.id === id)?.name ?? id;
-}
-
 function SupplierProfile() {
   const { supplierId: id } = useParams({ from: "/_app/suppliers_/$supplierId" });
   const { data: supplier, isLoading, isError, refetch } = useSupplier(id);
-  const bundle = useStore(selectSupplierBundle(id));
+  const { data: contractsData } = useContractsForSupplier(id);
+  const { data: purchaseOrdersData } = usePurchaseOrdersForSupplier(id);
+  const { data: invoicesData } = useSupplierInvoicesForSupplier(id);
+  const { data: paymentsData } = useSupplierPaymentsForSupplier(id);
+  const { data: documentsData } = useDocumentsForEntity("supplier", id);
+  const { data: activityData } = useActivityLogForEntity("supplier", id);
 
   if (isLoading) {
     return (
@@ -66,7 +70,12 @@ function SupplierProfile() {
     );
   }
 
-  const { contracts, purchaseOrders, invoices, payments, documents, activity } = bundle;
+  const contracts = contractsData ?? [];
+  const purchaseOrders = purchaseOrdersData ?? [];
+  const invoices = invoicesData ?? [];
+  const payments = paymentsData ?? [];
+  const documents = documentsData ?? [];
+  const activity = activityData ?? [];
   const activeContracts = contracts.filter((c) => c.status === "בתוקף");
   const contractValue = activeContracts.reduce((s, c) => s + c.value, 0);
   const invoiced = invoices.reduce((s, i) => s + i.amount, 0);
@@ -164,7 +173,7 @@ function SupplierProfile() {
                   <span className="font-medium">{c.title}</span>,
                   c.projectId ? (
                     <Link to="/project/$id" params={{ id: c.projectId }} className="text-brand hover:underline">
-                      {projectName(c.projectId)}
+                      {c.projectName ?? c.projectId}
                     </Link>
                   ) : (
                     "כללי"
@@ -190,7 +199,7 @@ function SupplierProfile() {
                 rows={purchaseOrders.map((p) => [
                   p.id,
                   <span className="font-medium">{p.description}</span>,
-                  projectName(p.projectId),
+                  p.projectName ?? "—",
                   <span className="font-semibold tabular-nums">₪{p.amount.toLocaleString()}</span>,
                   <span className="text-muted-foreground">{p.date}</span>,
                   <StatusBadge value={p.status} />,
@@ -211,7 +220,7 @@ function SupplierProfile() {
                   const late = i.status !== "שולם" && isOverdue(i.dueDate);
                   return [
                     i.id,
-                    projectName(i.projectId),
+                    i.projectName ?? "—",
                     <span className="font-semibold tabular-nums">₪{i.amount.toLocaleString()}</span>,
                     <span className="text-muted-foreground">{i.issueDate}</span>,
                     <span className={late ? "text-rose-600 font-medium" : "text-muted-foreground"}>{i.dueDate}</span>,

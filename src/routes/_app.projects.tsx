@@ -3,8 +3,8 @@ import { Users, Calendar, Loader2 } from "lucide-react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { Progress } from "@/components/ui/progress";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
-import { tasks } from "@/lib/mock-data";
 import { useProjects, useCreateProject } from "@/lib/queries/projects";
+import { useTasks } from "@/lib/queries/tasks";
 
 export const Route = createFileRoute("/_app/projects")({
   component: ProjectsPage,
@@ -12,6 +12,8 @@ export const Route = createFileRoute("/_app/projects")({
 
 function ProjectsPage() {
   const { data: projects, isLoading, isError, refetch } = useProjects();
+  const { data: tasksData } = useTasks();
+  const tasks = tasksData ?? [];
   const createProject = useCreateProject();
 
   return (

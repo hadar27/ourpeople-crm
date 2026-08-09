@@ -1,48 +1,6 @@
 // Mock data for the Our People nonprofit ERP/CRM platform.
 // All data is in-memory only — no backend integration yet.
 
-export type RegistrationSource = "טופס דיגיטלי" | "QR" | "אתר" | "צוות פנימי" | "ייבוא Excel" | "API";
-export type RegistrationStatus = "מאושר" | "ממתין לתשלום" | "ממתין לאישור" | "טיוטה";
-export type ParticipantPayment = "שולם" | "שולם חלקית" | "לא שולם" | "לא נדרש תשלום";
-
-export type Participant = {
-  id: string;
-  name: string;
-  idNumber: string;
-  phone: string;
-  activity: string;
-  activityType: "חינמית" | "בתשלום";
-  status: RegistrationStatus;
-  paymentStatus: ParticipantPayment;
-  source: RegistrationSource;
-  registrationDate: string;
-  documentsComplete: boolean;
-  isNewImmigrant?: boolean;
-  immigrationYear?: number;
-};
-
-export const activitiesCatalog: { name: string; type: "חינמית" | "בתשלום"; price: number }[] = [
-  { name: "קייטנת קיץ", type: "בתשלום", price: 850 },
-  { name: "סדנת העצמה נשים", type: "בתשלום", price: 300 },
-  { name: "ליווי משפחות", type: "חינמית", price: 0 },
-  { name: "תכנית נוער", type: "בתשלום", price: 200 },
-  { name: "סיוע למשפחות עולים", type: "חינמית", price: 0 },
-  { name: "חירום ושיקום", type: "חינמית", price: 0 },
-  { name: "מועדון נוער", type: "חינמית", price: 0 },
-];
-
-export const participants: Participant[] = [
-  { id: "P-1001", name: "מירב כהן", idNumber: "302145678", phone: "0501234567", activity: "קייטנת קיץ", activityType: "בתשלום", status: "מאושר", paymentStatus: "שולם", source: "טופס דיגיטלי", registrationDate: "2025-05-12", documentsComplete: true },
-  { id: "P-1002", name: "אחמד עבדאללה", idNumber: "315678234", phone: "0527788991", activity: "סדנת העצמה נשים", activityType: "בתשלום", status: "ממתין לתשלום", paymentStatus: "שולם חלקית", source: "QR", registrationDate: "2025-05-18", documentsComplete: true },
-  { id: "P-1003", name: "נטלי לוי", idNumber: "208934512", phone: "0541239876", activity: "ליווי משפחות", activityType: "חינמית", status: "ממתין לאישור", paymentStatus: "לא נדרש תשלום", source: "אתר", registrationDate: "2025-05-20", documentsComplete: false },
-  { id: "P-1004", name: "יוסי בן דוד", idNumber: "311223344", phone: "0509988776", activity: "תכנית נוער", activityType: "בתשלום", status: "מאושר", paymentStatus: "שולם", source: "צוות פנימי", registrationDate: "2025-04-30", documentsComplete: true },
-  { id: "P-1005", name: "סוזן מרים", idNumber: "327654321", phone: "0533344556", activity: "סיוע למשפחות עולים", activityType: "חינמית", status: "ממתין לאישור", paymentStatus: "לא נדרש תשלום", source: "ייבוא Excel", registrationDate: "2025-05-05", documentsComplete: false, isNewImmigrant: true, immigrationYear: 2022 },
-  { id: "P-1006", name: "דנה אברמוב", idNumber: "318877665", phone: "0521122334", activity: "קייטנת קיץ", activityType: "בתשלום", status: "מאושר", paymentStatus: "שולם", source: "טופס דיגיטלי", registrationDate: "2025-05-15", documentsComplete: true, isNewImmigrant: true, immigrationYear: 2018 },
-  { id: "P-1007", name: "מוחמד חליל", idNumber: "330011223", phone: "0544455667", activity: "חירום ושיקום", activityType: "חינמית", status: "מאושר", paymentStatus: "לא נדרש תשלום", source: "API", registrationDate: "2025-05-21", documentsComplete: true },
-  { id: "P-1008", name: "רחל פרידמן", idNumber: "298877665", phone: "0507788990", activity: "תכנית נוער", activityType: "בתשלום", status: "ממתין לתשלום", paymentStatus: "לא שולם", source: "טופס דיגיטלי", registrationDate: "2025-05-22", documentsComplete: false },
-  { id: "P-1009", name: "אלינור בקר", idNumber: "320099887", phone: "0508877665", activity: "קייטנת קיץ", activityType: "בתשלום", status: "מאושר", paymentStatus: "שולם", source: "QR", registrationDate: "2025-05-23", documentsComplete: true, isNewImmigrant: true, immigrationYear: 2023 },
-];
-
 export type Volunteer = {
   id: string;
   name: string;
@@ -60,25 +18,6 @@ export const volunteers: Volunteer[] = [
   { id: "V-204", name: "נועה ברק", availability: "בקרים", project: "סדנת העצמה נשים", hours: 67, status: "פעיל", skills: ["פסיכולוגיה", "אנגלית"] },
   { id: "V-205", name: "תומר רז", availability: "גמיש", project: "תכנית נוער", hours: 15, status: "בהפסקה", skills: ["מוזיקה"] },
   { id: "V-206", name: "פאדי נסר", availability: "ערבים", project: "סיוע לעולים", hours: 92, status: "פעיל", skills: ["תרגום", "ערבית", "רוסית"] },
-];
-
-export type Donor = {
-  id: string;
-  name: string;
-  type: "פרטי" | "תאגיד" | "קרן";
-  totalDonated: number;
-  lastDonation: string;
-  interests: string[];
-  status: "פעיל" | "לא פעיל";
-};
-
-export const donors: Donor[] = [
-  { id: "D-501", name: 'קרן הירש לצדקה', type: "קרן", totalDonated: 250000, lastDonation: "2025-04-12", interests: ["נוער", "חינוך"], status: "פעיל" },
-  { id: "D-502", name: "חברת טכנולגיה בע״מ", type: "תאגיד", totalDonated: 180000, lastDonation: "2025-03-28", interests: ["העצמה", "תעסוקה"], status: "פעיל" },
-  { id: "D-503", name: "משפחת לוינסון", type: "פרטי", totalDonated: 42000, lastDonation: "2025-05-02", interests: ["משפחות"], status: "פעיל" },
-  { id: "D-504", name: "אבי גולדמן", type: "פרטי", totalDonated: 15000, lastDonation: "2024-12-15", interests: ["חירום"], status: "פעיל" },
-  { id: "D-505", name: 'קרן "אור"', type: "קרן", totalDonated: 320000, lastDonation: "2025-05-10", interests: ["נשים", "עולים"], status: "פעיל" },
-  { id: "D-506", name: "מירי בלום", type: "פרטי", totalDonated: 5400, lastDonation: "2024-11-04", interests: ["נוער"], status: "לא פעיל" },
 ];
 
 export type Donation = {
@@ -119,17 +58,6 @@ export const projects: Project[] = [
   { id: "PR-04", name: "סדנת העצמה לנשים", status: "פעיל", budget: 95000, spent: 38000, progress: 40, volunteers: 8, manager: "נועה ברק" },
   { id: "PR-05", name: "חירום ושיקום קהילתי", status: "בתכנון", budget: 410000, spent: 12000, progress: 5, volunteers: 6, manager: "דניאל מזרחי" },
   { id: "PR-06", name: "מועדונית אחה״צ", status: "הסתיים", budget: 140000, spent: 138000, progress: 100, volunteers: 14, manager: "ליאת אזולאי" },
-];
-
-export type Task = { id: string; title: string; project: string; assignee: string; column: "todo" | "doing" | "done" };
-export const tasks: Task[] = [
-  { id: "T-1", title: "אישור תקציב קייטנה", project: "קייטנת קיץ 2025", assignee: "ליאת אזולאי", column: "todo" },
-  { id: "T-2", title: "גיוס 5 מתנדבים נוספים", project: "תכנית נוער שכונתית", assignee: "אורן שטרן", column: "todo" },
-  { id: "T-3", title: "תיאום הסעות", project: "קייטנת קיץ 2025", assignee: "דניאל מזרחי", column: "doing" },
-  { id: "T-4", title: "סדנה ראשונה", project: "סדנת העצמה לנשים", assignee: "נועה ברק", column: "doing" },
-  { id: "T-5", title: "חלוקת ערכות חירום", project: "חירום ושיקום קהילתי", assignee: "פאדי נסר", column: "doing" },
-  { id: "T-6", title: "סיכום רבעון Q1", project: "ליווי משפחות עולים", assignee: "פאדי נסר", column: "done" },
-  { id: "T-7", title: "דוח מתנדבים אפריל", project: "תכנית נוער שכונתית", assignee: "אורן שטרן", column: "done" },
 ];
 
 export type Supplier = {
@@ -224,109 +152,6 @@ export const projectMix = [
   { name: "חירום", value: 13 },
   { name: "עולים", value: 10 },
 ];
-
-// Israeli ID validation (9 digits)
-export function isValidIsraeliId(value: string): boolean {
-  return /^\d{9}$/.test(value);
-}
-export function isValidPhone(value: string): boolean {
-  return /^\d{10}$/.test(value);
-}
-
-// ---------- Project financial breakdown ----------
-export type ProjectExpenseLine = {
-  category: string;
-  supplier?: string;
-  amount: number;
-  date: string;
-  status: "שולם" | "ממתין" | "חלקי";
-};
-
-export const projectExpenses: Record<string, ProjectExpenseLine[]> = {
-  "PR-01": [
-    { category: "הסעות", supplier: 'הסעות "דרך"', amount: 25000, date: "2025-05-04", status: "שולם" },
-    { category: "מזון וכיבוד", supplier: "קייטרינג בית חם", amount: 42000, date: "2025-05-10", status: "שולם" },
-    { category: "ציוד פעילות", supplier: "אבי ציוד משרדי", amount: 12000, date: "2025-05-12", status: "ממתין" },
-    { category: "תוכן והדרכה", supplier: "סדנאות חוץ בע״מ", amount: 18500, date: "2025-05-15", status: "שולם" },
-    { category: "דפוס וחומרים", supplier: 'דפוס "טופ"', amount: 8500, date: "2025-05-18", status: "חלקי" },
-    { category: "שכר רכזים", amount: 78000, date: "2025-05-20", status: "שולם" },
-  ],
-  "PR-02": [
-    { category: "ציוד פעילות", supplier: "אבי ציוד משרדי", amount: 9500, date: "2025-04-22", status: "שולם" },
-    { category: "תוכן והדרכה", supplier: "סדנאות חוץ בע״מ", amount: 32000, date: "2025-05-02", status: "שולם" },
-    { category: "מזון", supplier: "קייטרינג בית חם", amount: 14500, date: "2025-05-09", status: "ממתין" },
-    { category: "שכר רכזים", amount: 36000, date: "2025-05-15", status: "שולם" },
-  ],
-  "PR-03": [
-    { category: "סלי מזון", amount: 64000, date: "2025-04-10", status: "שולם" },
-    { category: "שוברי סיוע", amount: 85000, date: "2025-04-25", status: "שולם" },
-    { category: "ליווי מקצועי", supplier: "סדנאות חוץ בע״מ", amount: 28000, date: "2025-05-05", status: "שולם" },
-    { category: "הסעות", supplier: 'הסעות "דרך"', amount: 18000, date: "2025-05-12", status: "ממתין" },
-    { category: "אדמיניסטרציה", amount: 15000, date: "2025-05-18", status: "שולם" },
-  ],
-  "PR-04": [
-    { category: "תוכן והדרכה", supplier: "סדנאות חוץ בע״מ", amount: 22000, date: "2025-05-01", status: "שולם" },
-    { category: "כיבוד", supplier: "קייטרינג בית חם", amount: 6500, date: "2025-05-08", status: "שולם" },
-    { category: "חומרי סדנה", amount: 9500, date: "2025-05-14", status: "ממתין" },
-  ],
-  "PR-05": [
-    { category: "ערכות חירום", amount: 8000, date: "2025-05-10", status: "שולם" },
-    { category: "תיאום ראשוני", amount: 4000, date: "2025-05-14", status: "שולם" },
-  ],
-  "PR-06": [
-    { category: "תפעול שוטף", amount: 138000, date: "2025-03-30", status: "שולם" },
-  ],
-};
-
-// ---------- Gantt / project phases ----------
-export type GanttPhase = {
-  id: string;
-  name: string;
-  owner: string;
-  start: string; // ISO yyyy-mm-dd
-  end: string;
-  progress: number; // 0-100
-  dependsOn?: string;
-  milestone?: boolean;
-};
-
-export const projectPhases: Record<string, GanttPhase[]> = {
-  "PR-01": [
-    { id: "PH-1", name: "תכנון ואפיון", owner: "ליאת אזולאי", start: "2025-03-01", end: "2025-03-25", progress: 100 },
-    { id: "PH-2", name: "גיוס מתנדבים", owner: "אורן שטרן", start: "2025-03-20", end: "2025-04-30", progress: 85, dependsOn: "PH-1" },
-    { id: "PH-3", name: "תיאום ספקים והסעות", owner: "דניאל מזרחי", start: "2025-04-01", end: "2025-05-15", progress: 70, dependsOn: "PH-1" },
-    { id: "PH-4", name: "אישור תקציב", owner: "רונית פרץ", start: "2025-04-10", end: "2025-04-20", progress: 100, milestone: true },
-    { id: "PH-5", name: "ביצוע הקייטנה", owner: "ליאת אזולאי", start: "2025-07-01", end: "2025-08-15", progress: 0, dependsOn: "PH-3" },
-    { id: "PH-6", name: "דוח סיכום", owner: "ליאת אזולאי", start: "2025-08-15", end: "2025-08-30", progress: 0, dependsOn: "PH-5", milestone: true },
-  ],
-  "PR-02": [
-    { id: "PH-1", name: "תכנון", owner: "אורן שטרן", start: "2025-02-15", end: "2025-03-10", progress: 100 },
-    { id: "PH-2", name: "גיוס נוער", owner: "אורן שטרן", start: "2025-03-01", end: "2025-04-15", progress: 90, dependsOn: "PH-1" },
-    { id: "PH-3", name: "מפגשים שבועיים", owner: "תומר רז", start: "2025-04-01", end: "2025-08-01", progress: 45, dependsOn: "PH-2" },
-    { id: "PH-4", name: "סיכום עונה", owner: "אורן שטרן", start: "2025-08-01", end: "2025-08-20", progress: 0, dependsOn: "PH-3", milestone: true },
-  ],
-  "PR-03": [
-    { id: "PH-1", name: "מיפוי משפחות", owner: "פאדי נסר", start: "2025-01-10", end: "2025-02-15", progress: 100 },
-    { id: "PH-2", name: "תיאום סיוע חודשי", owner: "ליאת אזולאי", start: "2025-02-01", end: "2025-07-30", progress: 80, dependsOn: "PH-1" },
-    { id: "PH-3", name: "ליווי מקצועי", owner: "נועה ברק", start: "2025-03-01", end: "2025-08-30", progress: 65, dependsOn: "PH-1" },
-    { id: "PH-4", name: "דוח רבעוני למשרד הקליטה", owner: "רונית פרץ", start: "2025-06-15", end: "2025-07-01", progress: 0, milestone: true },
-  ],
-  "PR-04": [
-    { id: "PH-1", name: "אפיון תכנית", owner: "נועה ברק", start: "2025-03-01", end: "2025-03-20", progress: 100 },
-    { id: "PH-2", name: "גיוס משתתפות", owner: "נועה ברק", start: "2025-03-15", end: "2025-04-30", progress: 75, dependsOn: "PH-1" },
-    { id: "PH-3", name: "מחזור סדנאות", owner: "נועה ברק", start: "2025-05-01", end: "2025-07-15", progress: 30, dependsOn: "PH-2" },
-    { id: "PH-4", name: "אירוע סיום", owner: "נועה ברק", start: "2025-07-20", end: "2025-07-25", progress: 0, dependsOn: "PH-3", milestone: true },
-  ],
-  "PR-05": [
-    { id: "PH-1", name: "מיפוי צרכים", owner: "דניאל מזרחי", start: "2025-05-01", end: "2025-06-01", progress: 30 },
-    { id: "PH-2", name: "הקמת מערך לוגיסטי", owner: "דניאל מזרחי", start: "2025-06-01", end: "2025-07-15", progress: 0, dependsOn: "PH-1" },
-    { id: "PH-3", name: "ביצוע בשטח", owner: "פאדי נסר", start: "2025-07-15", end: "2025-09-30", progress: 0, dependsOn: "PH-2" },
-  ],
-  "PR-06": [
-    { id: "PH-1", name: "תפעול שוטף", owner: "ליאת אזולאי", start: "2024-09-01", end: "2025-03-30", progress: 100 },
-    { id: "PH-2", name: "סיכום וסגירה", owner: "ליאת אזולאי", start: "2025-03-15", end: "2025-04-15", progress: 100, milestone: true },
-  ],
-};
 
 // ---------- Project participants count (mock) ----------
 export const projectParticipantCounts: Record<string, number> = {

@@ -1,8 +1,7 @@
 // Business-rule engine: derives operational alerts from the current data.
 // Pure rules — no AI.
 import { projects, volunteers, donations, suppliers, type Alert } from "./mock-data";
-import { getSnapshot } from "./store";
-import { daysBetween, isOverdue } from "./crm-seed";
+import { seedInteractions, seedFollowUps, seedFamilies, seedAssistance, seedAllocations, daysBetween, isOverdue } from "./crm-seed";
 
 const REQUIRED_VOLUNTEERS_PER_PROJECT: Record<string, number> = {
   "קייטנת קיץ 2025": 30,
@@ -101,8 +100,7 @@ export function generateAlerts(): Alert[] {
     });
 
   // Overdue donor follow-ups (CRM)
-  const snap = getSnapshot();
-  snap.interactions
+  seedInteractions
     .filter((i) => i.status !== "הושלם" && isOverdue(i.followUpDate))
     .forEach((i) => {
       const late = daysBetween(i.followUpDate!);
@@ -117,7 +115,7 @@ export function generateAlerts(): Alert[] {
     });
 
   // Overdue follow-up tasks on families and suppliers
-  snap.followUps
+  seedFollowUps
     .filter((f) => f.status !== "הושלם" && isOverdue(f.dueDate))
     .forEach((f) => {
       out.push({
@@ -131,7 +129,7 @@ export function generateAlerts(): Alert[] {
     });
 
   // Families flagged at risk without a closed care cycle
-  snap.families
+  seedFamilies
     .filter((f) => f.status === "בסיכון")
     .forEach((f) => {
       out.push({
@@ -145,7 +143,7 @@ export function generateAlerts(): Alert[] {
     });
 
   // Pending assistance requests awaiting committee approval
-  const pendingAid = snap.assistance.filter((a) => a.status === "ממתין");
+  const pendingAid = seedAssistance.filter((a) => a.status === "ממתין");
   if (pendingAid.length > 0) {
     out.push({
       id: id(),
@@ -158,9 +156,9 @@ export function generateAlerts(): Alert[] {
   }
 
   // Unallocated donations
-  snap.allocations.length &&
+  seedAllocations.length &&
     donations.forEach((d) => {
-      const alloc = snap.allocations.filter((a) => a.donationId === d.id).reduce((s, a) => s + a.amount, 0);
+      const alloc = seedAllocations.filter((a) => a.donationId === d.id).reduce((s, a) => s + a.amount, 0);
       if (alloc < d.amount) {
         out.push({
           id: id(),
