@@ -5,9 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/page-header";
 import { MiniStat, SectionCard, EmptyState, Timeline, type TimelineItem } from "@/components/detail-kit";
 import { FormDialog } from "@/components/form-dialog";
-import { projects } from "@/lib/mock-data";
 import { isOverdue, TODAY } from "@/lib/crm-seed";
 import { useFamily } from "@/lib/queries/families";
+import { useProjects } from "@/lib/queries/projects";
 import { useFamilyMembers, useCreateFamilyMember } from "@/lib/queries/family-members";
 import { useAssistanceForFamily, useCreateAssistance, useSetAssistanceStatus } from "@/lib/queries/assistance";
 import { useFollowUpsForEntity, useCompleteFollowUp } from "@/lib/queries/follow-ups";
@@ -29,6 +29,7 @@ function FamilyProfile() {
   const { data: assistance } = useAssistanceForFamily(id);
   const { data: followUps } = useFollowUpsForEntity(id);
   const { data: documentsData } = useDocumentsForEntity("family", id);
+  const { data: projectsData } = useProjects();
   const createFamilyMember = useCreateFamilyMember();
   const createAssistance = useCreateAssistance();
   const setAssistanceStatus = useSetAssistanceStatus();
@@ -54,6 +55,7 @@ function FamilyProfile() {
   }
 
   const documents = documentsData ?? [];
+  const projects = projectsData ?? [];
   const membersList = members ?? [];
   const assistanceList = assistance ?? [];
   const followUpsList = followUps ?? [];

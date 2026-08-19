@@ -20,7 +20,7 @@ import {
 import logo from "@/assets/logo.png";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { generateAlerts } from "@/lib/business-rules";
+import { useAlerts } from "@/lib/business-rules";
 import { useSession, signOut } from "@/lib/auth";
 
 const nav = [
@@ -40,7 +40,7 @@ const nav = [
 
 export function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const alertCount = generateAlerts().filter((a) => a.severity !== "נמוכה").length;
+  const alertCount = useAlerts().filter((a) => a.severity !== "נמוכה").length;
   const navigate = useNavigate();
   const { session, loading } = useSession();
 

@@ -13,8 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/page-header";
 import { MiniStat, SectionCard, EmptyState, RecordNotFound } from "@/components/detail-kit";
-import { projects } from "@/lib/mock-data";
 import { useParticipant } from "@/lib/queries/participants";
+import { useProjects } from "@/lib/queries/projects";
 import { ParticipantEditButton } from "@/components/module-edit-dialogs";
 import { Loader2 } from "lucide-react";
 
@@ -33,6 +33,7 @@ export const Route = createFileRoute("/_app/participants_/$participantId")({
 function ParticipantProfile() {
   const { participantId } = useParams({ from: "/_app/participants_/$participantId" });
   const { data: participant, isLoading, isError, refetch } = useParticipant(participantId);
+  const { data: projects } = useProjects();
 
   if (isLoading) {
     return (
@@ -63,7 +64,7 @@ function ParticipantProfile() {
   }
 
   const price = participant.activityPrice;
-  const relatedProject = projects.find((p) => p.name.includes(participant.activity));
+  const relatedProject = (projects ?? []).find((p) => p.name.includes(participant.activity));
 
   const paidFully = participant.paymentStatus === "שולם" || participant.paymentStatus === "לא נדרש תשלום";
   const balance = paidFully ? 0 : participant.paymentStatus === "שולם חלקית" ? Math.round(price / 2) : price;

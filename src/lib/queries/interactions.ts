@@ -54,8 +54,21 @@ function toRow(patch: Partial<DonorInteraction>): Record<string, unknown> {
 
 export const interactionKeys = {
   all: ["interactions"] as const,
+  list: () => [...interactionKeys.all, "list"] as const,
   forDonor: (donorId: string | undefined) => [...interactionKeys.all, "donor", donorId] as const,
 };
+
+/** All interactions across every donor (used by the alert engine's overdue-follow-up sweep). */
+export function useAllInteractions() {
+  return useQuery({
+    queryKey: interactionKeys.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase.from("interactions").select("*");
+      if (error) throw error;
+      return (data as InteractionRow[]).map(toInteraction);
+    },
+  });
+}
 
 export function useInteractionsForDonor(donorId: string | undefined) {
   return useQuery({
@@ -83,6 +96,7 @@ export function useCreateInteraction() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: interactionKeys.forDonor(data.donorId) });
+      queryClient.invalidateQueries({ queryKey: interactionKeys.list() });
     },
   });
 }
@@ -102,6 +116,7 @@ export function useUpdateInteraction() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: interactionKeys.forDonor(data.donorId) });
+      queryClient.invalidateQueries({ queryKey: interactionKeys.list() });
     },
   });
 }
@@ -121,6 +136,7 @@ export function useSetInteractionStatus() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: interactionKeys.forDonor(data.donorId) });
+      queryClient.invalidateQueries({ queryKey: interactionKeys.list() });
     },
   });
 }

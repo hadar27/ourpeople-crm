@@ -14,11 +14,12 @@ import {
   Bar,
   Legend,
 } from "recharts";
-import { budgetVsActual, monthlyDonations } from "@/lib/mock-data";
 import { useIncomes, useCreateIncome, GENERAL_PROJECT as GENERAL_PROJECT_INCOME } from "@/lib/queries/incomes";
 import { useExpenses, useCreateExpense, GENERAL_PROJECT as GENERAL_PROJECT_EXPENSE } from "@/lib/queries/expenses";
 import { useProjects } from "@/lib/queries/projects";
 import { useSuppliers } from "@/lib/queries/suppliers";
+import { useDonations } from "@/lib/queries/donations";
+import { monthlyDonationTotals } from "@/lib/dashboard-metrics";
 import { ExpenseEditButton, IncomeEditButton } from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/finance")({
@@ -31,10 +32,13 @@ function FinancePage() {
   const { data: expenses } = useExpenses();
   const { data: projects } = useProjects();
   const { data: suppliers } = useSuppliers();
+  const { data: donations } = useDonations();
   const createIncome = useCreateIncome();
   const createExpense = useCreateExpense();
   const projectOptions = [GENERAL_PROJECT_INCOME, ...(projects ?? []).map((p) => p.name)];
   const supplierOptions = (suppliers ?? []).map((s) => s.name);
+  const monthlyDonations = monthlyDonationTotals(donations ?? []);
+  const budgetVsActual = (projects ?? []).map((p) => ({ project: p.name, budget: p.budget, actual: p.spent }));
   return (
     <>
       <PageHeader title="כספים — ERP" description="לוח בקרה פיננסי כולל הכנסות, הוצאות וניצול תקציב מול תכנון."

@@ -25,20 +25,18 @@ import {
   BarChart,
   Bar,
   Legend,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
 import { PageHeader, StatCard, StatusBadge } from "@/components/page-header";
-import { monthlyDonations, budgetVsActual, projectMix, donations } from "@/lib/mock-data";
-import { generateAlerts, moduleRoute } from "@/lib/business-rules";
+import { useAlerts, moduleRoute } from "@/lib/business-rules";
+import { useDonations } from "@/lib/queries/donations";
+import { useProjects } from "@/lib/queries/projects";
+import { useVolunteers } from "@/lib/queries/volunteers";
+import { monthlyDonationTotals } from "@/lib/dashboard-metrics";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/dashboard")({
   component: Dashboard,
 });
-
-const PIE_COLORS = ["#2563EB", "#1E3A8A", "#60A5FA", "#93C5FD", "#1D4ED8"];
 
 const quickActions = [
   { label: "הוסף תורם", icon: UserPlus, to: "/donors" as const, msg: "טופס תורם חדש נפתח" },
@@ -49,7 +47,48 @@ const quickActions = [
 ];
 
 function Dashboard() {
-  const alerts = generateAlerts();
+  const alerts = useAlerts();
+  const { data: donations } = useDonations();
+  const { data: projects } = useProjects();
+  const { data: volunteers } = useVolunteers();
+
+  const donationList = donations ?? [];
+  const projectList = projects ?? [];
+  const volunteerList = volunteers ?? [];
+
+  const now = new Date();
+  const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const thisMonthKey = monthKey(now);
+  const lastMonthKey = monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+  const thisMonthTotal = donationList
+    .filter((d) => d.date.slice(0, 7) === thisMonthKey)
+    .reduce((s, d) => s + d.amount, 0);
+  const lastMonthTotal = donationList
+    .filter((d) => d.date.slice(0, 7) === lastMonthKey)
+    .reduce((s, d) => s + d.amount, 0);
+  const donationDelta =
+    lastMonthTotal > 0
+      ? `${thisMonthTotal >= lastMonthTotal ? "▲" : "▼"} ${Math.round(
+          (Math.abs(thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100,
+        )}% מהחודש שעבר`
+      : "אין נתונים להשוואה לחודש שעבר";
+
+  const activeVolunteers = volunteerList.filter((v) => v.status === "פעיל").length;
+  const onBreakVolunteers = volunteerList.filter((v) => v.status === "בהפסקה").length;
+
+  const activeProjects = projectList.filter((p) => p.status === "פעיל").length;
+  const planningProjects = projectList.filter((p) => p.status === "בתכנון").length;
+  const closedProjects = projectList.filter((p) => p.status === "הסתיים").length;
+
+  const totalBudget = projectList.reduce((s, p) => s + p.budget, 0);
+  const totalSpent = projectList.reduce((s, p) => s + p.spent, 0);
+  const budgetPct = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
+  const shortMoney = (v: number) => (v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : `${Math.round(v / 1000)}K`);
+
+  const monthlyDonations = monthlyDonationTotals(donationList);
+  const budgetVsActual = projectList.map((p) => ({ project: p.name, budget: p.budget, actual: p.spent }));
+  const recentDonations = donationList.slice(0, 5);
+
   return (
     <>
       <PageHeader
@@ -66,10 +105,31 @@ function Dashboard() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        <StatCard label="תרומות החודש" value="₪238,500" delta="▲ 12.4% מהחודש שעבר" icon={<HandCoins className="h-5 w-5" />} tone="brand" />
-        <StatCard label="מתנדבים פעילים" value="186" delta="▲ 8 חדשים השבוע" icon={<HeartHandshake className="h-5 w-5" />} />
-        <StatCard label="פרויקטים פעילים" value="14" delta="2 בתכנון · 1 נסגר" icon={<TrendingUp className="h-5 w-5" />} />
-        <StatCard label="ניצול תקציב שנתי" value="62%" delta="₪936K מתוך ₪1.5M" icon={<Wallet className="h-5 w-5" />} />
+        <StatCard
+          label="תרומות החודש"
+          value={`₪${thisMonthTotal.toLocaleString()}`}
+          delta={donationDelta}
+          icon={<HandCoins className="h-5 w-5" />}
+          tone="brand"
+        />
+        <StatCard
+          label="מתנדבים פעילים"
+          value={String(activeVolunteers)}
+          delta={`${onBreakVolunteers} בהפסקה`}
+          icon={<HeartHandshake className="h-5 w-5" />}
+        />
+        <StatCard
+          label="פרויקטים פעילים"
+          value={String(activeProjects)}
+          delta={`${planningProjects} בתכנון · ${closedProjects} הסתיימו`}
+          icon={<TrendingUp className="h-5 w-5" />}
+        />
+        <StatCard
+          label="ניצול תקציב שנתי"
+          value={`${budgetPct}%`}
+          delta={`₪${shortMoney(totalSpent)} מתוך ₪${shortMoney(totalBudget)}`}
+          icon={<Wallet className="h-5 w-5" />}
+        />
       </div>
 
       {/* Quick Actions */}
@@ -97,55 +157,29 @@ function Dashboard() {
       </div>
 
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div className="lg:col-span-2 card-elevated p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-sm text-muted-foreground">גיוס תרומות לפי חודש</div>
-              <div className="text-lg font-semibold">מגמת גיוס 6 חודשים אחרונים</div>
-            </div>
-            <StatusBadge value="פעיל" />
+      <div className="card-elevated p-5 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <div className="text-sm text-muted-foreground">גיוס תרומות לפי חודש</div>
+            <div className="text-lg font-semibold">מגמת גיוס — חודשים אחרונים</div>
           </div>
-          <ResponsiveContainer width="100%" height={260}>
-            <AreaChart data={monthlyDonations}>
-              <defs>
-                <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#2563EB" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="#2563EB" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid stroke="#E2E8F0" strokeDasharray="3 3" />
-              <XAxis dataKey="month" stroke="#94A3B8" fontSize={12} />
-              <YAxis stroke="#94A3B8" fontSize={12} tickFormatter={(v) => `₪${v / 1000}K`} />
-              <Tooltip formatter={(v: number) => `₪${v.toLocaleString()}`} />
-              <Area type="monotone" dataKey="amount" stroke="#2563EB" strokeWidth={2.5} fill="url(#grad)" />
-            </AreaChart>
-          </ResponsiveContainer>
+          <StatusBadge value="פעיל" />
         </div>
-
-        <div className="card-elevated p-5">
-          <div className="text-sm text-muted-foreground">תמהיל פעילות</div>
-          <div className="text-lg font-semibold mb-2">חלוקה לפי קהל יעד</div>
-          <ResponsiveContainer width="100%" height={240}>
-            <PieChart>
-              <Pie data={projectMix} dataKey="value" nameKey="name" innerRadius={55} outerRadius={85} paddingAngle={2}>
-                {projectMix.map((_, i) => (
-                  <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
-            {projectMix.map((p, i) => (
-              <div key={p.name} className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: PIE_COLORS[i] }} />
-                <span className="text-muted-foreground">{p.name}</span>
-                <span className="mr-auto font-medium">{p.value}%</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <ResponsiveContainer width="100%" height={260}>
+          <AreaChart data={monthlyDonations}>
+            <defs>
+              <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#2563EB" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="#2563EB" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke="#E2E8F0" strokeDasharray="3 3" />
+            <XAxis dataKey="month" stroke="#94A3B8" fontSize={12} />
+            <YAxis stroke="#94A3B8" fontSize={12} tickFormatter={(v) => `₪${v / 1000}K`} />
+            <Tooltip formatter={(v: number) => `₪${v.toLocaleString()}`} />
+            <Area type="monotone" dataKey="amount" stroke="#2563EB" strokeWidth={2.5} fill="url(#grad)" />
+          </AreaChart>
+        </ResponsiveContainer>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -212,7 +246,7 @@ function Dashboard() {
             </tr>
           </thead>
           <tbody>
-            {donations.slice(0, 5).map((d) => (
+            {recentDonations.map((d) => (
               <tr key={d.id} className="border-t border-border hover:bg-surface-muted/60 cursor-pointer">
                 <td className="py-3 font-medium">
                   <Link to="/donation/$id" params={{ id: d.id }} className="hover:text-brand">{d.donor}</Link>

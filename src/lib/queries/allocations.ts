@@ -34,8 +34,21 @@ function toRow(patch: Partial<DonationAllocation>): Record<string, unknown> {
 
 export const allocationKeys = {
   all: ["allocations"] as const,
+  list: () => [...allocationKeys.all, "list"] as const,
   forDonation: (donationId: string | undefined) => [...allocationKeys.all, "donation", donationId] as const,
 };
+
+/** All allocations across every donation (used by the alert engine's unallocated-donation sweep). */
+export function useAllAllocations() {
+  return useQuery({
+    queryKey: allocationKeys.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase.from("allocations").select("*");
+      if (error) throw error;
+      return (data as AllocationRow[]).map(toAllocation);
+    },
+  });
+}
 
 export function useAllocationsForDonation(donationId: string | undefined) {
   return useQuery({
@@ -63,6 +76,7 @@ export function useCreateAllocation() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: allocationKeys.forDonation(data.donationId) });
+      queryClient.invalidateQueries({ queryKey: allocationKeys.list() });
     },
   });
 }
@@ -76,6 +90,7 @@ export function useDeleteAllocation() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: allocationKeys.forDonation(variables.donationId) });
+      queryClient.invalidateQueries({ queryKey: allocationKeys.list() });
     },
   });
 }

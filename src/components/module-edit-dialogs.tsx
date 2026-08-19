@@ -36,7 +36,6 @@ import type {
   InteractionStatus,
   InteractionType,
 } from "@/lib/crm-types";
-import type { Supplier } from "@/lib/mock-data";
 
 type Btn = { triggerLabel?: string };
 
@@ -419,7 +418,7 @@ export function SupplierEditButton({ record, triggerLabel }: { record: SupplierR
           address: v.address || undefined,
           taxId: v.taxId || undefined,
           paymentTerms: v.paymentTerms || undefined,
-          status: v.status as Supplier["status"],
+          status: v.status as SupplierRecord["status"],
           notes: v.notes || undefined,
         };
         try {

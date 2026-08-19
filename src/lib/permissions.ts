@@ -1,9 +1,6 @@
 // Role-based edit permissions for the Our People platform.
-// The signed-in user is mocked for now; swapping in a real session only requires
-// replacing `useCurrentUser` with a query against the auth provider.
-import { useSyncExternalStore } from "react";
-import type { User } from "./mock-data";
-import { users } from "./mock-data";
+import { useSession } from "./auth";
+import { useUsers, type UserRecord } from "./queries/users";
 
 export type EditableModule =
   | "participants"
@@ -16,7 +13,7 @@ export type EditableModule =
   | "finance"
   | "users";
 
-const ROLE_EDIT_MATRIX: Record<User["role"], EditableModule[]> = {
+const ROLE_EDIT_MATRIX: Record<UserRecord["role"], EditableModule[]> = {
   "מנהל מערכת": [
     "participants",
     "volunteers",
@@ -34,35 +31,20 @@ const ROLE_EDIT_MATRIX: Record<User["role"], EditableModule[]> = {
   "מנהל קשרי תורמים": ["donors", "donations"],
 };
 
-let currentUser: User = users[0];
-const listeners = new Set<() => void>();
-
-export function setCurrentUser(u: User) {
-  currentUser = u;
-  listeners.forEach((l) => l());
-}
-
-export function getCurrentUser() {
-  return currentUser;
-}
-
-export function useCurrentUser(): User {
-  return useSyncExternalStore(
-    (cb) => {
-      listeners.add(cb);
-      return () => listeners.delete(cb);
-    },
-    () => currentUser,
-    () => currentUser,
-  );
-}
-
-export function canEditModule(role: User["role"], module: EditableModule): boolean {
+export function canEditModule(role: UserRecord["role"], module: EditableModule): boolean {
   return (ROLE_EDIT_MATRIX[role] ?? []).includes(module);
+}
+
+/** The signed-in user's staff-directory record, matched by email against the real Supabase Auth session. */
+export function useCurrentUser(): UserRecord | undefined {
+  const { session } = useSession();
+  const { data: users } = useUsers();
+  const email = session?.user.email;
+  return email ? users?.find((u) => u.email === email) : undefined;
 }
 
 /** True when the signed-in user may edit records in the given module. */
 export function useCanEdit(module: EditableModule): boolean {
   const user = useCurrentUser();
-  return canEditModule(user.role, module);
+  return user ? canEditModule(user.role, module) : false;
 }

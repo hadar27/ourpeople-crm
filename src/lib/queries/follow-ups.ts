@@ -43,8 +43,21 @@ function toRow(task: Partial<FollowUpTask>): Record<string, unknown> {
 
 export const followUpKeys = {
   all: ["followUps"] as const,
+  list: () => [...followUpKeys.all, "list"] as const,
   forEntity: (entityId: string | undefined) => [...followUpKeys.all, "entity", entityId] as const,
 };
+
+/** All follow-up tasks across every entity (used by the alert engine's overdue-task sweep). */
+export function useAllFollowUps() {
+  return useQuery({
+    queryKey: followUpKeys.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase.from("follow_ups").select("*");
+      if (error) throw error;
+      return (data as FollowUpRow[]).map(toFollowUp);
+    },
+  });
+}
 
 export function useFollowUpsForEntity(entityId: string | undefined) {
   return useQuery({
@@ -72,6 +85,7 @@ export function useCreateFollowUp() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: followUpKeys.forEntity(data.entityId) });
+      queryClient.invalidateQueries({ queryKey: followUpKeys.list() });
     },
   });
 }
@@ -91,6 +105,7 @@ export function useCompleteFollowUp() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: followUpKeys.forEntity(data.entityId) });
+      queryClient.invalidateQueries({ queryKey: followUpKeys.list() });
     },
   });
 }
