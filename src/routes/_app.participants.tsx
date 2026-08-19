@@ -3,7 +3,7 @@ import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { CalendarClock, CreditCard, UserPlus, FileWarning, Globe2, QrCode, Sparkles, Database, Upload, Users as UsersIcon, Loader2 } from "lucide-react";
-import { useActivities } from "@/lib/queries/activities";
+import { useProjects } from "@/lib/queries/projects";
 import {
   useParticipants,
   useCreateParticipant,
@@ -37,10 +37,10 @@ const columns: Column<ParticipantRecord>[] = [
   { key: "name", header: "שם מלא", render: (r) => <span className="font-medium">{r.name}</span> },
   { key: "idNumber", header: "ת.ז." },
   { key: "phone", header: "טלפון" },
-  { key: "activity", header: "פעילות", render: (r) => (
+  { key: "project", header: "פרויקט", render: (r) => (
     <div className="flex flex-col">
-      <span>{r.activity}</span>
-      <span className="text-[11px] text-muted-foreground">{r.activityType}</span>
+      <span>{r.project}</span>
+      <span className="text-[11px] text-muted-foreground">{r.projectType}</span>
     </div>
   )},
   { key: "source", header: "מקור רישום", render: (r) => <SourceBadge source={r.source} /> },
@@ -56,7 +56,7 @@ const columns: Column<ParticipantRecord>[] = [
 
 function ParticipantsPage() {
   const { data: participants, isLoading, isError, refetch } = useParticipants();
-  const { data: activities } = useActivities();
+  const { data: projects } = useProjects();
   const createParticipant = useCreateParticipant();
 
   // Operational KPIs derived from data
@@ -67,7 +67,7 @@ function ParticipantsPage() {
   const missingDocs = list.filter((p) => !p.documentsComplete).length;
   const newImmigrants = list.filter((p) => p.isNewImmigrant).length;
 
-  const activityNames = (activities ?? []).map((a) => a.name);
+  const projectNames = (projects ?? []).map((p) => p.name);
 
   return (
     <>
@@ -81,8 +81,8 @@ function ParticipantsPage() {
             description="הזן את פרטי המשתתף. רישום לפעילות בתשלום יאושר רק לאחר השלמת תשלום."
             successMessage="המשתתף נרשם בהצלחה במערכת"
             customValidate={(v) => {
-              const activity = v["activity"];
-              const def = (activities ?? []).find((a) => a.name === activity);
+              const project = v["project"];
+              const def = (projects ?? []).find((p) => p.name === project);
               if (def?.type === "בתשלום") {
                 const pay = v["paymentStatus"];
                 if (!pay || pay === "לא שולם" || pay === "שולם חלקית") {
@@ -96,7 +96,7 @@ function ParticipantsPage() {
               { name: "idNumber", label: "תעודת זהות", required: true, placeholder: "9 ספרות", pattern: /^\d{9}$/, patternMessage: "ת.ז. חייבת להכיל 9 ספרות בדיוק", maxLength: 9, helper: "9 ספרות, ללא מקפים" },
               { name: "phone", label: "טלפון נייד", type: "tel", required: true, placeholder: "0500000000", pattern: /^\d{10}$/, patternMessage: "טלפון חייב להכיל 10 ספרות בדיוק", maxLength: 10 },
               { name: "email", label: "אימייל", type: "email", placeholder: "name@example.com" },
-              { name: "activity", label: "פעילות", type: "select", required: true, options: activityNames, helper: "פעילות בתשלום דורשת תשלום מלא לפני אישור" },
+              { name: "project", label: "פרויקט", type: "select", required: true, options: projectNames, helper: "פרויקט בתשלום דורש תשלום מלא לפני אישור" },
               { name: "source", label: "מקור רישום", type: "select", required: true, options: ["טופס דיגיטלי", "QR", "אתר", "צוות פנימי", "ייבוא Excel", "API"] },
               { name: "paymentStatus", label: "סטטוס תשלום", type: "select", required: true, options: ["לא נדרש תשלום", "לא שולם", "שולם חלקית", "שולם"] },
               { name: "documents", label: "מסמכים שהוגשו", type: "select", options: ["הושלמו", "חסרים"] },
@@ -104,16 +104,15 @@ function ParticipantsPage() {
               { name: "notes", label: "הערות", type: "textarea", colSpan: 2, placeholder: "הערות נוספות..." },
             ]}
             onCreate={async (v) => {
-              const def = (activities ?? []).find((a) => a.name === v.activity);
-              if (!def) return { ok: false, error: "פעילות לא תקינה" };
+              const def = (projects ?? []).find((p) => p.name === v.project);
+              if (!def) return { ok: false, error: "פרויקט לא תקין" };
               try {
                 await createParticipant.mutateAsync({
                   name: v.fullName,
                   idNumber: v.idNumber,
                   phone: v.phone,
                   email: v.email || undefined,
-                  activityId: def.id,
-                  activityType: def.type,
+                  projectId: def.id,
                   source: v.source as RegistrationSource,
                   paymentStatus: v.paymentStatus as ParticipantRecord["paymentStatus"],
                   status: "ממתין לאישור",
@@ -154,7 +153,7 @@ function ParticipantsPage() {
         <DataTable
           rows={list}
           columns={columns}
-          searchKeys={["name", "idNumber", "phone", "activity"]}
+          searchKeys={["name", "idNumber", "phone", "project"]}
           getRowHref={(r) => `/participants/${r.id}`}
           rowActions={(r) => <ParticipantEditButton record={r} />}
         />

@@ -8,7 +8,6 @@ import { useUpdateParticipant, type ParticipantRecord } from "@/lib/queries/part
 import { useUpdateVolunteer, type VolunteerRecord } from "@/lib/queries/volunteers";
 import { useUsers, useUpdateUser, type UserRecord } from "@/lib/queries/users";
 import { ANONYMOUS_DONOR, useUpdateDonation, type DonationRecord } from "@/lib/queries/donations";
-import { useActivities } from "@/lib/queries/activities";
 import { useSuppliers, useUpdateSupplier, type SupplierRecord } from "@/lib/queries/suppliers";
 import { useUpdateIncome, type IncomeRecord } from "@/lib/queries/incomes";
 import { useUpdateExpense, type ExpenseRecord } from "@/lib/queries/expenses";
@@ -43,7 +42,7 @@ type Btn = { triggerLabel?: string };
 export function ParticipantEditButton({ record, triggerLabel }: { record: ParticipantRecord } & Btn) {
   const allowed = useCanEdit("participants");
   const updateParticipant = useUpdateParticipant();
-  const { data: activities } = useActivities();
+  const { data: projects } = useProjects();
   if (!allowed) return null;
   return (
     <RecordEditDialog
@@ -59,7 +58,7 @@ export function ParticipantEditButton({ record, triggerLabel }: { record: Partic
         email: record.email ?? "",
         address: record.address ?? "",
         city: record.city ?? "",
-        activity: record.activity,
+        project: record.project,
         source: record.source,
         status: record.status,
         paymentStatus: record.paymentStatus,
@@ -68,7 +67,7 @@ export function ParticipantEditButton({ record, triggerLabel }: { record: Partic
       }}
       customValidate={(v) => {
         if (
-          record.activityType === "בתשלום" &&
+          record.projectType === "בתשלום" &&
           v.status === "מאושר" &&
           v.paymentStatus !== "שולם"
         ) {
@@ -77,8 +76,8 @@ export function ParticipantEditButton({ record, triggerLabel }: { record: Partic
         return null;
       }}
       onSave={async (v) => {
-        const def = (activities ?? []).find((a) => a.name === v.activity);
-        if (!def) return { ok: false, error: "פעילות לא תקינה" };
+        const def = (projects ?? []).find((p) => p.name === v.project);
+        if (!def) return { ok: false, error: "פרויקט לא תקין" };
         try {
           await updateParticipant.mutateAsync({
             id: record.id,
@@ -89,8 +88,7 @@ export function ParticipantEditButton({ record, triggerLabel }: { record: Partic
               email: v.email || undefined,
               address: v.address || undefined,
               city: v.city || undefined,
-              activityId: def.id,
-              activityType: def.type,
+              projectId: def.id,
               source: v.source as ParticipantRecord["source"],
               status: v.status as ParticipantRecord["status"],
               paymentStatus: v.paymentStatus as ParticipantRecord["paymentStatus"],
@@ -111,7 +109,7 @@ export function ParticipantEditButton({ record, triggerLabel }: { record: Partic
 export function VolunteerEditButton({ record, triggerLabel }: { record: VolunteerRecord } & Btn) {
   const allowed = useCanEdit("volunteers");
   const updateVolunteer = useUpdateVolunteer();
-  const { data: activities } = useActivities();
+  const { data: projects } = useProjects();
   if (!allowed) return null;
   return (
     <RecordEditDialog
@@ -131,7 +129,7 @@ export function VolunteerEditButton({ record, triggerLabel }: { record: Voluntee
         notes: record.notes ?? "",
       }}
       onSave={async (v) => {
-        const def = (activities ?? []).find((a) => a.name === v.project);
+        const def = (projects ?? []).find((p) => p.name === v.project);
         try {
           await updateVolunteer.mutateAsync({
             id: record.id,
@@ -140,8 +138,7 @@ export function VolunteerEditButton({ record, triggerLabel }: { record: Voluntee
               phone: v.phone || undefined,
               email: v.email || undefined,
               availability: v.availability,
-              activityId: def?.id,
-              project: v.project,
+              projectId: def?.id,
               hours: Number(v.hours) || 0,
               status: v.status as VolunteerRecord["status"],
               skills: splitList(v.skills),
@@ -263,7 +260,6 @@ export function DonationEditButton({ record, triggerLabel }: { record: DonationR
   const updateDonation = useUpdateDonation();
   const { data: donors } = useDonors();
   const { data: projects } = useProjects();
-  const { data: activities } = useActivities();
   if (!allowed) return null;
   const allocated = allocations.reduce((s, a) => s + a.amount, 0);
   return (
@@ -298,7 +294,6 @@ export function DonationEditButton({ record, triggerLabel }: { record: DonationR
         const isAnonymous = v.donor === ANONYMOUS_DONOR;
         const donor = (donors ?? []).find((d) => d.name === v.donor);
         const project = (projects ?? []).find((p) => p.name === v.project);
-        const activity = (activities ?? []).find((a) => a.name === v.project);
         try {
           await updateDonation.mutateAsync({
             id: record.id,
@@ -307,7 +302,6 @@ export function DonationEditButton({ record, triggerLabel }: { record: DonationR
               isAnonymous,
               amount: Number(v.amount),
               projectId: project?.id,
-              activityId: activity?.id,
               project: v.project,
               method: v.method as DonationRecord["method"],
               date: v.date,

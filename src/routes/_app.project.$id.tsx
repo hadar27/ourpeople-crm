@@ -7,6 +7,7 @@ import { GanttChart } from "@/components/gantt-chart";
 import { useProject } from "@/lib/queries/projects";
 import { useDonations } from "@/lib/queries/donations";
 import { useVolunteers } from "@/lib/queries/volunteers";
+import { useParticipants } from "@/lib/queries/participants";
 import { useTasksForProject } from "@/lib/queries/tasks";
 import { useProjectExpenses } from "@/lib/queries/project-expenses";
 import { useProjectPhases } from "@/lib/queries/project-phases";
@@ -17,21 +18,6 @@ export const Route = createFileRoute("/_app/project/$id")({
   component: ProjectDetail,
 });
 
-/**
- * Placeholder participant counts per project. Participants currently link to
- * `activities`, not `projects` — there's no real FK to count against. Planned
- * follow-up work drops the `activities` table and links participants directly
- * to projects, at which point this should become a real query.
- */
-const PARTICIPANT_COUNTS_BY_PROJECT: Record<string, number> = {
-  "PR-01": 142,
-  "PR-02": 64,
-  "PR-03": 38,
-  "PR-04": 26,
-  "PR-05": 0,
-  "PR-06": 95,
-};
-
 function ProjectDetail() {
   const { id } = useParams({ from: "/_app/project/$id" });
   const navigate = useNavigate();
@@ -41,6 +27,7 @@ function ProjectDetail() {
   const { data: phasesData } = useProjectPhases(project?.id);
   const { data: donationsData } = useDonations();
   const { data: volunteersData } = useVolunteers();
+  const { data: participantsData } = useParticipants();
 
   if (isLoading) {
     return (
@@ -74,12 +61,10 @@ function ProjectDetail() {
 
   const projectTasks = tasksData ?? [];
   const projectDonations = (donationsData ?? []).filter((d) => d.projectId === project.id);
-  const projectVolunteers = (volunteersData ?? []).filter(
-    (v) => v.project === project.name || v.project.includes(project.name.split(" ")[0]),
-  );
+  const projectVolunteers = (volunteersData ?? []).filter((v) => v.projectId === project.id);
   const expenses = expensesData ?? [];
   const phases = phasesData ?? [];
-  const participantsCount = PARTICIPANT_COUNTS_BY_PROJECT[project.id] ?? 0;
+  const participantsCount = (participantsData ?? []).filter((p) => p.projectId === project.id).length;
   const totalDonations = projectDonations.reduce((s, d) => s + d.amount, 0);
   const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
   const remainingBudget = project.budget - project.spent;

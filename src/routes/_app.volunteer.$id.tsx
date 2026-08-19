@@ -17,7 +17,7 @@ function VolunteerDetail() {
   const { data: projects } = useProjects();
   if (isLoading) return <div className="card-elevated p-8 text-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin inline-block" /></div>;
   if (isError || !v) return <div className="card-elevated p-8 text-center">מתנדב לא נמצא. <Link to="/volunteers" className="text-brand">חזרה</Link></div>;
-  const project = (projects ?? []).find((p) => p.name === v.project || v.project.includes(p.name.split(" ")[0]));
+  const project = (projects ?? []).find((p) => p.id === v.projectId);
 
   return (
     <>

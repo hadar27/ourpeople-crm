@@ -63,8 +63,8 @@ function ParticipantProfile() {
     );
   }
 
-  const price = participant.activityPrice;
-  const relatedProject = (projects ?? []).find((p) => p.name.includes(participant.activity));
+  const price = participant.projectPrice;
+  const relatedProject = (projects ?? []).find((p) => p.id === participant.projectId);
 
   const paidFully = participant.paymentStatus === "שולם" || participant.paymentStatus === "לא נדרש תשלום";
   const balance = paidFully ? 0 : participant.paymentStatus === "שולם חלקית" ? Math.round(price / 2) : price;
@@ -119,20 +119,19 @@ function ParticipantProfile() {
 
         <SectionCard title="פעילות ורישום" icon={<CalendarClock className="h-4 w-4" />}>
           <div className="divide-y divide-border text-sm">
-            <Row label="פעילות" value={participant.activity} />
-            <Row label="סוג פעילות" value={participant.activityType} />
             <Row
-              label="פרויקט משויך"
+              label="פרויקט"
               value={
                 relatedProject ? (
                   <Link to="/project/$id" params={{ id: relatedProject.id }} className="text-brand hover:underline">
                     {relatedProject.name}
                   </Link>
                 ) : (
-                  "—"
+                  participant.project
                 )
               }
             />
+            <Row label="סוג פרויקט" value={participant.projectType} />
             <Row label="סטטוס רישום" value={<StatusBadge value={participant.status} />} />
           </div>
         </SectionCard>

@@ -10,10 +10,10 @@ export type ParticipantRecord = {
   name: string;
   idNumber: string;
   phone: string;
-  activityId: string;
-  activity: string;
-  activityType: "חינמית" | "בתשלום";
-  activityPrice: number;
+  projectId: string;
+  project: string;
+  projectType: "חינמית" | "בתשלום";
+  projectPrice: number;
   status: RegistrationStatus;
   paymentStatus: ParticipantPayment;
   source: RegistrationSource;
@@ -32,8 +32,7 @@ type ParticipantRow = {
   name: string;
   id_number: string;
   phone: string;
-  activity_id: string;
-  activity_type: string;
+  project_id: string;
   status: string;
   payment_status: string;
   source: string;
@@ -45,7 +44,7 @@ type ParticipantRow = {
   address: string | null;
   city: string | null;
   notes: string | null;
-  activities: { id: string; name: string; type: string; price: number } | null;
+  projects: { id: string; name: string; type: string; price: number } | null;
 };
 
 function toParticipantRecord(row: ParticipantRow): ParticipantRecord {
@@ -54,10 +53,10 @@ function toParticipantRecord(row: ParticipantRow): ParticipantRecord {
     name: row.name,
     idNumber: row.id_number,
     phone: row.phone,
-    activityId: row.activity_id,
-    activity: row.activities?.name ?? "",
-    activityType: row.activity_type as ParticipantRecord["activityType"],
-    activityPrice: row.activities?.price ?? 0,
+    projectId: row.project_id,
+    project: row.projects?.name ?? "",
+    projectType: (row.projects?.type ?? "חינמית") as ParticipantRecord["projectType"],
+    projectPrice: row.projects?.price ?? 0,
     status: row.status as RegistrationStatus,
     paymentStatus: row.payment_status as ParticipantPayment,
     source: row.source as RegistrationSource,
@@ -77,8 +76,7 @@ function toRow(patch: Partial<ParticipantRecord>): Record<string, unknown> {
   if (patch.name !== undefined) row.name = patch.name;
   if (patch.idNumber !== undefined) row.id_number = patch.idNumber;
   if (patch.phone !== undefined) row.phone = patch.phone;
-  if (patch.activityId !== undefined) row.activity_id = patch.activityId;
-  if (patch.activityType !== undefined) row.activity_type = patch.activityType;
+  if (patch.projectId !== undefined) row.project_id = patch.projectId;
   if (patch.status !== undefined) row.status = patch.status;
   if (patch.paymentStatus !== undefined) row.payment_status = patch.paymentStatus;
   if (patch.source !== undefined) row.source = patch.source;
@@ -93,7 +91,7 @@ function toRow(patch: Partial<ParticipantRecord>): Record<string, unknown> {
   return row;
 }
 
-const SELECT = "*, activities(id, name, type, price)";
+const SELECT = "*, projects(id, name, type, price)";
 
 export const participantKeys = {
   all: ["participants"] as const,

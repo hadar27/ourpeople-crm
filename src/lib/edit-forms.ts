@@ -13,7 +13,7 @@ export const participantFields: FormField[] = [
   { name: "email", label: "אימייל", type: "email" },
   { name: "address", label: "כתובת" },
   { name: "city", label: "עיר" },
-  { name: "activity", label: "פעילות", type: "select", required: true, options: ["קייטנת קיץ", "סדנת העצמה נשים", "ליווי משפחות", "תכנית נוער", "סיוע למשפחות עולים", "חירום ושיקום", "מועדון נוער"] },
+  { name: "project", label: "פרויקט", type: "select", required: true, options: ["קייטנת קיץ 2025", "תכנית נוער שכונתית", "ליווי משפחות עולים", "סדנת העצמה לנשים", "חירום ושיקום קהילתי", 'מועדונית אחה"צ'] },
   { name: "source", label: "מקור רישום", type: "select", required: true, options: ["טופס דיגיטלי", "QR", "אתר", "צוות פנימי", "ייבוא Excel", "API"] },
   { name: "status", label: "סטטוס רישום", type: "select", required: true, options: ["מאושר", "ממתין לתשלום", "ממתין לאישור", "טיוטה"] },
   { name: "paymentStatus", label: "סטטוס תשלום", type: "select", required: true, options: ["שולם", "שולם חלקית", "לא שולם", "לא נדרש תשלום"] },

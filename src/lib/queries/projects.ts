@@ -5,6 +5,8 @@ export type ProjectRecord = {
   id: string;
   name: string;
   status: "פעיל" | "בתכנון" | "הסתיים";
+  type: "חינמית" | "בתשלום";
+  price: number;
   budget: number;
   spent: number;
   progress: number;
@@ -22,6 +24,8 @@ type ProjectRow = {
   id: string;
   name: string;
   status: string;
+  type: string;
+  price: number;
   budget: number;
   spent: number;
   progress: number;
@@ -40,6 +44,8 @@ function toProjectRecord(row: ProjectRow): ProjectRecord {
     id: row.id,
     name: row.name,
     status: row.status as ProjectRecord["status"],
+    type: row.type as ProjectRecord["type"],
+    price: row.price,
     budget: row.budget,
     spent: row.spent,
     progress: row.progress,
@@ -58,6 +64,8 @@ function toRow(patch: Partial<ProjectRecord>): Record<string, unknown> {
   const row: Record<string, unknown> = {};
   if (patch.name !== undefined) row.name = patch.name;
   if (patch.status !== undefined) row.status = patch.status;
+  if (patch.type !== undefined) row.type = patch.type;
+  if (patch.price !== undefined) row.price = patch.price;
   if (patch.budget !== undefined) row.budget = patch.budget;
   if (patch.spent !== undefined) row.spent = patch.spent;
   if (patch.progress !== undefined) row.progress = patch.progress;

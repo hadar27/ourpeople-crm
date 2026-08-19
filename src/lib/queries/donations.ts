@@ -10,7 +10,6 @@ export type DonationRecord = {
   donor: string;
   amount: number;
   projectId?: string;
-  activityId?: string;
   project: string;
   method: "העברה בנקאית" | "אשראי" | "מזומן" | "שיק";
   receipt: "הופק" | "ממתין" | "חסר";
@@ -25,7 +24,6 @@ type DonationRow = {
   is_anonymous: boolean;
   amount: number;
   project_id: string | null;
-  activity_id: string | null;
   project_label: string | null;
   method: string;
   receipt: string;
@@ -34,7 +32,6 @@ type DonationRow = {
   notes: string | null;
   donors: { name: string } | null;
   projects: { name: string } | null;
-  activities: { name: string } | null;
 };
 
 function toDonationRecord(row: DonationRow): DonationRecord {
@@ -45,8 +42,7 @@ function toDonationRecord(row: DonationRow): DonationRecord {
     donor: row.donors?.name ?? (row.is_anonymous ? ANONYMOUS_DONOR : ""),
     amount: row.amount,
     projectId: row.project_id ?? undefined,
-    activityId: row.activity_id ?? undefined,
-    project: row.projects?.name ?? row.activities?.name ?? row.project_label ?? "",
+    project: row.projects?.name ?? row.project_label ?? "",
     method: row.method as DonationRecord["method"],
     receipt: row.receipt as DonationRecord["receipt"],
     date: row.date,
@@ -65,7 +61,6 @@ function toRow(patch: Partial<DonationRecord>): Record<string, unknown> {
   if (patch.project !== undefined) {
     row.project_label = patch.project;
     row.project_id = patch.projectId ?? null;
-    row.activity_id = patch.activityId ?? null;
   }
   if (patch.method !== undefined) row.method = patch.method;
   if (patch.receipt !== undefined) row.receipt = patch.receipt;
@@ -75,7 +70,7 @@ function toRow(patch: Partial<DonationRecord>): Record<string, unknown> {
   return row;
 }
 
-const SELECT = "*, donors(name), projects(name), activities(name)";
+const SELECT = "*, donors(name), projects(name)";
 
 export const donationKeys = {
   all: ["donations"] as const,

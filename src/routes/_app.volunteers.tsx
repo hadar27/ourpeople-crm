@@ -3,7 +3,7 @@ import { Award, Loader2 } from "lucide-react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
-import { useActivities } from "@/lib/queries/activities";
+import { useProjects } from "@/lib/queries/projects";
 import { useVolunteers, useCreateVolunteer, type VolunteerRecord } from "@/lib/queries/volunteers";
 import { VolunteerEditButton } from "@/components/module-edit-dialogs";
 
@@ -31,9 +31,9 @@ const columns: Column<VolunteerRecord>[] = [
 
 function VolunteersPage() {
   const { data: volunteers, isLoading, isError, refetch } = useVolunteers();
-  const { data: activities } = useActivities();
+  const { data: projects } = useProjects();
   const createVolunteer = useCreateVolunteer();
-  const activityOptions = [...(activities ?? []).map((a) => a.name), UNASSIGNED];
+  const projectOptions = [...(projects ?? []).map((p) => p.name), UNASSIGNED];
 
   return (
     <>
@@ -50,18 +50,17 @@ function VolunteersPage() {
               { name: "fullName", label: "שם מלא", required: true },
               { name: "phone", label: "טלפון", type: "tel", required: true },
               { name: "availability", label: "זמינות", type: "select", required: true, options: ["בוקר", "צהריים", "ערב", "סופי שבוע", "גמיש"] },
-              { name: "project", label: "פרויקט משויך", type: "select", options: activityOptions },
+              { name: "project", label: "פרויקט משויך", type: "select", options: projectOptions },
               { name: "skills", label: "כישורים", colSpan: 2, placeholder: "הדרכה, נהיגה, תרגום..." },
             ]}
             onCreate={async (v) => {
-              const def = (activities ?? []).find((a) => a.name === v.project);
+              const def = (projects ?? []).find((p) => p.name === v.project);
               try {
                 await createVolunteer.mutateAsync({
                   name: v.fullName,
                   phone: v.phone || undefined,
                   availability: v.availability,
-                  activityId: def?.id,
-                  project: v.project || UNASSIGNED,
+                  projectId: def?.id,
                   hours: 0,
                   status: "פעיל",
                   skills: v.skills ? v.skills.split(",").map((s) => s.trim()).filter(Boolean) : [],

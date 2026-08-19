@@ -6,7 +6,6 @@ import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { useDonations, useCreateDonation, ANONYMOUS_DONOR, type DonationRecord } from "@/lib/queries/donations";
 import { useDonors } from "@/lib/queries/donors";
 import { useProjects } from "@/lib/queries/projects";
-import { useActivities } from "@/lib/queries/activities";
 import { DonationEditButton } from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/donations")({
@@ -27,11 +26,10 @@ function DonationsPage() {
   const { data: donations, isLoading, isError, refetch } = useDonations();
   const { data: donors } = useDonors();
   const { data: projects } = useProjects();
-  const { data: activities } = useActivities();
   const createDonation = useCreateDonation();
 
   const donorOptions = [...(donors ?? []).map((d) => d.name), ANONYMOUS_DONOR];
-  const projectOptions = [...(projects ?? []).map((p) => p.name), ...(activities ?? []).map((a) => a.name)];
+  const projectOptions = (projects ?? []).map((p) => p.name);
 
   return (
     <>
@@ -57,14 +55,12 @@ function DonationsPage() {
               const isAnonymous = v.donor === ANONYMOUS_DONOR;
               const donor = (donors ?? []).find((d) => d.name === v.donor);
               const project = (projects ?? []).find((p) => p.name === v.project);
-              const activity = (activities ?? []).find((a) => a.name === v.project);
               try {
                 await createDonation.mutateAsync({
                   donorId: donor?.id,
                   isAnonymous,
                   amount: Number(v.amount) || 0,
                   projectId: project?.id,
-                  activityId: activity?.id,
                   project: v.project || "",
                   method: v.method as DonationRecord["method"],
                   receipt: (v.receipt || "ממתין") as DonationRecord["receipt"],
