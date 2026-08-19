@@ -1,13 +1,17 @@
 import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
-import { ArrowRight, Users, Wallet, Calendar, CheckCircle2, AlertTriangle, UserCheck, Truck, PiggyBank } from "lucide-react";
+import { ArrowRight, Users, Wallet, Calendar, CheckCircle2, AlertTriangle, UserCheck, Truck, PiggyBank, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/page-header";
 import { GanttChart } from "@/components/gantt-chart";
-import { tasks, donations, volunteers, projectExpenses, projectPhases, projectParticipantCounts } from "@/lib/mock-data";
-import { useRecord } from "@/lib/records-store";
+import { useProject } from "@/lib/queries/projects";
+import { useDonations } from "@/lib/queries/donations";
+import { useVolunteers } from "@/lib/queries/volunteers";
+import { useParticipants } from "@/lib/queries/participants";
+import { useTasksForProject } from "@/lib/queries/tasks";
+import { useProjectExpenses } from "@/lib/queries/project-expenses";
+import { useProjectPhases } from "@/lib/queries/project-phases";
 import { ProjectEditButton } from "@/components/module-edit-dialogs";
-import { ChangeHistory } from "@/components/change-history";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/project/$id")({
@@ -17,7 +21,30 @@ export const Route = createFileRoute("/_app/project/$id")({
 function ProjectDetail() {
   const { id } = useParams({ from: "/_app/project/$id" });
   const navigate = useNavigate();
-  const project = useRecord("projects", id);
+  const { data: project, isLoading, isError, refetch } = useProject(id);
+  const { data: tasksData } = useTasksForProject(project?.id);
+  const { data: expensesData } = useProjectExpenses(project?.id);
+  const { data: phasesData } = useProjectPhases(project?.id);
+  const { data: donationsData } = useDonations();
+  const { data: volunteersData } = useVolunteers();
+  const { data: participantsData } = useParticipants();
+
+  if (isLoading) {
+    return (
+      <div className="card-elevated flex items-center justify-center gap-2 p-16 text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin" /> טוען פרויקט...
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="card-elevated flex flex-col items-center gap-3 p-16 text-center">
+        <div className="text-sm text-muted-foreground">אירעה שגיאה בטעינת הפרויקט.</div>
+        <button onClick={() => refetch()} className="text-sm text-brand hover:underline">נסה שוב</button>
+      </div>
+    );
+  }
 
   if (!project) {
     return (
@@ -32,12 +59,12 @@ function ProjectDetail() {
     );
   }
 
-  const projectTasks = tasks.filter((t) => t.project === project.name);
-  const projectDonations = donations.filter((d) => d.project === project.name || d.project.includes(project.name.split(" ")[0]));
-  const projectVolunteers = volunteers.filter((v) => v.project === project.name || v.project.includes(project.name.split(" ")[0]));
-  const expenses = projectExpenses[project.id] ?? [];
-  const phases = projectPhases[project.id] ?? [];
-  const participantsCount = projectParticipantCounts[project.id] ?? 0;
+  const projectTasks = tasksData ?? [];
+  const projectDonations = (donationsData ?? []).filter((d) => d.projectId === project.id);
+  const projectVolunteers = (volunteersData ?? []).filter((v) => v.projectId === project.id);
+  const expenses = expensesData ?? [];
+  const phases = phasesData ?? [];
+  const participantsCount = (participantsData ?? []).filter((p) => p.projectId === project.id).length;
   const totalDonations = projectDonations.reduce((s, d) => s + d.amount, 0);
   const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
   const remainingBudget = project.budget - project.spent;

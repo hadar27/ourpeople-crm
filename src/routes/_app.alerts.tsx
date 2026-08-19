@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AlertTriangle, CheckCircle2, Bell } from "lucide-react";
 import { useState } from "react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
-import { generateAlerts, moduleRoute } from "@/lib/business-rules";
+import { useAlerts, moduleRoute } from "@/lib/business-rules";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/alerts")({
@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_app/alerts")({
 });
 
 function AlertsPage() {
-  const all = generateAlerts();
+  const all = useAlerts();
   const [resolved, setResolved] = useState<Set<string>>(new Set());
   const open = all.filter((a) => !resolved.has(a.id));
   const high = open.filter((a) => a.severity === "גבוהה").length;

@@ -1,15 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Users, Calendar } from "lucide-react";
+import { Users, Calendar, Loader2 } from "lucide-react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { Progress } from "@/components/ui/progress";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
-import { projects, tasks } from "@/lib/mock-data";
+import { useProjects, useCreateProject } from "@/lib/queries/projects";
+import { useTasks } from "@/lib/queries/tasks";
 
 export const Route = createFileRoute("/_app/projects")({
   component: ProjectsPage,
 });
 
 function ProjectsPage() {
+  const { data: projects, isLoading, isError, refetch } = useProjects();
+  const { data: tasksData } = useTasks();
+  const tasks = tasksData ?? [];
+  const createProject = useCreateProject();
+
   return (
     <>
       <PageHeader
@@ -24,18 +30,46 @@ function ProjectsPage() {
             fields={[
               { name: "name", label: "שם פרויקט", required: true, colSpan: 2 },
               { name: "budget", label: "תקציב (₪)", type: "number", required: true },
-              { name: "status", label: "סטטוס", type: "select", required: true, options: ["תכנון", "פעיל", "מושהה", "הושלם"] },
+              { name: "status", label: "סטטוס", type: "select", required: true, options: ["בתכנון", "פעיל", "הסתיים"] },
               { name: "startDate", label: "תאריך התחלה", type: "date", required: true },
               { name: "endDate", label: "תאריך סיום", type: "date", required: true },
               { name: "description", label: "תיאור", type: "textarea", colSpan: 2, placeholder: "מטרות הפרויקט וקהל היעד..." },
             ]}
+            onCreate={async (v) => {
+              try {
+                await createProject.mutateAsync({
+                  name: v.name,
+                  budget: Number(v.budget) || 0,
+                  spent: 0,
+                  progress: 0,
+                  volunteers: 0,
+                  manager: "",
+                  status: v.status as "פעיל" | "בתכנון" | "הסתיים",
+                  startDate: v.startDate || undefined,
+                  endDate: v.endDate || undefined,
+                  description: v.description || undefined,
+                });
+                return { ok: true };
+              } catch (err) {
+                return { ok: false, error: err instanceof Error ? err.message : "השמירה נכשלה" };
+              }
+            }}
           />
         }
       />
 
-      {/* Project cards */}
+      {isLoading ? (
+        <div className="card-elevated flex items-center justify-center gap-2 p-16 text-muted-foreground mb-8">
+          <Loader2 className="h-5 w-5 animate-spin" /> טוען פרויקטים...
+        </div>
+      ) : isError ? (
+        <div className="card-elevated flex flex-col items-center gap-3 p-16 text-center mb-8">
+          <div className="text-sm text-muted-foreground">אירעה שגיאה בטעינת הפרויקטים.</div>
+          <button onClick={() => refetch()} className="text-sm text-brand hover:underline">נסה שוב</button>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
-        {projects.map((p) => (
+        {(projects ?? []).map((p) => (
           <Link
             key={p.id}
             to="/project/$id"
@@ -73,6 +107,7 @@ function ProjectsPage() {
           </Link>
         ))}
       </div>
+      )}
 
       {/* Kanban */}
       <div className="card-elevated p-5">

@@ -1,4 +1,4 @@
-// Shared edit-form field definitions and audit labels per module.
+// Shared edit-form field definitions per module.
 // Keeping them in one place means the table row edit and the profile page edit
 // always show identical fields and validation.
 import type { FormField } from "@/components/entity-form-dialog";
@@ -13,19 +13,13 @@ export const participantFields: FormField[] = [
   { name: "email", label: "אימייל", type: "email" },
   { name: "address", label: "כתובת" },
   { name: "city", label: "עיר" },
-  { name: "activity", label: "פעילות", type: "select", required: true, options: ["קייטנת קיץ", "סדנת העצמה נשים", "ליווי משפחות", "תכנית נוער", "סיוע למשפחות עולים", "חירום ושיקום", "מועדון נוער"] },
+  { name: "project", label: "פרויקט", type: "select", required: true, options: ["קייטנת קיץ 2025", "תכנית נוער שכונתית", "ליווי משפחות עולים", "סדנת העצמה לנשים", "חירום ושיקום קהילתי", 'מועדונית אחה"צ'] },
   { name: "source", label: "מקור רישום", type: "select", required: true, options: ["טופס דיגיטלי", "QR", "אתר", "צוות פנימי", "ייבוא Excel", "API"] },
   { name: "status", label: "סטטוס רישום", type: "select", required: true, options: ["מאושר", "ממתין לתשלום", "ממתין לאישור", "טיוטה"] },
   { name: "paymentStatus", label: "סטטוס תשלום", type: "select", required: true, options: ["שולם", "שולם חלקית", "לא שולם", "לא נדרש תשלום"] },
   { name: "documentsComplete", label: "סטטוס מסמכים", type: "select", required: true, options: ["הושלמו", "חסרים"] },
   { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
 ];
-
-export const participantLabels: Record<string, string> = {
-  name: "שם מלא", idNumber: "ת.ז.", phone: "טלפון", email: "אימייל", address: "כתובת", city: "עיר",
-  activity: "פעילות", source: "מקור רישום", status: "סטטוס רישום", paymentStatus: "סטטוס תשלום",
-  documentsComplete: "סטטוס מסמכים", notes: "הערות",
-};
 
 export const volunteerFields: FormField[] = [
   { name: "name", label: "שם מלא", required: true },
@@ -38,11 +32,6 @@ export const volunteerFields: FormField[] = [
   { name: "skills", label: "כישורים", colSpan: 2, helper: "מופרדים בפסיק", placeholder: "הדרכה, נהיגה, תרגום" },
   { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
 ];
-
-export const volunteerLabels: Record<string, string> = {
-  name: "שם מלא", phone: "טלפון", email: "אימייל", availability: "זמינות", project: "פרויקט משויך",
-  hours: "שעות התנדבות", status: "סטטוס", skills: "כישורים", notes: "הערות",
-};
 
 export const donorFields: FormField[] = [
   { name: "name", label: "שם תורם", required: true },
@@ -57,11 +46,6 @@ export const donorFields: FormField[] = [
   { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
 ];
 
-export const donorLabels: Record<string, string> = {
-  name: "שם תורם", contact: "איש קשר", phone: "טלפון", email: "אימייל", type: "סוג תורם",
-  address: "כתובת", preferredChannel: "אופן קשר מועדף", status: "סטטוס", interests: "תחומי עניין", notes: "הערות",
-};
-
 export const interactionFields: FormField[] = [
   { name: "type", label: "סוג אינטראקציה", type: "select", required: true, options: ["שיחת טלפון", "פגישה", 'דוא"ל', "WhatsApp", "אחר"] },
   { name: "date", label: "תאריך", type: "date", required: true },
@@ -75,11 +59,6 @@ export const interactionFields: FormField[] = [
   { name: "status", label: "סטטוס", type: "select", required: true, options: ["פתוח", "ממתין", "הושלם"] },
 ];
 
-export const interactionLabels: Record<string, string> = {
-  type: "סוג אינטראקציה", date: "תאריך", time: "שעה", staff: "איש צוות", subject: "נושא",
-  summary: "סיכום השיחה", outcome: "תוצאה", followUpAction: "פעולת המשך", followUpDate: "תאריך המשך", status: "סטטוס",
-};
-
 export const donationFields: FormField[] = [
   { name: "donor", label: "תורם", required: true },
   { name: "amount", label: "סכום (₪)", type: "number", required: true },
@@ -90,11 +69,6 @@ export const donationFields: FormField[] = [
   { name: "reference", label: "אסמכתא" },
   { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
 ];
-
-export const donationLabels: Record<string, string> = {
-  donor: "תורם", amount: "סכום", project: "ייעוד / פרויקט", method: "אופן תשלום", date: "תאריך תרומה",
-  receipt: "סטטוס קבלה", reference: "אסמכתא", notes: "הערות",
-};
 
 export const projectFields: FormField[] = [
   { name: "name", label: "שם פרויקט", required: true, colSpan: 2 },
@@ -109,12 +83,6 @@ export const projectFields: FormField[] = [
   { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
 ];
 
-export const projectLabels: Record<string, string> = {
-  name: "שם פרויקט", description: "תיאור", status: "סטטוס", manager: "מנהל/ת פרויקט",
-  startDate: "תאריך התחלה", endDate: "תאריך סיום", budget: "תקציב מתוכנן",
-  requiredVolunteers: "מתנדבים נדרשים", suppliers: "ספקים קשורים", notes: "הערות",
-};
-
 export const supplierFields: FormField[] = [
   { name: "name", label: "שם הספק", required: true },
   { name: "contact", label: "איש קשר", required: true },
@@ -127,11 +95,6 @@ export const supplierFields: FormField[] = [
   { name: "status", label: "סטטוס", type: "select", required: true, options: ["פעיל", "מושעה"] },
   { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
 ];
-
-export const supplierLabels: Record<string, string> = {
-  name: "שם הספק", contact: "איש קשר", phone: "טלפון", email: "אימייל", category: "קטגוריה",
-  address: "כתובת", taxId: "ח.פ. / עוסק", paymentTerms: "תנאי תשלום", status: "סטטוס", notes: "הערות",
-};
 
 export const familyFields: FormField[] = [
   { name: "familyName", label: "שם המשפחה", required: true },
@@ -148,12 +111,6 @@ export const familyFields: FormField[] = [
   { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
 ];
 
-export const familyLabels: Record<string, string> = {
-  familyName: "שם המשפחה", mainContact: "איש קשר ראשי", phone: "טלפון", email: "אימייל", city: "עיר",
-  countryOfOrigin: "ארץ מקור", immigrationDate: "תאריך עלייה", membersCount: "מספר נפשות",
-  assignedStaff: "איש צוות מלווה", status: "סטטוס טיפול", needs: "צרכי סיוע", notes: "הערות",
-};
-
 export const incomeFields: FormField[] = [
   { name: "category", label: "סוג הכנסה", type: "select", required: true, options: ["תרומה", "מענק", "אגרות נרשמים", "אחר"] },
   { name: "amount", label: "סכום (₪)", type: "number", required: true },
@@ -165,11 +122,6 @@ export const incomeFields: FormField[] = [
   { name: "reference", label: "אסמכתא" },
   { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
 ];
-
-export const incomeLabels: Record<string, string> = {
-  category: "סוג הכנסה", amount: "סכום", date: "תאריך", source: "מקור", donationId: "תרומה משויכת",
-  project: "פרויקט משויך", method: "אופן תשלום", reference: "אסמכתא", notes: "הערות",
-};
 
 export const expenseFields: FormField[] = [
   { name: "category", label: "קטגוריית הוצאה", required: true },
@@ -183,11 +135,6 @@ export const expenseFields: FormField[] = [
   { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
 ];
 
-export const expenseLabels: Record<string, string> = {
-  category: "קטגוריית הוצאה", amount: "סכום", date: "תאריך", supplier: "ספק", project: "פרויקט",
-  status: "סטטוס תשלום", receiptStatus: "חשבונית / קבלה", reference: "אסמכתא", notes: "הערות",
-};
-
 export const userFields: FormField[] = [
   { name: "name", label: "שם מלא", required: true },
   { name: "email", label: "דוא״ל", type: "email", required: true },
@@ -195,10 +142,6 @@ export const userFields: FormField[] = [
   { name: "status", label: "סטטוס", type: "select", required: true, options: ["פעיל", "מושעה"] },
   { name: "permissions", label: "הרשאות מיוחדות", colSpan: 2, helper: "מופרדות בפסיק — לדוגמה: אישור תשלומים, ייצוא דוחות" },
 ];
-
-export const userLabels: Record<string, string> = {
-  name: "שם מלא", email: "דוא״ל", role: "תפקיד", status: "סטטוס", permissions: "הרשאות מיוחדות",
-};
 
 export function splitList(v: string): string[] {
   return v

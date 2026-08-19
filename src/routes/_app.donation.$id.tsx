@@ -1,15 +1,15 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { ArrowRight, Download, FileCheck2, Plus, Trash2, PieChart } from "lucide-react";
+import { ArrowRight, Download, FileCheck2, Plus, Trash2, PieChart, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/page-header";
 import { SectionCard, EmptyState } from "@/components/detail-kit";
 import { FormDialog } from "@/components/form-dialog";
-import { projects } from "@/lib/mock-data";
-import { useCollection, useRecord } from "@/lib/records-store";
+import { useDonation } from "@/lib/queries/donations";
+import { useDonors } from "@/lib/queries/donors";
+import { useProjects } from "@/lib/queries/projects";
 import { DonationEditButton } from "@/components/module-edit-dialogs";
-import { ChangeHistory } from "@/components/change-history";
 import { TODAY } from "@/lib/crm-seed";
-import { addAllocation, newId, removeAllocation, selectAllocations, useStore } from "@/lib/store";
+import { useAllocationsForDonation, useCreateAllocation, useDeleteAllocation } from "@/lib/queries/allocations";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/donation/$id")({
@@ -18,36 +18,54 @@ export const Route = createFileRoute("/_app/donation/$id")({
 
 function DonationDetail() {
   const { id } = useParams({ from: "/_app/donation/$id" });
-  const d = useRecord("donations", id);
-  const donors = useCollection("donors");
-  const allocations = useStore(selectAllocations(id));
+  const { data: d, isLoading, isError, refetch } = useDonation(id);
+  const { data: donors } = useDonors();
+  const { data: projects } = useProjects();
+  const { data: allocationsData } = useAllocationsForDonation(id);
+  const allocations = allocationsData ?? [];
+  const createAllocation = useCreateAllocation();
+  const deleteAllocation = useDeleteAllocation();
 
-  if (!d)
+  if (isLoading) {
+    return (
+      <div className="card-elevated flex items-center justify-center gap-2 p-16 text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin" /> טוען...
+      </div>
+    );
+  }
+
+  if (isError || !d)
     return (
       <div className="card-elevated p-8 text-center">
         תרומה לא נמצאה. <Link to="/donations" className="text-brand">חזרה</Link>
+        {isError && (
+          <button onClick={() => refetch()} className="block mx-auto mt-2 text-sm text-brand hover:underline">נסה שוב</button>
+        )}
       </div>
     );
 
-  const donor = donors.find((x) => x.name === d.donor);
+  const donor = (donors ?? []).find((x) => x.id === d.donorId);
   const allocated = allocations.reduce((s, a) => s + a.amount, 0);
   const remaining = d.amount - allocated;
   const pct = Math.min(100, Math.round((allocated / d.amount) * 100));
 
-  const handleAllocate = (v: Record<string, string>) => {
-    const project = projects.find((p) => p.name === v.projectId);
+  const handleAllocate = async (v: Record<string, string>) => {
+    const project = (projects ?? []).find((p) => p.name === v.projectId);
     if (!project) return "יש לבחור פרויקט";
     const amount = Number(v.amount);
     if (!amount || amount <= 0) return "יש להזין סכום חיובי";
     if (amount > remaining) return `ניתן לייעד עד ₪${remaining.toLocaleString()} — היתרה שטרם יועדה`;
-    addAllocation({
-      id: newId("AL"),
-      donationId: d.id,
-      projectId: project.id,
-      amount,
-      date: v.date || TODAY,
-      notes: v.notes || undefined,
-    });
+    try {
+      await createAllocation.mutateAsync({
+        donationId: d.id,
+        projectId: project.id,
+        amount,
+        date: v.date || TODAY,
+        notes: v.notes || undefined,
+      });
+    } catch (err) {
+      return err instanceof Error ? err.message : "השמירה נכשלה";
+    }
   };
 
   return (
@@ -124,7 +142,6 @@ function DonationDetail() {
       </div>
 
       <div className="mt-6">
-        <ChangeHistory entityId={d.id} className="mb-6" />
         <SectionCard
           title="ייעוד התרומה לפרויקטים"
           actions={
@@ -138,7 +155,7 @@ function DonationDetail() {
               description={`יתרה שטרם יועדה: ₪${remaining.toLocaleString()} מתוך ₪${d.amount.toLocaleString()}.`}
               successMessage="הייעוד נרשם ושויך לתקציב הפרויקט"
               fields={[
-                { name: "projectId", label: "פרויקט", type: "select", required: true, options: projects.map((p) => p.name) },
+                { name: "projectId", label: "פרויקט", type: "select", required: true, options: (projects ?? []).map((p) => p.name) },
                 { name: "amount", label: "סכום (₪)", type: "number", required: true },
                 { name: "date", label: "תאריך ייעוד", type: "date", required: true },
                 { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
@@ -177,7 +194,7 @@ function DonationDetail() {
               </thead>
               <tbody>
                 {allocations.map((a) => {
-                  const p = projects.find((x) => x.id === a.projectId);
+                  const p = (projects ?? []).find((x) => x.id === a.projectId);
                   return (
                     <tr key={a.id} className="border-t border-border hover:bg-surface-muted">
                       <td className="py-3">
@@ -195,9 +212,13 @@ function DonationDetail() {
                         <button
                           className="text-muted-foreground hover:text-destructive"
                           aria-label="בטל ייעוד"
-                          onClick={() => {
-                            removeAllocation(a.id);
-                            toast.success("הייעוד בוטל");
+                          onClick={async () => {
+                            try {
+                              await deleteAllocation.mutateAsync({ id: a.id, donationId: d.id });
+                              toast.success("הייעוד בוטל");
+                            } catch {
+                              toast.error("ביטול הייעוד נכשל");
+                            }
                           }}
                         >
                           <Trash2 className="h-4 w-4" />

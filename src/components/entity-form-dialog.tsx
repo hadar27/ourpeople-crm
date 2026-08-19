@@ -32,6 +32,8 @@ interface EntityFormDialogProps {
   successMessage: string;
   triggerNode?: ReactNode;
   customValidate?: (values: Record<string, string>) => string | null;
+  /** Persist the new record. When omitted, the dialog simulates a save (no data is stored). */
+  onCreate?: (values: Record<string, string>) => Promise<{ ok: boolean; error?: string }>;
 }
 
 export function EntityFormDialog({
@@ -42,6 +44,7 @@ export function EntityFormDialog({
   successMessage,
   triggerNode,
   customValidate,
+  onCreate,
 }: EntityFormDialogProps) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -79,8 +82,17 @@ export function EntityFormDialog({
       }
     }
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 700));
-    setSaving(false);
+    if (onCreate) {
+      const res = await onCreate(values);
+      setSaving(false);
+      if (!res.ok) {
+        toast.error(res.error ?? "השמירה נכשלה. נסו שוב.");
+        return;
+      }
+    } else {
+      await new Promise((r) => setTimeout(r, 700));
+      setSaving(false);
+    }
     toast.success(successMessage);
     setValues({});
     setErrors({});

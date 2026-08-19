@@ -20,6 +20,9 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Local env vars (Supabase URL/keys) — see .env.example
+.env.local
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

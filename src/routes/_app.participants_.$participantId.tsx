@@ -13,10 +13,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/page-header";
 import { MiniStat, SectionCard, EmptyState, RecordNotFound } from "@/components/detail-kit";
-import { activitiesCatalog, projects } from "@/lib/mock-data";
-import { useRecord } from "@/lib/records-store";
+import { useParticipant } from "@/lib/queries/participants";
+import { useProjects } from "@/lib/queries/projects";
 import { ParticipantEditButton } from "@/components/module-edit-dialogs";
-import { ChangeHistory } from "@/components/change-history";
+import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_app/participants_/$participantId")({
   component: ParticipantProfile,
@@ -32,7 +32,25 @@ export const Route = createFileRoute("/_app/participants_/$participantId")({
 
 function ParticipantProfile() {
   const { participantId } = useParams({ from: "/_app/participants_/$participantId" });
-  const participant = useRecord("participants", participantId);
+  const { data: participant, isLoading, isError, refetch } = useParticipant(participantId);
+  const { data: projects } = useProjects();
+
+  if (isLoading) {
+    return (
+      <div className="card-elevated flex items-center justify-center gap-2 p-16 text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin" /> טוען...
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="card-elevated flex flex-col items-center gap-3 p-16 text-center">
+        <div className="text-sm text-muted-foreground">אירעה שגיאה בטעינת הנרשם.</div>
+        <button onClick={() => refetch()} className="text-sm text-brand hover:underline">נסה שוב</button>
+      </div>
+    );
+  }
 
   if (!participant) {
     return (
@@ -45,9 +63,8 @@ function ParticipantProfile() {
     );
   }
 
-  const activityDef = activitiesCatalog.find((a) => a.name === participant.activity);
-  const price = activityDef?.price ?? 0;
-  const relatedProject = projects.find((p) => p.name.includes(participant.activity));
+  const price = participant.projectPrice;
+  const relatedProject = (projects ?? []).find((p) => p.id === participant.projectId);
 
   const paidFully = participant.paymentStatus === "שולם" || participant.paymentStatus === "לא נדרש תשלום";
   const balance = paidFully ? 0 : participant.paymentStatus === "שולם חלקית" ? Math.round(price / 2) : price;
@@ -90,10 +107,6 @@ function ParticipantProfile() {
         />
       </div>
 
-      <div className="mb-6">
-        <ChangeHistory entityId={participant.id} />
-      </div>
-
       <div className="grid lg:grid-cols-2 gap-6">
         <SectionCard title="פרטי קשר" icon={<Phone className="h-4 w-4" />}>
           <div className="divide-y divide-border text-sm">
@@ -106,20 +119,19 @@ function ParticipantProfile() {
 
         <SectionCard title="פעילות ורישום" icon={<CalendarClock className="h-4 w-4" />}>
           <div className="divide-y divide-border text-sm">
-            <Row label="פעילות" value={participant.activity} />
-            <Row label="סוג פעילות" value={participant.activityType} />
             <Row
-              label="פרויקט משויך"
+              label="פרויקט"
               value={
                 relatedProject ? (
                   <Link to="/project/$id" params={{ id: relatedProject.id }} className="text-brand hover:underline">
                     {relatedProject.name}
                   </Link>
                 ) : (
-                  "—"
+                  participant.project
                 )
               }
             />
+            <Row label="סוג פרויקט" value={participant.projectType} />
             <Row label="סטטוס רישום" value={<StatusBadge value={participant.status} />} />
           </div>
         </SectionCard>

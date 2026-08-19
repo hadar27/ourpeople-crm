@@ -5,12 +5,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/page-header";
 import { MiniStat, SectionCard, EmptyState, Timeline, type TimelineItem } from "@/components/detail-kit";
 import { FormDialog } from "@/components/form-dialog";
-import { useCollection, useRecord } from "@/lib/records-store";
+import { useDonor } from "@/lib/queries/donors";
+import { useDonations } from "@/lib/queries/donations";
 import { DonorEditButton, InteractionEditButton } from "@/components/module-edit-dialogs";
-import { ChangeHistory } from "@/components/change-history";
 import { isOverdue, TODAY } from "@/lib/crm-seed";
-import { addFollowUp, addInteraction, newId, selectInteractions, setInteractionStatus, useStore } from "@/lib/store";
-import type { DonorInteraction, InteractionType } from "@/lib/crm-types";
+import { useInteractionsForDonor, useCreateInteraction, useSetInteractionStatus } from "@/lib/queries/interactions";
+import { useCreateFollowUp } from "@/lib/queries/follow-ups";
+import type { InteractionType } from "@/lib/crm-types";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/donor/$id")({
@@ -21,11 +22,19 @@ const CURRENT_STAFF = "שרה כהן";
 
 function DonorDetail() {
   const { id } = useParams({ from: "/_app/donor/$id" });
-  const donor = useRecord("donors", id);
-  const donations = useCollection("donations");
-  const interactions = useStore(selectInteractions(id));
+  const { data: donor, isLoading, isError } = useDonor(id);
+  const { data: donations } = useDonations();
+  const { data: interactionsData } = useInteractionsForDonor(id);
+  const interactions = interactionsData ?? [];
+  const createInteraction = useCreateInteraction();
+  const createFollowUp = useCreateFollowUp();
+  const setInteractionStatus = useSetInteractionStatus();
 
-  if (!donor) {
+  if (isLoading) {
+    return <div className="card-elevated p-8 text-center text-muted-foreground">טוען...</div>;
+  }
+
+  if (isError || !donor) {
     return (
       <div className="card-elevated p-8 text-center">
         תורם לא נמצא. <Link to="/donors" className="text-brand">חזרה</Link>
@@ -33,7 +42,7 @@ function DonorDetail() {
     );
   }
 
-  const history = donations.filter((d) => d.donor === donor.name);
+  const history = (donations ?? []).filter((d) => d.donorId === donor.id);
   const sorted = [...interactions].sort((a, b) => (a.date < b.date ? 1 : -1));
   const openFollowUps = sorted.filter((i) => i.followUpDate && i.status !== "הושלם");
   const overdue = openFollowUps.filter((i) => isOverdue(i.followUpDate));
@@ -77,9 +86,13 @@ function DonorDetail() {
             {i.status !== "הושלם" && (
               <button
                 className="text-emerald-700 hover:underline flex items-center gap-1"
-                onClick={() => {
-                  setInteractionStatus(i.id, "הושלם");
-                  toast.success("משימת ההמשך סומנה כהושלמה");
+                onClick={async () => {
+                  try {
+                    await setInteractionStatus.mutateAsync({ id: i.id, status: "הושלם" });
+                    toast.success("משימת ההמשך סומנה כהושלמה");
+                  } catch {
+                    toast.error("העדכון נכשל");
+                  }
                 }}
               >
                 <CheckCircle2 className="h-3.5 w-3.5" /> סמן כהושלם
@@ -91,35 +104,39 @@ function DonorDetail() {
     ),
   }));
 
-  const handleLog = (v: Record<string, string>) => {
-    const rec: DonorInteraction = {
-      id: newId("IN"),
-      donorId: donor.id,
-      type: v.type as InteractionType,
-      date: v.date || TODAY,
-      time: v.time || "09:00",
-      staff: v.staff || CURRENT_STAFF,
-      subject: v.subject,
-      summary: v.summary,
-      outcome: v.outcome ?? "",
-      followUpAction: v.followUpAction || undefined,
-      followUpDate: v.followUpDate || undefined,
-      status: v.followUpAction ? "פתוח" : "הושלם",
-      createdAt: TODAY,
-    };
-    addInteraction(rec);
-    if (rec.followUpAction && rec.followUpDate) {
-      addFollowUp({
-        id: newId("FU"),
-        entityType: "donor",
-        entityId: donor.id,
-        entityName: donor.name,
-        sourceInteractionId: rec.id,
-        title: rec.followUpAction,
-        dueDate: rec.followUpDate,
-        assignee: rec.staff,
-        status: "פתוח",
+  const handleLog = async (v: Record<string, string>) => {
+    const followUpAction = v.followUpAction || undefined;
+    const followUpDate = v.followUpDate || undefined;
+    const staff = v.staff || CURRENT_STAFF;
+    try {
+      const rec = await createInteraction.mutateAsync({
+        donorId: donor.id,
+        type: v.type as InteractionType,
+        date: v.date || TODAY,
+        time: v.time || "09:00",
+        staff,
+        subject: v.subject,
+        summary: v.summary,
+        outcome: v.outcome ?? "",
+        followUpAction,
+        followUpDate,
+        status: followUpAction ? "פתוח" : "הושלם",
+        createdAt: TODAY,
       });
+      if (followUpAction && followUpDate) {
+        await createFollowUp.mutateAsync({
+          entityType: "donor",
+          entityId: donor.id,
+          entityName: donor.name,
+          sourceInteractionId: rec.id,
+          title: followUpAction,
+          dueDate: followUpDate,
+          assignee: staff,
+          status: "פתוח",
+        });
+      }
+    } catch (err) {
+      return err instanceof Error ? err.message : "השמירה נכשלה";
     }
   };
 
@@ -200,7 +217,6 @@ function DonorDetail() {
         <TabsList className="mb-4">
           <TabsTrigger value="crm">היסטוריית קשר ({interactions.length})</TabsTrigger>
           <TabsTrigger value="donations">תרומות ({history.length})</TabsTrigger>
-          <TabsTrigger value="crm-history">היסטוריית שינויים</TabsTrigger>
           <TabsTrigger value="tasks">משימות המשך ({openFollowUps.length})</TabsTrigger>
         </TabsList>
 
@@ -208,10 +224,6 @@ function DonorDetail() {
           <SectionCard title="יומן אינטראקציות">
             <Timeline items={timeline} />
           </SectionCard>
-        </TabsContent>
-
-        <TabsContent value="crm-history">
-          <ChangeHistory entityId={donor.id} />
         </TabsContent>
 
         <TabsContent value="donations">
@@ -275,9 +287,13 @@ function DonorDetail() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => {
-                        setInteractionStatus(i.id, "הושלם");
-                        toast.success("המשימה הושלמה");
+                      onClick={async () => {
+                        try {
+                          await setInteractionStatus.mutateAsync({ id: i.id, status: "הושלם" });
+                          toast.success("המשימה הושלמה");
+                        } catch {
+                          toast.error("העדכון נכשל");
+                        }
                       }}
                     >
                       <CheckCircle2 className="h-4 w-4 ml-1" /> סיום

@@ -1,8 +1,44 @@
 // Business-rule engine: derives operational alerts from the current data.
 // Pure rules — no AI.
-import { projects, volunteers, donations, suppliers, type Alert } from "./mock-data";
-import { getSnapshot } from "./store";
+import type { ProjectRecord } from "./queries/projects";
+import type { VolunteerRecord } from "./queries/volunteers";
+import type { DonationRecord } from "./queries/donations";
+import type { SupplierRecord } from "./queries/suppliers";
+import type { FamilyRecord } from "./queries/families";
+import { useProjects } from "./queries/projects";
+import { useVolunteers } from "./queries/volunteers";
+import { useDonations } from "./queries/donations";
+import { useSuppliers } from "./queries/suppliers";
+import { useFamilies } from "./queries/families";
+import { useAllInteractions } from "./queries/interactions";
+import { useAllFollowUps } from "./queries/follow-ups";
+import { useAllAssistance } from "./queries/assistance";
+import { useAllAllocations } from "./queries/allocations";
+import type { DonorInteraction, FollowUpTask, AssistanceRecord, DonationAllocation } from "./crm-types";
 import { daysBetween, isOverdue } from "./crm-seed";
+
+export type AlertSeverity = "גבוהה" | "בינונית" | "נמוכה";
+
+export type Alert = {
+  id: string;
+  title: string;
+  severity: AlertSeverity;
+  module: string;
+  rule: string;
+  createdAt: string;
+};
+
+export type AlertEngineData = {
+  projects: ProjectRecord[];
+  volunteers: VolunteerRecord[];
+  donations: DonationRecord[];
+  suppliers: SupplierRecord[];
+  interactions: DonorInteraction[];
+  followUps: FollowUpTask[];
+  families: FamilyRecord[];
+  assistance: AssistanceRecord[];
+  allocations: DonationAllocation[];
+};
 
 const REQUIRED_VOLUNTEERS_PER_PROJECT: Record<string, number> = {
   "קייטנת קיץ 2025": 30,
@@ -12,7 +48,9 @@ const REQUIRED_VOLUNTEERS_PER_PROJECT: Record<string, number> = {
   "חירום ושיקום קהילתי": 25,
 };
 
-export function generateAlerts(): Alert[] {
+export function generateAlerts(data: AlertEngineData): Alert[] {
+  const { projects, volunteers, donations, suppliers, interactions, followUps, families, assistance, allocations } =
+    data;
   const out: Alert[] = [];
   let i = 1;
   const id = () => `A-${String(i++).padStart(3, "0")}`;
@@ -101,8 +139,7 @@ export function generateAlerts(): Alert[] {
     });
 
   // Overdue donor follow-ups (CRM)
-  const snap = getSnapshot();
-  snap.interactions
+  interactions
     .filter((i) => i.status !== "הושלם" && isOverdue(i.followUpDate))
     .forEach((i) => {
       const late = daysBetween(i.followUpDate!);
@@ -117,7 +154,7 @@ export function generateAlerts(): Alert[] {
     });
 
   // Overdue follow-up tasks on families and suppliers
-  snap.followUps
+  followUps
     .filter((f) => f.status !== "הושלם" && isOverdue(f.dueDate))
     .forEach((f) => {
       out.push({
@@ -131,7 +168,7 @@ export function generateAlerts(): Alert[] {
     });
 
   // Families flagged at risk without a closed care cycle
-  snap.families
+  families
     .filter((f) => f.status === "בסיכון")
     .forEach((f) => {
       out.push({
@@ -145,7 +182,7 @@ export function generateAlerts(): Alert[] {
     });
 
   // Pending assistance requests awaiting committee approval
-  const pendingAid = snap.assistance.filter((a) => a.status === "ממתין");
+  const pendingAid = assistance.filter((a) => a.status === "ממתין");
   if (pendingAid.length > 0) {
     out.push({
       id: id(),
@@ -158,9 +195,9 @@ export function generateAlerts(): Alert[] {
   }
 
   // Unallocated donations
-  snap.allocations.length &&
+  allocations.length &&
     donations.forEach((d) => {
-      const alloc = snap.allocations.filter((a) => a.donationId === d.id).reduce((s, a) => s + a.amount, 0);
+      const alloc = allocations.filter((a) => a.donationId === d.id).reduce((s, a) => s + a.amount, 0);
       if (alloc < d.amount) {
         out.push({
           id: id(),
@@ -174,6 +211,31 @@ export function generateAlerts(): Alert[] {
     });
 
   return out;
+}
+
+/** Runs the alert engine against live Supabase data. */
+export function useAlerts(): Alert[] {
+  const { data: projects } = useProjects();
+  const { data: volunteers } = useVolunteers();
+  const { data: donations } = useDonations();
+  const { data: suppliers } = useSuppliers();
+  const { data: interactions } = useAllInteractions();
+  const { data: followUps } = useAllFollowUps();
+  const { data: families } = useFamilies();
+  const { data: assistance } = useAllAssistance();
+  const { data: allocations } = useAllAllocations();
+
+  return generateAlerts({
+    projects: projects ?? [],
+    volunteers: volunteers ?? [],
+    donations: donations ?? [],
+    suppliers: suppliers ?? [],
+    interactions: interactions ?? [],
+    followUps: followUps ?? [],
+    families: families ?? [],
+    assistance: assistance ?? [],
+    allocations: allocations ?? [],
+  });
 }
 
 export const moduleRoute: Record<string, string> = {

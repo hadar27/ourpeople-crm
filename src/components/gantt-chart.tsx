@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Flag } from "lucide-react";
-import type { GanttPhase } from "@/lib/mock-data";
+import type { GanttPhase } from "@/lib/queries/project-phases";
 
 function toDays(d: string) {
   return Math.floor(new Date(d).getTime() / 86_400_000);
