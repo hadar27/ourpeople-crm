@@ -20,6 +20,9 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Vercel
+.vercel/
+
 # Local env vars (Supabase URL/keys) — see .env.example
 .env.local
 

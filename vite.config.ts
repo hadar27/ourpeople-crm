@@ -12,4 +12,10 @@ export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
+  // Nitro (via the shared Lovable config) always falls back to the
+  // `cloudflare-module` preset when no explicit preset is set — it does NOT
+  // autodetect the deploy target from env vars. Vercel's build environment
+  // sets `VERCEL=1`, so use that to opt into Nitro's `vercel` preset there;
+  // every other build (local dev, Cloudflare) keeps the default.
+  nitro: process.env.VERCEL ? { preset: "vercel" } : undefined,
 });
