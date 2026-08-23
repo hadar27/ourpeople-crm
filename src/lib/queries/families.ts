@@ -94,7 +94,11 @@ export function useFamily(id: string | undefined) {
   return useQuery({
     queryKey: familyKeys.detail(id),
     queryFn: async () => {
-      const { data, error } = await supabase.from("families").select("*").eq("id", id).maybeSingle();
+      const { data, error } = await supabase
+        .from("families")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
       if (error) throw error;
       return data ? toFamilyRecord(data as FamilyRow) : null;
     },
@@ -102,11 +106,29 @@ export function useFamily(id: string | undefined) {
   });
 }
 
+export function useDeleteFamily() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("families").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: familyKeys.list() });
+      queryClient.invalidateQueries({ queryKey: familyKeys.detail(id) });
+    },
+  });
+}
+
 export function useCreateFamily() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (values: Partial<FamilyRecord>) => {
-      const { data, error } = await supabase.from("families").insert(toRow(values)).select().single();
+      const { data, error } = await supabase
+        .from("families")
+        .insert(toRow(values))
+        .select()
+        .single();
       if (error) throw error;
       return toFamilyRecord(data as FamilyRow);
     },

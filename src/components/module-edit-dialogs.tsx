@@ -1,17 +1,36 @@
 // Per-module edit buttons. Each one is permission-gated, pre-filled with the
 // current record and writes back through the record store (id preserved).
 import { RecordEditDialog } from "@/components/record-edit-dialog";
+import { DeleteRecordButton } from "@/components/delete-record-dialog";
 import { useCanEdit } from "@/lib/permissions";
-import { useDonors, useUpdateDonor, type DonorRecord } from "@/lib/queries/donors";
+import { useDonors, useUpdateDonor, useDeleteDonor, type DonorRecord } from "@/lib/queries/donors";
 import { useProjects, useUpdateProject, type ProjectRecord } from "@/lib/queries/projects";
-import { useUpdateParticipant, type ParticipantRecord } from "@/lib/queries/participants";
-import { useUpdateVolunteer, type VolunteerRecord } from "@/lib/queries/volunteers";
-import { useUsers, useUpdateUser, type UserRecord } from "@/lib/queries/users";
-import { ANONYMOUS_DONOR, useUpdateDonation, type DonationRecord } from "@/lib/queries/donations";
-import { useSuppliers, useUpdateSupplier, type SupplierRecord } from "@/lib/queries/suppliers";
-import { useUpdateIncome, type IncomeRecord } from "@/lib/queries/incomes";
-import { useUpdateExpense, type ExpenseRecord } from "@/lib/queries/expenses";
-import { useUpdateFamily, type FamilyRecord } from "@/lib/queries/families";
+import {
+  useUpdateParticipant,
+  useDeleteParticipant,
+  type ParticipantRecord,
+} from "@/lib/queries/participants";
+import {
+  useUpdateVolunteer,
+  useDeleteVolunteer,
+  type VolunteerRecord,
+} from "@/lib/queries/volunteers";
+import { useUsers, useUpdateUser, useDeleteUser, type UserRecord } from "@/lib/queries/users";
+import {
+  ANONYMOUS_DONOR,
+  useUpdateDonation,
+  useDeleteDonation,
+  type DonationRecord,
+} from "@/lib/queries/donations";
+import {
+  useSuppliers,
+  useUpdateSupplier,
+  useDeleteSupplier,
+  type SupplierRecord,
+} from "@/lib/queries/suppliers";
+import { useUpdateIncome, useDeleteIncome, type IncomeRecord } from "@/lib/queries/incomes";
+import { useUpdateExpense, useDeleteExpense, type ExpenseRecord } from "@/lib/queries/expenses";
+import { useUpdateFamily, useDeleteFamily, type FamilyRecord } from "@/lib/queries/families";
 import { useUpdateInteraction } from "@/lib/queries/interactions";
 import {
   donationFields,
@@ -39,7 +58,10 @@ import type {
 type Btn = { triggerLabel?: string };
 
 // ---------- Participants ----------
-export function ParticipantEditButton({ record, triggerLabel }: { record: ParticipantRecord } & Btn) {
+export function ParticipantEditButton({
+  record,
+  triggerLabel,
+}: { record: ParticipantRecord } & Btn) {
   const allowed = useCanEdit("participants");
   const updateParticipant = useUpdateParticipant();
   const { data: projects } = useProjects();
@@ -66,11 +88,7 @@ export function ParticipantEditButton({ record, triggerLabel }: { record: Partic
         notes: record.notes ?? "",
       }}
       customValidate={(v) => {
-        if (
-          record.projectType === "בתשלום" &&
-          v.status === "מאושר" &&
-          v.paymentStatus !== "שולם"
-        ) {
+        if (record.projectType === "בתשלום" && v.status === "מאושר" && v.paymentStatus !== "שולם") {
           return "פעילות בתשלום יכולה להיות מאושרת רק לאחר תשלום מלא.";
         }
         return null;
@@ -101,6 +119,19 @@ export function ParticipantEditButton({ record, triggerLabel }: { record: Partic
           return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
         }
       }}
+    />
+  );
+}
+
+export function ParticipantDeleteButton({ record }: { record: ParticipantRecord }) {
+  const allowed = useCanEdit("participants");
+  const deleteParticipant = useDeleteParticipant();
+  if (!allowed) return null;
+  return (
+    <DeleteRecordButton
+      title={`מחיקת נרשם — ${record.name}`}
+      description="פעולה זו תמחק לצמיתות את הנרשם. לא ניתן לשחזר אחרי המחיקה."
+      onDelete={() => deleteParticipant.mutateAsync(record.id)}
     />
   );
 }
@@ -154,6 +185,19 @@ export function VolunteerEditButton({ record, triggerLabel }: { record: Voluntee
   );
 }
 
+export function VolunteerDeleteButton({ record }: { record: VolunteerRecord }) {
+  const allowed = useCanEdit("volunteers");
+  const deleteVolunteer = useDeleteVolunteer();
+  if (!allowed) return null;
+  return (
+    <DeleteRecordButton
+      title={`מחיקת מתנדב — ${record.name}`}
+      description="פעולה זו תמחק לצמיתות את המתנדב. לא ניתן לשחזר אחרי המחיקה."
+      onDelete={() => deleteVolunteer.mutateAsync(record.id)}
+    />
+  );
+}
+
 // ---------- Donors ----------
 export function DonorEditButton({ record, triggerLabel }: { record: DonorRecord } & Btn) {
   const allowed = useCanEdit("donors");
@@ -203,8 +247,24 @@ export function DonorEditButton({ record, triggerLabel }: { record: DonorRecord 
   );
 }
 
+export function DonorDeleteButton({ record }: { record: DonorRecord }) {
+  const allowed = useCanEdit("donors");
+  const deleteDonor = useDeleteDonor();
+  if (!allowed) return null;
+  return (
+    <DeleteRecordButton
+      title={`מחיקת תורם — ${record.name}`}
+      description="פעולה זו תמחק לצמיתות את התורם. תרומות, פגישות ואינטראקציות משויכות ימנעו את המחיקה."
+      onDelete={() => deleteDonor.mutateAsync(record.id)}
+    />
+  );
+}
+
 // ---------- Donor interactions ----------
-export function InteractionEditButton({ record, triggerLabel }: { record: DonorInteraction } & Btn) {
+export function InteractionEditButton({
+  record,
+  triggerLabel,
+}: { record: DonorInteraction } & Btn) {
   const allowed = useCanEdit("donors");
   const updateInteraction = useUpdateInteraction();
   if (!allowed) return null;
@@ -319,6 +379,19 @@ export function DonationEditButton({ record, triggerLabel }: { record: DonationR
   );
 }
 
+export function DonationDeleteButton({ record }: { record: DonationRecord }) {
+  const allowed = useCanEdit("donations");
+  const deleteDonation = useDeleteDonation();
+  if (!allowed) return null;
+  return (
+    <DeleteRecordButton
+      title={`מחיקת תרומה — ${record.id}`}
+      description="פעולה זו תמחק לצמיתות את התרומה. הכנסות והקצאות משויכות ימנעו את המחיקה."
+      onDelete={() => deleteDonation.mutateAsync(record.id)}
+    />
+  );
+}
+
 // ---------- Projects ----------
 export function ProjectEditButton({ record, triggerLabel }: { record: ProjectRecord } & Btn) {
   const allowed = useCanEdit("projects");
@@ -426,6 +499,19 @@ export function SupplierEditButton({ record, triggerLabel }: { record: SupplierR
   );
 }
 
+export function SupplierDeleteButton({ record }: { record: SupplierRecord }) {
+  const allowed = useCanEdit("suppliers");
+  const deleteSupplier = useDeleteSupplier();
+  if (!allowed) return null;
+  return (
+    <DeleteRecordButton
+      title={`מחיקת ספק — ${record.name}`}
+      description="פעולה זו תמחק לצמיתות את הספק. חוזים, הזמנות רכש, חשבוניות ותשלומים משויכים ימנעו את המחיקה."
+      onDelete={() => deleteSupplier.mutateAsync(record.id)}
+    />
+  );
+}
+
 // ---------- Families ----------
 export function FamilyEditButton({ record, triggerLabel }: { record: FamilyRecord } & Btn) {
   const allowed = useCanEdit("families");
@@ -485,6 +571,19 @@ export function FamilyEditButton({ record, triggerLabel }: { record: FamilyRecor
   );
 }
 
+export function FamilyDeleteButton({ record }: { record: FamilyRecord }) {
+  const allowed = useCanEdit("families");
+  const deleteFamily = useDeleteFamily();
+  if (!allowed) return null;
+  return (
+    <DeleteRecordButton
+      title={`מחיקת תיק משפחה — ${record.familyName}`}
+      description="פעולה זו תמחק לצמיתות את התיק. בני המשפחה ורישומי הסיוע המשויכים ימנעו את המחיקה."
+      onDelete={() => deleteFamily.mutateAsync(record.id)}
+    />
+  );
+}
+
 // ---------- Income ----------
 export function IncomeEditButton({ record, triggerLabel }: { record: IncomeRecord } & Btn) {
   const allowed = useCanEdit("finance");
@@ -533,6 +632,19 @@ export function IncomeEditButton({ record, triggerLabel }: { record: IncomeRecor
           return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
         }
       }}
+    />
+  );
+}
+
+export function IncomeDeleteButton({ record }: { record: IncomeRecord }) {
+  const allowed = useCanEdit("finance");
+  const deleteIncome = useDeleteIncome();
+  if (!allowed) return null;
+  return (
+    <DeleteRecordButton
+      title={`מחיקת הכנסה — ${record.id}`}
+      description="פעולה זו תמחק לצמיתות את רישום ההכנסה. לא ניתן לשחזר אחרי המחיקה."
+      onDelete={() => deleteIncome.mutateAsync(record.id)}
     />
   );
 }
@@ -597,13 +709,28 @@ export function ExpenseEditButton({ record, triggerLabel }: { record: ExpenseRec
   );
 }
 
+export function ExpenseDeleteButton({ record }: { record: ExpenseRecord }) {
+  const allowed = useCanEdit("finance");
+  const deleteExpense = useDeleteExpense();
+  if (!allowed) return null;
+  return (
+    <DeleteRecordButton
+      title={`מחיקת הוצאה — ${record.id}`}
+      description="פעולה זו תמחק לצמיתות את רישום ההוצאה. לא ניתן לשחזר אחרי המחיקה."
+      onDelete={() => deleteExpense.mutateAsync(record.id)}
+    />
+  );
+}
+
 // ---------- Users & permissions ----------
 export function UserEditButton({ record, triggerLabel }: { record: UserRecord } & Btn) {
   const allowed = useCanEdit("users");
   const { data: allUsers } = useUsers();
   const updateUser = useUpdateUser();
   if (!allowed) return null;
-  const activeAdmins = (allUsers ?? []).filter((u) => u.role === "מנהל מערכת" && u.status === "פעיל");
+  const activeAdmins = (allUsers ?? []).filter(
+    (u) => u.role === "מנהל מערכת" && u.status === "פעיל",
+  );
   const isOnlyActiveAdmin =
     record.role === "מנהל מערכת" && record.status === "פעיל" && activeAdmins.length === 1;
   return (
@@ -641,6 +768,30 @@ export function UserEditButton({ record, triggerLabel }: { record: UserRecord } 
         } catch (err) {
           return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
         }
+      }}
+    />
+  );
+}
+
+export function UserDeleteButton({ record }: { record: UserRecord }) {
+  const allowed = useCanEdit("users");
+  const { data: allUsers } = useUsers();
+  const deleteUser = useDeleteUser();
+  if (!allowed) return null;
+  const activeAdmins = (allUsers ?? []).filter(
+    (u) => u.role === "מנהל מערכת" && u.status === "פעיל",
+  );
+  const isOnlyActiveAdmin =
+    record.role === "מנהל מערכת" && record.status === "פעיל" && activeAdmins.length === 1;
+  return (
+    <DeleteRecordButton
+      title={`מחיקת משתמש — ${record.name}`}
+      description="פעולה זו תמחק לצמיתות את המשתמש ותסיר את הגישה שלו למערכת."
+      onDelete={async () => {
+        if (isOnlyActiveAdmin) {
+          throw new Error("לא ניתן למחוק את מנהל המערכת האחרון הפעיל במערכת.");
+        }
+        await deleteUser.mutateAsync(record.id);
       }}
     />
   );

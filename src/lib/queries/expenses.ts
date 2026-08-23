@@ -79,9 +79,25 @@ export function useExpenses() {
   return useQuery({
     queryKey: expenseKeys.list(),
     queryFn: async () => {
-      const { data, error } = await supabase.from("expenses").select(SELECT).order("date", { ascending: false });
+      const { data, error } = await supabase
+        .from("expenses")
+        .select(SELECT)
+        .order("date", { ascending: false });
       if (error) throw error;
       return (data as unknown as ExpenseRow[]).map(toExpenseRecord);
+    },
+  });
+}
+
+export function useDeleteExpense() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("expenses").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: expenseKeys.list() });
     },
   });
 }
@@ -90,7 +106,11 @@ export function useCreateExpense() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (values: Partial<ExpenseRecord>) => {
-      const { data, error } = await supabase.from("expenses").insert(toRow(values)).select(SELECT).single();
+      const { data, error } = await supabase
+        .from("expenses")
+        .insert(toRow(values))
+        .select(SELECT)
+        .single();
       if (error) throw error;
       return toExpenseRecord(data as unknown as ExpenseRow);
     },

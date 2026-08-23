@@ -4,7 +4,7 @@ import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { useUsers, useCreateUser, type UserRecord } from "@/lib/queries/users";
-import { UserEditButton } from "@/components/module-edit-dialogs";
+import { UserEditButton, UserDeleteButton } from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/users")({
   component: UsersPage,
@@ -12,7 +12,11 @@ export const Route = createFileRoute("/_app/users")({
 
 const columns: Column<UserRecord>[] = [
   { key: "name", header: "שם", render: (r) => <span className="font-medium">{r.name}</span> },
-  { key: "email", header: "דוא״ל", render: (r) => <span className="text-muted-foreground">{r.email}</span> },
+  {
+    key: "email",
+    header: "דוא״ל",
+    render: (r) => <span className="text-muted-foreground">{r.email}</span>,
+  },
   { key: "role", header: "תפקיד", render: (r) => <StatusBadge value={r.role} /> },
   { key: "status", header: "סטטוס", render: (r) => <StatusBadge value={r.status} /> },
   { key: "lastLogin", header: "כניסה אחרונה" },
@@ -36,9 +40,21 @@ function UsersPage() {
               { name: "name", label: "שם מלא", required: true },
               { name: "email", label: "דוא״ל", type: "email", required: true },
               { name: "phone", label: "טלפון", type: "tel" },
-              { name: "role", label: "תפקיד", type: "select", required: true, options: ["מנהל מערכת", "הנהלה", "מנהל כספים", "מנהל מתנדבים", "מנהל קשרי תורמים"] },
+              {
+                name: "role",
+                label: "תפקיד",
+                type: "select",
+                required: true,
+                options: ["מנהל מערכת", "הנהלה", "מנהל כספים", "מנהל מתנדבים", "מנהל קשרי תורמים"],
+              },
               { name: "status", label: "סטטוס", type: "select", options: ["פעיל", "מושעה"] },
-              { name: "password", label: "סיסמה זמנית", required: true, placeholder: "תישלח באימייל", helper: "רשומה זו היא ספריית אנשי צוות בלבד — אינה יוצרת חשבון התחברות אמיתי" },
+              {
+                name: "password",
+                label: "סיסמה זמנית",
+                required: true,
+                placeholder: "תישלח באימייל",
+                helper: "רשומה זו היא ספריית אנשי צוות בלבד — אינה יוצרת חשבון התחברות אמיתי",
+              },
             ]}
             onCreate={async (v) => {
               try {
@@ -65,10 +81,22 @@ function UsersPage() {
         ) : isError ? (
           <div className="card-elevated flex flex-col items-center gap-3 p-16 text-center">
             <div className="text-sm text-muted-foreground">אירעה שגיאה בטעינת המשתמשים.</div>
-            <button onClick={() => refetch()} className="text-sm text-brand hover:underline">נסה שוב</button>
+            <button onClick={() => refetch()} className="text-sm text-brand hover:underline">
+              נסה שוב
+            </button>
           </div>
         ) : (
-          <DataTable rows={users ?? []} columns={columns} searchKeys={["name", "email", "role"]} rowActions={(r) => <UserEditButton record={r} />} />
+          <DataTable
+            rows={users ?? []}
+            columns={columns}
+            searchKeys={["name", "email", "role"]}
+            rowActions={(r) => (
+              <div className="flex items-center justify-end gap-2">
+                <UserEditButton record={r} />
+                <UserDeleteButton record={r} />
+              </div>
+            )}
+          />
         )}
       </div>
     </>

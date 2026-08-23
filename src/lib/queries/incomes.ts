@@ -76,9 +76,25 @@ export function useIncomes() {
   return useQuery({
     queryKey: incomeKeys.list(),
     queryFn: async () => {
-      const { data, error } = await supabase.from("incomes").select(SELECT).order("date", { ascending: false });
+      const { data, error } = await supabase
+        .from("incomes")
+        .select(SELECT)
+        .order("date", { ascending: false });
       if (error) throw error;
       return (data as unknown as IncomeRow[]).map(toIncomeRecord);
+    },
+  });
+}
+
+export function useDeleteIncome() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("incomes").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: incomeKeys.list() });
     },
   });
 }
@@ -87,7 +103,11 @@ export function useCreateIncome() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (values: Partial<IncomeRecord>) => {
-      const { data, error } = await supabase.from("incomes").insert(toRow(values)).select(SELECT).single();
+      const { data, error } = await supabase
+        .from("incomes")
+        .insert(toRow(values))
+        .select(SELECT)
+        .single();
       if (error) throw error;
       return toIncomeRecord(data as unknown as IncomeRow);
     },
