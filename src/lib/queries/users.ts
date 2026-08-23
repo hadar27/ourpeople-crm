@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { createUserWithAuth } from "@/lib/create-user";
 
 export type UserRecord = {
   id: string;
@@ -76,10 +77,16 @@ export function useDeleteUser() {
 export function useCreateUser() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (values: Partial<UserRecord>) => {
-      const { data, error } = await supabase.from("users").insert(toRow(values)).select().single();
-      if (error) throw error;
-      return toUserRecord(data as UserRow);
+    mutationFn: async (values: {
+      accessToken: string;
+      name: string;
+      email: string;
+      role: UserRecord["role"];
+      status: UserRecord["status"];
+      password?: string;
+    }) => {
+      const { row, generatedPassword } = await createUserWithAuth({ data: values });
+      return { user: toUserRecord(row as UserRow), generatedPassword };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.list() });
