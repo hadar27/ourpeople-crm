@@ -34,6 +34,8 @@ import {
   IncomeEditButton,
   IncomeDeleteButton,
 } from "@/components/module-edit-dialogs";
+import { EmptyState } from "@/components/detail-kit";
+import { useCanEdit } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_app/finance")({
   component: FinancePage,
@@ -47,6 +49,25 @@ function FinancePage() {
   const { data: donations } = useDonations();
   const createIncome = useCreateIncome();
   const createExpense = useCreateExpense();
+  const canAccess = useCanEdit("finance");
+
+  if (!canAccess) {
+    return (
+      <>
+        <PageHeader
+          title="כספים — ERP"
+          description="לוח בקרה פיננסי כולל הכנסות, הוצאות וניצול תקציב מול תכנון."
+        />
+        <div className="card-elevated p-16">
+          <EmptyState
+            text="אין לך הרשאה לצפייה בעמוד זה"
+            hint="גישה לכספים מוגבלת למנהל מערכת ומנהל כספים."
+          />
+        </div>
+      </>
+    );
+  }
+
   const projectOptions = [GENERAL_PROJECT_INCOME, ...(projects ?? []).map((p) => p.name)];
   const supplierOptions = (suppliers ?? []).map((s) => s.name);
   const monthlyDonations = monthlyDonationTotals(donations ?? []);

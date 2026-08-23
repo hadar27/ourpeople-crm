@@ -9,8 +9,13 @@ import { useDonors } from "@/lib/queries/donors";
 import { useProjects } from "@/lib/queries/projects";
 import { DonationEditButton } from "@/components/module-edit-dialogs";
 import { TODAY } from "@/lib/crm-seed";
-import { useAllocationsForDonation, useCreateAllocation, useDeleteAllocation } from "@/lib/queries/allocations";
+import {
+  useAllocationsForDonation,
+  useCreateAllocation,
+  useDeleteAllocation,
+} from "@/lib/queries/allocations";
 import { toast } from "sonner";
+import { useCanEdit } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_app/donation/$id")({
   component: DonationDetail,
@@ -25,6 +30,18 @@ function DonationDetail() {
   const allocations = allocationsData ?? [];
   const createAllocation = useCreateAllocation();
   const deleteAllocation = useDeleteAllocation();
+  const canAccess = useCanEdit("donations");
+
+  if (!canAccess) {
+    return (
+      <div className="card-elevated p-8 text-center">
+        אין לך הרשאה לצפייה בעמוד זה.{" "}
+        <Link to="/donations" className="text-brand">
+          חזרה
+        </Link>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -37,9 +54,17 @@ function DonationDetail() {
   if (isError || !d)
     return (
       <div className="card-elevated p-8 text-center">
-        תרומה לא נמצאה. <Link to="/donations" className="text-brand">חזרה</Link>
+        תרומה לא נמצאה.{" "}
+        <Link to="/donations" className="text-brand">
+          חזרה
+        </Link>
         {isError && (
-          <button onClick={() => refetch()} className="block mx-auto mt-2 text-sm text-brand hover:underline">נסה שוב</button>
+          <button
+            onClick={() => refetch()}
+            className="block mx-auto mt-2 text-sm text-brand hover:underline"
+          >
+            נסה שוב
+          </button>
         )}
       </div>
     );
@@ -54,7 +79,8 @@ function DonationDetail() {
     if (!project) return "יש לבחור פרויקט";
     const amount = Number(v.amount);
     if (!amount || amount <= 0) return "יש להזין סכום חיובי";
-    if (amount > remaining) return `ניתן לייעד עד ₪${remaining.toLocaleString()} — היתרה שטרם יועדה`;
+    if (amount > remaining)
+      return `ניתן לייעד עד ₪${remaining.toLocaleString()} — היתרה שטרם יועדה`;
     try {
       await createAllocation.mutateAsync({
         donationId: d.id,
@@ -70,7 +96,10 @@ function DonationDetail() {
 
   return (
     <>
-      <Link to="/donations" className="text-sm text-brand inline-flex items-center gap-1 mb-4 hover:underline">
+      <Link
+        to="/donations"
+        className="text-sm text-brand inline-flex items-center gap-1 mb-4 hover:underline"
+      >
         <ArrowRight className="h-4 w-4" /> חזרה לרשימת התרומות
       </Link>
 
@@ -91,7 +120,10 @@ function DonationDetail() {
                   <FileCheck2 className="h-4 w-4 ml-1" /> הפק קבלה
                 </Button>
               )}
-              <Button className="bg-brand hover:bg-brand-deep" onClick={() => toast.success("המסמך הורד")}>
+              <Button
+                className="bg-brand hover:bg-brand-deep"
+                onClick={() => toast.success("המסמך הורד")}
+              >
                 <Download className="h-4 w-4 ml-1" /> הורד אישור
               </Button>
             </div>
@@ -102,7 +134,11 @@ function DonationDetail() {
               label="תורם"
               value={
                 donor ? (
-                  <Link to="/donor/$id" params={{ id: donor.id }} className="text-brand hover:underline font-medium">
+                  <Link
+                    to="/donor/$id"
+                    params={{ id: donor.id }}
+                    className="text-brand hover:underline font-medium"
+                  >
                     {d.donor}
                   </Link>
                 ) : (
@@ -147,7 +183,11 @@ function DonationDetail() {
           actions={
             <FormDialog
               trigger={
-                <Button size="sm" className="bg-brand hover:bg-brand-deep gap-1" disabled={remaining <= 0}>
+                <Button
+                  size="sm"
+                  className="bg-brand hover:bg-brand-deep gap-1"
+                  disabled={remaining <= 0}
+                >
                   <Plus className="h-4 w-4" /> ייעוד לפרויקט
                 </Button>
               }
@@ -155,7 +195,13 @@ function DonationDetail() {
               description={`יתרה שטרם יועדה: ₪${remaining.toLocaleString()} מתוך ₪${d.amount.toLocaleString()}.`}
               successMessage="הייעוד נרשם ושויך לתקציב הפרויקט"
               fields={[
-                { name: "projectId", label: "פרויקט", type: "select", required: true, options: (projects ?? []).map((p) => p.name) },
+                {
+                  name: "projectId",
+                  label: "פרויקט",
+                  type: "select",
+                  required: true,
+                  options: (projects ?? []).map((p) => p.name),
+                },
                 { name: "amount", label: "סכום (₪)", type: "number", required: true },
                 { name: "date", label: "תאריך ייעוד", type: "date", required: true },
                 { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
@@ -167,14 +213,20 @@ function DonationDetail() {
           <div className="mb-5">
             <div className="flex items-center justify-between text-sm mb-2">
               <span className="flex items-center gap-1 text-muted-foreground">
-                <PieChart className="h-4 w-4" /> יועד ₪{allocated.toLocaleString()} מתוך ₪{d.amount.toLocaleString()}
+                <PieChart className="h-4 w-4" /> יועד ₪{allocated.toLocaleString()} מתוך ₪
+                {d.amount.toLocaleString()}
               </span>
-              <span className={`font-semibold ${remaining > 0 ? "text-amber-600" : "text-emerald-600"}`}>
+              <span
+                className={`font-semibold ${remaining > 0 ? "text-amber-600" : "text-emerald-600"}`}
+              >
                 {remaining > 0 ? `יתרה ₪${remaining.toLocaleString()}` : "יועד במלואו"}
               </span>
             </div>
             <div className="h-2.5 rounded-full bg-surface-muted overflow-hidden">
-              <div className="h-full bg-brand-gradient rounded-full transition-all" style={{ width: `${pct}%` }} />
+              <div
+                className="h-full bg-brand-gradient rounded-full transition-all"
+                style={{ width: `${pct}%` }}
+              />
             </div>
           </div>
 
@@ -198,11 +250,17 @@ function DonationDetail() {
                   return (
                     <tr key={a.id} className="border-t border-border hover:bg-surface-muted">
                       <td className="py-3">
-                        <Link to="/project/$id" params={{ id: a.projectId }} className="text-brand hover:underline font-medium">
+                        <Link
+                          to="/project/$id"
+                          params={{ id: a.projectId }}
+                          className="text-brand hover:underline font-medium"
+                        >
                           {p?.name ?? a.projectId}
                         </Link>
                       </td>
-                      <td className="py-3 font-semibold tabular-nums">₪{a.amount.toLocaleString()}</td>
+                      <td className="py-3 font-semibold tabular-nums">
+                        ₪{a.amount.toLocaleString()}
+                      </td>
                       <td className="py-3 tabular-nums text-muted-foreground">
                         {Math.round((a.amount / d.amount) * 100)}%
                       </td>
