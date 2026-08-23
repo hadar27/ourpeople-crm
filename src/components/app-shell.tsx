@@ -20,9 +20,20 @@ import {
 import logo from "@/assets/logo.png";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useAlerts } from "@/lib/business-rules";
 import { useSession, signOut } from "@/lib/auth";
-import { useCanEdit, type EditableModule } from "@/lib/permissions";
+import { useCanEdit, useCurrentUser, type EditableModule } from "@/lib/permissions";
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
+}
 
 const nav = [
   { to: "/dashboard", label: "לוח בקרה", icon: LayoutDashboard },
@@ -44,6 +55,7 @@ export function AppShell() {
   const alertCount = useAlerts().filter((a) => a.severity !== "נמוכה").length;
   const navigate = useNavigate();
   const { session, loading } = useSession();
+  const user = useCurrentUser();
   const moduleAccess: Partial<Record<EditableModule, boolean>> = {
     donations: useCanEdit("donations"),
     finance: useCanEdit("finance"),
@@ -110,16 +122,6 @@ export function AppShell() {
             );
           })}
         </nav>
-
-        <div className="p-3 border-t border-sidebar-border">
-          <button
-            onClick={handleSignOut}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-accent"
-          >
-            <LogOut className="h-4 w-4" />
-            התנתקות
-          </button>
-        </div>
       </aside>
 
       {/* Main */}
@@ -144,16 +146,28 @@ export function AppShell() {
               </span>
             )}
           </Link>
-          <div className="flex items-center gap-3 pr-4 border-r border-border">
-            <Avatar className="h-9 w-9">
-              <AvatarFallback className="bg-brand text-brand-foreground text-xs">שכ</AvatarFallback>
-            </Avatar>
-            <div className="text-sm leading-tight">
-              <div className="font-semibold">שרה כהן</div>
-              <div className="text-xs text-muted-foreground">מנהל מערכת</div>
-            </div>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-3 pr-4 border-r border-border outline-none">
+                <Avatar className="h-9 w-9">
+                  <AvatarFallback className="bg-brand text-brand-foreground text-xs">
+                    {user ? initials(user.name) : ""}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="text-sm leading-tight text-right">
+                  <div className="font-semibold">{user?.name ?? ""}</div>
+                  <div className="text-xs text-muted-foreground">{user?.role ?? ""}</div>
+                </div>
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleSignOut}>
+                <LogOut className="h-4 w-4" />
+                התנתקות
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </header>
 
         <main className="flex-1 p-6 md:p-8 overflow-x-hidden">
