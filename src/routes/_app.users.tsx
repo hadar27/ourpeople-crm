@@ -2,9 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
-import { EntityFormDialog } from "@/components/entity-form-dialog";
-import { useUsers, useCreateUser, type UserRecord } from "@/lib/queries/users";
+import { EmptyState } from "@/components/detail-kit";
+import { useUsers, type UserRecord } from "@/lib/queries/users";
 import { UserEditButton, UserDeleteButton } from "@/components/module-edit-dialogs";
+import { useCanEdit } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_app/users")({
   component: UsersPage,
@@ -24,55 +25,25 @@ const columns: Column<UserRecord>[] = [
 
 function UsersPage() {
   const { data: users, isLoading, isError, refetch } = useUsers();
-  const createUser = useCreateUser();
+  const canAccess = useCanEdit("users");
+
+  if (!canAccess) {
+    return (
+      <>
+        <PageHeader title="משתמשים והרשאות" description="ניהול משתמשי המערכת ותפקידיהם." />
+        <div className="card-elevated p-16">
+          <EmptyState
+            text="אין לך הרשאה לצפייה בעמוד זה"
+            hint="גישה למשתמשים והרשאות מוגבלת למנהל מערכת."
+          />
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
-      <PageHeader
-        title="משתמשים והרשאות"
-        description="ניהול משתמשי המערכת ותפקידיהם."
-        actions={
-          <EntityFormDialog
-            triggerLabel="הוסף משתמש"
-            title="הוספת משתמש חדש"
-            description="יצירת חשבון משתמש ושיוך לתפקיד והרשאות."
-            successMessage="משתמש חדש נוסף בהצלחה"
-            fields={[
-              { name: "name", label: "שם מלא", required: true },
-              { name: "email", label: "דוא״ל", type: "email", required: true },
-              { name: "phone", label: "טלפון", type: "tel" },
-              {
-                name: "role",
-                label: "תפקיד",
-                type: "select",
-                required: true,
-                options: ["מנהל מערכת", "הנהלה", "מנהל כספים", "מנהל מתנדבים", "מנהל קשרי תורמים"],
-              },
-              { name: "status", label: "סטטוס", type: "select", options: ["פעיל", "מושעה"] },
-              {
-                name: "password",
-                label: "סיסמה זמנית",
-                required: true,
-                placeholder: "תישלח באימייל",
-                helper: "רשומה זו היא ספריית אנשי צוות בלבד — אינה יוצרת חשבון התחברות אמיתי",
-              },
-            ]}
-            onCreate={async (v) => {
-              try {
-                await createUser.mutateAsync({
-                  name: v.name,
-                  email: v.email,
-                  role: v.role as UserRecord["role"],
-                  status: (v.status || "פעיל") as UserRecord["status"],
-                  lastLogin: "",
-                });
-                return { ok: true };
-              } catch (err) {
-                return { ok: false, error: err instanceof Error ? err.message : "השמירה נכשלה" };
-              }
-            }}
-          />
-        }
-      />
+      <PageHeader title="משתמשים והרשאות" description="ניהול משתמשי המערכת ותפקידיהם." />
       <div className="mb-6">
         {isLoading ? (
           <div className="card-elevated flex items-center justify-center gap-2 p-16 text-muted-foreground">

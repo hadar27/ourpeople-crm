@@ -5,7 +5,7 @@ export type UserRecord = {
   id: string;
   name: string;
   email: string;
-  role: "מנהל מערכת" | "הנהלה" | "מנהל כספים" | "מנהל מתנדבים" | "מנהל קשרי תורמים";
+  role: "מנהל מערכת" | "מנהל כספים" | "מנהל פרויקטים";
   status: "פעיל" | "מושעה";
   lastLogin: string;
   permissions?: string;
@@ -66,20 +66,6 @@ export function useDeleteUser() {
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("users").delete().eq("id", id);
       if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.list() });
-    },
-  });
-}
-
-export function useCreateUser() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (values: Partial<UserRecord>) => {
-      const { data, error } = await supabase.from("users").insert(toRow(values)).select().single();
-      if (error) throw error;
-      return toUserRecord(data as UserRow);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.list() });

@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
+import { EmptyState } from "@/components/detail-kit";
 import {
   useDonations,
   useCreateDonation,
@@ -12,6 +13,7 @@ import {
 import { useDonors } from "@/lib/queries/donors";
 import { useProjects } from "@/lib/queries/projects";
 import { DonationEditButton, DonationDeleteButton } from "@/components/module-edit-dialogs";
+import { useCanEdit } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_app/donations")({
   component: DonationsPage,
@@ -36,6 +38,24 @@ function DonationsPage() {
   const { data: donors } = useDonors();
   const { data: projects } = useProjects();
   const createDonation = useCreateDonation();
+  const canAccess = useCanEdit("donations");
+
+  if (!canAccess) {
+    return (
+      <>
+        <PageHeader
+          title="ניהול תרומות"
+          description="כל הכניסות הכספיות מתורמים, קמפיינים ואירועים."
+        />
+        <div className="card-elevated p-16">
+          <EmptyState
+            text="אין לך הרשאה לצפייה בעמוד זה"
+            hint="גישה לתרומות מוגבלת למנהל מערכת ומנהל כספים."
+          />
+        </div>
+      </>
+    );
+  }
 
   const donorOptions = [...(donors ?? []).map((d) => d.name), ANONYMOUS_DONOR];
   const projectOptions = (projects ?? []).map((p) => p.name);
