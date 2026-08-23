@@ -316,9 +316,9 @@ function ProjectDetail() {
             <div className="text-lg font-semibold">לוח זמני פרויקט (Gantt)</div>
             <div className="text-xs text-muted-foreground">שלבים, אבני דרך, אחריות והתקדמות</div>
           </div>
-          <Button size="sm" variant="outline" onClick={() => toast.success("שלב חדש נוסף")}>
+          {/* <Button size="sm" variant="outline" onClick={() => toast.success("שלב חדש נוסף")}>
             + שלב
-          </Button>
+          </Button> */}
         </div>
         {phases.length === 0 ? (
           <div className="text-center py-8 text-sm text-muted-foreground">
