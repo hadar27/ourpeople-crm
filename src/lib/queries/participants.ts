@@ -3,7 +3,8 @@ import { supabase } from "@/lib/supabase";
 
 export type RegistrationStatus = "מאושר" | "ממתין לתשלום" | "ממתין לאישור" | "טיוטה";
 export type ParticipantPayment = "שולם" | "שולם חלקית" | "לא שולם" | "לא נדרש תשלום";
-export type RegistrationSource = "טופס דיגיטלי" | "QR" | "אתר" | "צוות פנימי" | "ייבוא Excel" | "API";
+export type RegistrationSource =
+  "טופס דיגיטלי" | "QR" | "אתר" | "צוות פנימי" | "ייבוא Excel" | "API";
 
 export type ParticipantRecord = {
   id: string;
@@ -114,11 +115,29 @@ export function useParticipant(id: string | undefined) {
   return useQuery({
     queryKey: participantKeys.detail(id),
     queryFn: async () => {
-      const { data, error } = await supabase.from("participants").select(SELECT).eq("id", id).maybeSingle();
+      const { data, error } = await supabase
+        .from("participants")
+        .select(SELECT)
+        .eq("id", id)
+        .maybeSingle();
       if (error) throw error;
       return data ? toParticipantRecord(data as unknown as ParticipantRow) : null;
     },
     enabled: !!id,
+  });
+}
+
+export function useDeleteParticipant() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("participants").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: participantKeys.list() });
+      queryClient.invalidateQueries({ queryKey: participantKeys.detail(id) });
+    },
   });
 }
 

@@ -82,11 +82,29 @@ export function useVolunteer(id: string | undefined) {
   return useQuery({
     queryKey: volunteerKeys.detail(id),
     queryFn: async () => {
-      const { data, error } = await supabase.from("volunteers").select(SELECT).eq("id", id).maybeSingle();
+      const { data, error } = await supabase
+        .from("volunteers")
+        .select(SELECT)
+        .eq("id", id)
+        .maybeSingle();
       if (error) throw error;
       return data ? toVolunteerRecord(data as unknown as VolunteerRow) : null;
     },
     enabled: !!id,
+  });
+}
+
+export function useDeleteVolunteer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("volunteers").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: volunteerKeys.list() });
+      queryClient.invalidateQueries({ queryKey: volunteerKeys.detail(id) });
+    },
   });
 }
 

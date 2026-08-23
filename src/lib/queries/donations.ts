@@ -55,7 +55,7 @@ function toRow(patch: Partial<DonationRecord>): Record<string, unknown> {
   const row: Record<string, unknown> = {};
   if (patch.isAnonymous !== undefined) row.is_anonymous = patch.isAnonymous;
   if (patch.donorId !== undefined || patch.isAnonymous !== undefined) {
-    row.donor_id = patch.isAnonymous ? null : patch.donorId ?? null;
+    row.donor_id = patch.isAnonymous ? null : (patch.donorId ?? null);
   }
   if (patch.amount !== undefined) row.amount = patch.amount;
   if (patch.project !== undefined) {
@@ -82,7 +82,10 @@ export function useDonations() {
   return useQuery({
     queryKey: donationKeys.list(),
     queryFn: async () => {
-      const { data, error } = await supabase.from("donations").select(SELECT).order("date", { ascending: false });
+      const { data, error } = await supabase
+        .from("donations")
+        .select(SELECT)
+        .order("date", { ascending: false });
       if (error) throw error;
       return (data as unknown as DonationRow[]).map(toDonationRecord);
     },
@@ -93,11 +96,29 @@ export function useDonation(id: string | undefined) {
   return useQuery({
     queryKey: donationKeys.detail(id),
     queryFn: async () => {
-      const { data, error } = await supabase.from("donations").select(SELECT).eq("id", id).maybeSingle();
+      const { data, error } = await supabase
+        .from("donations")
+        .select(SELECT)
+        .eq("id", id)
+        .maybeSingle();
       if (error) throw error;
       return data ? toDonationRecord(data as unknown as DonationRow) : null;
     },
     enabled: !!id,
+  });
+}
+
+export function useDeleteDonation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("donations").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: donationKeys.list() });
+      queryClient.invalidateQueries({ queryKey: donationKeys.detail(id) });
+    },
   });
 }
 

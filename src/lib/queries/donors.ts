@@ -111,6 +111,20 @@ export function useCreateDonor() {
   });
 }
 
+export function useDeleteDonor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("donors").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: donorKeys.list() });
+      queryClient.invalidateQueries({ queryKey: donorKeys.detail(id) });
+    },
+  });
+}
+
 export function useUpdateDonor() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -101,6 +101,20 @@ export function useSupplier(id: string | undefined) {
   });
 }
 
+export function useDeleteSupplier() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("suppliers").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: supplierKeys.list() });
+      queryClient.invalidateQueries({ queryKey: supplierKeys.detail(id) });
+    },
+  });
+}
+
 export function useCreateSupplier() {
   const queryClient = useQueryClient();
   return useMutation({

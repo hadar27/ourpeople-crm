@@ -14,18 +14,30 @@ import {
   Bar,
   Legend,
 } from "recharts";
-import { useIncomes, useCreateIncome, GENERAL_PROJECT as GENERAL_PROJECT_INCOME } from "@/lib/queries/incomes";
-import { useExpenses, useCreateExpense, GENERAL_PROJECT as GENERAL_PROJECT_EXPENSE } from "@/lib/queries/expenses";
+import {
+  useIncomes,
+  useCreateIncome,
+  GENERAL_PROJECT as GENERAL_PROJECT_INCOME,
+} from "@/lib/queries/incomes";
+import {
+  useExpenses,
+  useCreateExpense,
+  GENERAL_PROJECT as GENERAL_PROJECT_EXPENSE,
+} from "@/lib/queries/expenses";
 import { useProjects } from "@/lib/queries/projects";
 import { useSuppliers } from "@/lib/queries/suppliers";
 import { useDonations } from "@/lib/queries/donations";
 import { monthlyDonationTotals } from "@/lib/dashboard-metrics";
-import { ExpenseEditButton, IncomeEditButton } from "@/components/module-edit-dialogs";
+import {
+  ExpenseEditButton,
+  ExpenseDeleteButton,
+  IncomeEditButton,
+  IncomeDeleteButton,
+} from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/finance")({
   component: FinancePage,
 });
-
 
 function FinancePage() {
   const { data: income } = useIncomes();
@@ -38,10 +50,16 @@ function FinancePage() {
   const projectOptions = [GENERAL_PROJECT_INCOME, ...(projects ?? []).map((p) => p.name)];
   const supplierOptions = (suppliers ?? []).map((s) => s.name);
   const monthlyDonations = monthlyDonationTotals(donations ?? []);
-  const budgetVsActual = (projects ?? []).map((p) => ({ project: p.name, budget: p.budget, actual: p.spent }));
+  const budgetVsActual = (projects ?? []).map((p) => ({
+    project: p.name,
+    budget: p.budget,
+    actual: p.spent,
+  }));
   return (
     <>
-      <PageHeader title="כספים — ERP" description="לוח בקרה פיננסי כולל הכנסות, הוצאות וניצול תקציב מול תכנון."
+      <PageHeader
+        title="כספים — ERP"
+        description="לוח בקרה פיננסי כולל הכנסות, הוצאות וניצול תקציב מול תכנון."
         actions={
           <div className="flex items-center gap-2">
             <EntityFormDialog
@@ -53,7 +71,13 @@ function FinancePage() {
                 { name: "source", label: "מקור הכנסה", required: true, colSpan: 2 },
                 { name: "amount", label: "סכום (₪)", type: "number", required: true },
                 { name: "date", label: "תאריך", type: "date", required: true },
-                { name: "category", label: "קטגוריה", type: "select", required: true, options: ["תרומה", "מענק", "אגרות נרשמים", "אחר"] },
+                {
+                  name: "category",
+                  label: "קטגוריה",
+                  type: "select",
+                  required: true,
+                  options: ["תרומה", "מענק", "אגרות נרשמים", "אחר"],
+                },
                 { name: "project", label: "פרויקט", type: "select", options: projectOptions },
                 { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
               ]}
@@ -81,12 +105,29 @@ function FinancePage() {
               description="רישום הוצאה לניצול תקציב הפרויקט."
               successMessage="הוצאה חדשה נקלטה בהצלחה"
               fields={[
-                { name: "category", label: "קטגוריה", type: "select", required: true, options: ["שכר ותפעול", "הסעות", "קייטרינג", "ציוד", "פרסום ושיווק", "אחר"] },
+                {
+                  name: "category",
+                  label: "קטגוריה",
+                  type: "select",
+                  required: true,
+                  options: ["שכר ותפעול", "הסעות", "קייטרינג", "ציוד", "פרסום ושיווק", "אחר"],
+                },
                 { name: "amount", label: "סכום (₪)", type: "number", required: true },
-                { name: "project", label: "פרויקט", type: "select", required: true, options: [GENERAL_PROJECT_EXPENSE, ...(projects ?? []).map((p) => p.name)] },
+                {
+                  name: "project",
+                  label: "פרויקט",
+                  type: "select",
+                  required: true,
+                  options: [GENERAL_PROJECT_EXPENSE, ...(projects ?? []).map((p) => p.name)],
+                },
                 { name: "supplier", label: "ספק", type: "select", options: supplierOptions },
                 { name: "date", label: "תאריך", type: "date", required: true },
-                { name: "status", label: "סטטוס", type: "select", options: ["שולם", "ממתין", "חלקי"] },
+                {
+                  name: "status",
+                  label: "סטטוס",
+                  type: "select",
+                  options: ["שולם", "ממתין", "חלקי"],
+                },
                 { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
               ]}
               onCreate={async (v) => {
@@ -115,10 +156,31 @@ function FinancePage() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <StatCard label="הכנסות השנה" value="₪1.42M" delta="▲ 9.2% מהתחזית" icon={<TrendingUp className="h-5 w-5" />} tone="brand" />
-        <StatCard label="הוצאות השנה" value="₪936K" delta="62% מהתקציב" icon={<TrendingDown className="h-5 w-5" />} />
-        <StatCard label="תזרים נקי" value="₪484K" delta="יתרה חיובית" icon={<Wallet className="h-5 w-5" />} />
-        <StatCard label="חשבוניות פתוחות" value="11" delta="₪82,300 לתשלום" icon={<Receipt className="h-5 w-5" />} />
+        <StatCard
+          label="הכנסות השנה"
+          value="₪1.42M"
+          delta="▲ 9.2% מהתחזית"
+          icon={<TrendingUp className="h-5 w-5" />}
+          tone="brand"
+        />
+        <StatCard
+          label="הוצאות השנה"
+          value="₪936K"
+          delta="62% מהתקציב"
+          icon={<TrendingDown className="h-5 w-5" />}
+        />
+        <StatCard
+          label="תזרים נקי"
+          value="₪484K"
+          delta="יתרה חיובית"
+          icon={<Wallet className="h-5 w-5" />}
+        />
+        <StatCard
+          label="חשבוניות פתוחות"
+          value="11"
+          delta="₪82,300 לתשלום"
+          icon={<Receipt className="h-5 w-5" />}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -131,7 +193,13 @@ function FinancePage() {
               <XAxis dataKey="month" stroke="#94A3B8" fontSize={12} />
               <YAxis stroke="#94A3B8" fontSize={12} tickFormatter={(v) => `₪${v / 1000}K`} />
               <Tooltip formatter={(v: number) => `₪${v.toLocaleString()}`} />
-              <Line type="monotone" dataKey="amount" stroke="#1E3A8A" strokeWidth={3} dot={{ r: 4, fill: "#2563EB" }} />
+              <Line
+                type="monotone"
+                dataKey="amount"
+                stroke="#1E3A8A"
+                strokeWidth={3}
+                dot={{ r: 4, fill: "#2563EB" }}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -141,7 +209,12 @@ function FinancePage() {
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={budgetVsActual} layout="vertical">
               <CartesianGrid stroke="#E2E8F0" strokeDasharray="3 3" />
-              <XAxis type="number" stroke="#94A3B8" fontSize={11} tickFormatter={(v) => `₪${v / 1000}K`} />
+              <XAxis
+                type="number"
+                stroke="#94A3B8"
+                fontSize={11}
+                tickFormatter={(v) => `₪${v / 1000}K`}
+              />
               <YAxis type="category" dataKey="project" stroke="#94A3B8" fontSize={11} width={90} />
               <Tooltip formatter={(v: number) => `₪${v.toLocaleString()}`} />
               <Legend />
@@ -157,7 +230,12 @@ function FinancePage() {
           <div className="text-lg font-semibold mb-3">הכנסות אחרונות</div>
           <table className="w-full text-sm">
             <thead className="text-muted-foreground">
-              <tr className="text-right"><th className="py-2">מקור</th><th className="py-2">סכום</th><th className="py-2">תאריך</th><th className="py-2">פעולות</th></tr>
+              <tr className="text-right">
+                <th className="py-2">מקור</th>
+                <th className="py-2">סכום</th>
+                <th className="py-2">תאריך</th>
+                <th className="py-2">פעולות</th>
+              </tr>
             </thead>
             <tbody>
               {(income ?? []).map((i) => (
@@ -165,7 +243,12 @@ function FinancePage() {
                   <td className="py-3">{i.source}</td>
                   <td className="py-3 font-semibold">₪{i.amount.toLocaleString()}</td>
                   <td className="py-3 text-muted-foreground">{i.date}</td>
-                  <td className="py-3"><IncomeEditButton record={i} /></td>
+                  <td className="py-3">
+                    <div className="flex items-center gap-2">
+                      <IncomeEditButton record={i} />
+                      <IncomeDeleteButton record={i} />
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -175,7 +258,13 @@ function FinancePage() {
           <div className="text-lg font-semibold mb-3">הוצאות אחרונות</div>
           <table className="w-full text-sm">
             <thead className="text-muted-foreground">
-              <tr className="text-right"><th className="py-2">קטגוריה</th><th className="py-2">פרויקט</th><th className="py-2">סכום</th><th className="py-2">סטטוס</th><th className="py-2">פעולות</th></tr>
+              <tr className="text-right">
+                <th className="py-2">קטגוריה</th>
+                <th className="py-2">פרויקט</th>
+                <th className="py-2">סכום</th>
+                <th className="py-2">סטטוס</th>
+                <th className="py-2">פעולות</th>
+              </tr>
             </thead>
             <tbody>
               {(expenses ?? []).map((e) => (
@@ -183,8 +272,15 @@ function FinancePage() {
                   <td className="py-3">{e.category}</td>
                   <td className="py-3 text-muted-foreground">{e.project}</td>
                   <td className="py-3 font-semibold">₪{e.amount.toLocaleString()}</td>
-                  <td className="py-3"><StatusBadge value={e.status} /></td>
-                  <td className="py-3"><ExpenseEditButton record={e} /></td>
+                  <td className="py-3">
+                    <StatusBadge value={e.status} />
+                  </td>
+                  <td className="py-3">
+                    <div className="flex items-center gap-2">
+                      <ExpenseEditButton record={e} />
+                      <ExpenseDeleteButton record={e} />
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
