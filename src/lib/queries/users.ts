@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { createUserWithAuth } from "@/lib/create-user";
+import { deleteUserWithAuth } from "@/lib/delete-user";
+import { updateUserEmail } from "@/lib/update-user-email";
 
 export type UserRecord = {
   id: string;
@@ -64,9 +66,8 @@ export function useUsers() {
 export function useDeleteUser() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("users").delete().eq("id", id);
-      if (error) throw error;
+    mutationFn: async ({ id, accessToken }: { id: string; accessToken: string }) => {
+      await deleteUserWithAuth({ data: { id, accessToken } });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.list() });
@@ -97,7 +98,20 @@ export function useCreateUser() {
 export function useUpdateUser() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Partial<UserRecord> }) => {
+    mutationFn: async ({
+      id,
+      patch,
+      previousEmail,
+      accessToken,
+    }: {
+      id: string;
+      patch: Partial<UserRecord>;
+      previousEmail?: string;
+      accessToken?: string;
+    }) => {
+      if (patch.email !== undefined && patch.email !== previousEmail) {
+        await updateUserEmail({ data: { id, email: patch.email, accessToken: accessToken ?? "" } });
+      }
       const { data, error } = await supabase
         .from("users")
         .update(toRow(patch))

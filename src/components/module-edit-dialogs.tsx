@@ -3,6 +3,7 @@
 import { RecordEditDialog } from "@/components/record-edit-dialog";
 import { DeleteRecordButton } from "@/components/delete-record-dialog";
 import { useCanEdit } from "@/lib/permissions";
+import { useSession } from "@/lib/auth";
 import { useDonors, useUpdateDonor, useDeleteDonor, type DonorRecord } from "@/lib/queries/donors";
 import { useProjects, useUpdateProject, type ProjectRecord } from "@/lib/queries/projects";
 import {
@@ -727,6 +728,7 @@ export function UserEditButton({ record, triggerLabel }: { record: UserRecord } 
   const allowed = useCanEdit("users");
   const { data: allUsers } = useUsers();
   const updateUser = useUpdateUser();
+  const { session } = useSession();
   if (!allowed) return null;
   const activeAdmins = (allUsers ?? []).filter(
     (u) => u.role === "מנהל מערכת" && u.status === "פעיל",
@@ -763,6 +765,8 @@ export function UserEditButton({ record, triggerLabel }: { record: UserRecord } 
               status: v.status as UserRecord["status"],
               permissions: v.permissions || undefined,
             },
+            previousEmail: record.email,
+            accessToken: session?.access_token ?? "",
           });
           return { ok: true };
         } catch (err) {
@@ -777,6 +781,7 @@ export function UserDeleteButton({ record }: { record: UserRecord }) {
   const allowed = useCanEdit("users");
   const { data: allUsers } = useUsers();
   const deleteUser = useDeleteUser();
+  const { session } = useSession();
   if (!allowed) return null;
   const activeAdmins = (allUsers ?? []).filter(
     (u) => u.role === "מנהל מערכת" && u.status === "פעיל",
@@ -791,7 +796,7 @@ export function UserDeleteButton({ record }: { record: UserRecord }) {
         if (isOnlyActiveAdmin) {
           throw new Error("לא ניתן למחוק את מנהל המערכת האחרון הפעיל במערכת.");
         }
-        await deleteUser.mutateAsync(record.id);
+        await deleteUser.mutateAsync({ id: record.id, accessToken: session?.access_token ?? "" });
       }}
     />
   );
