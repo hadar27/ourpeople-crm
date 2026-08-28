@@ -46,7 +46,8 @@ function LoginPage() {
           <img src={logo} alt="Our People" className="h-20 w-auto bg-white rounded-2xl p-3" />
         </div>
         <div className="relative max-w-md">
-          <h1 className="text-4xl font-bold leading-tight">מערכת לניהול עמותת Our People.</h1>
+          <h1 className="text-4xl font-bold leading-tight">מערכת לניהול עמותת
+            Our People.</h1>
           <p className="mt-4 text-white/85 leading-relaxed">
             מערכת מידע פנימית לניהול תורמים, מתנדבים, פרויקטים, כספים ופעילות העמותה.
           </p>
