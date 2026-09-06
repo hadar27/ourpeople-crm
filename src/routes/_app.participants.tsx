@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader, StatusBadge } from "@/components/page-header";
-import { DataTable, type Column } from "@/components/data-table";
+import { DataTable, type Column, type FilterConfig } from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
 import {
   CalendarClock,
@@ -91,6 +91,27 @@ const columns: Column<ParticipantRecord>[] = [
           <FileWarning className="h-3 w-3" /> חסרים
         </span>
       ),
+  },
+];
+
+const filters: FilterConfig<ParticipantRecord>[] = [
+  {
+    key: "status",
+    label: "סטטוס",
+    type: "multi-select",
+    options: ["ממתין לאישור", "מאושר", "הגיע", "ביטול", "שלא הגיע"],
+  },
+  {
+    key: "source",
+    label: "מקור רישום",
+    type: "multi-select",
+    options: ["טופס דיגיטלי", "QR", "אתר", "צוות פנימי", "ייבוא Excel", "API"],
+  },
+  {
+    key: "paymentStatus",
+    label: "סטטוס תשלום",
+    type: "multi-select",
+    options: ["לא נדרש תשלום", "לא שולם", "שולם חלקית", "שולם"],
   },
 ];
 
@@ -274,6 +295,7 @@ function ParticipantsPage() {
             rows={list}
             columns={columns}
             searchKeys={["name", "idNumber", "phone", "project"]}
+            filters={filters}
             getRowHref={(r) => `/participants/${r.id}`}
             rowActions={(r) => (
               <div className="flex items-center justify-end gap-2">

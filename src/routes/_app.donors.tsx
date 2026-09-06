@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
-import { DataTable, type Column } from "@/components/data-table";
+import { DataTable, type Column, type FilterConfig } from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { useDonors, useCreateDonor, type DonorRecord } from "@/lib/queries/donors";
 import { DonorEditButton, DonorDeleteButton } from "@/components/module-edit-dialogs";
@@ -35,6 +35,18 @@ const columns: Column<DonorRecord>[] = [
     ),
   },
   { key: "status", header: "סטטוס", render: (r) => <StatusBadge value={r.status} /> },
+];
+
+const getDonorSize = (donor: DonorRecord): string => {
+  if (donor.totalDonated <= 5000) return "קטן";
+  if (donor.totalDonated <= 50000) return "בינוני";
+  return "גדול";
+};
+
+const filters: FilterConfig<DonorRecord>[] = [
+  { key: "type", label: "סוג תורם", type: "multi-select", options: ["פרטי", "תאגיד", "קרן"] },
+  { key: "status", label: "סטטוס", type: "multi-select", options: ["פעיל", "לא פעיל"] },
+  { key: "donorSize", label: "גודל תורם", type: "multi-select", options: ["קטן", "בינוני", "גדול"], getValue: getDonorSize },
 ];
 
 function DonorsPage() {
@@ -131,6 +143,7 @@ function DonorsPage() {
           rows={donors ?? []}
           columns={columns}
           searchKeys={["name", "type"]}
+          filters={filters}
           getRowHref={(r) => `/donor/${r.id}`}
           rowActions={(r) => (
             <div className="flex items-center justify-end gap-2">

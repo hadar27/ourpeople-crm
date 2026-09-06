@@ -2,14 +2,31 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Download, Filter, ChevronLeft } from "lucide-react";
+import { Search, Download, Filter, ChevronLeft, X } from "lucide-react";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export type Column<T> = {
   key: string;
   header: string;
   render?: (row: T) => ReactNode;
   className?: string;
+};
+
+export type FilterConfig<T> = {
+  key: keyof T | string;
+  label: string;
+  type: "select" | "multi-select";
+  options: string[];
+  getValue?: (row: T) => string;
 };
 
 export function DataTable<T extends Record<string, unknown>>({
@@ -19,6 +36,7 @@ export function DataTable<T extends Record<string, unknown>>({
   toolbar,
   getRowHref,
   rowActions,
+  filters,
 }: {
   rows: T[];
   columns: Column<T>[];
@@ -27,15 +45,70 @@ export function DataTable<T extends Record<string, unknown>>({
   getRowHref?: (row: T) => string | undefined;
   /** Rendered in a trailing cell, outside the row link (e.g. an edit button). */
   rowActions?: (row: T) => ReactNode;
+  filters?: FilterConfig<T>[];
 }) {
   const [q, setQ] = useState("");
+  const [filterState, setFilterState] = useState<Record<string, Set<string>>>({});
+
+  const filterConfigMap = useMemo(() => {
+    const map = new Map<string, FilterConfig<T>>();
+    filters?.forEach((f) => {
+      map.set(String(f.key), f);
+    });
+    return map;
+  }, [filters]);
+
   const filtered = useMemo(() => {
-    if (!q.trim()) return rows;
-    const needle = q.toLowerCase();
-    return rows.filter((row) =>
-      searchKeys.some((k) => String(row[k] ?? "").toLowerCase().includes(needle)),
-    );
-  }, [q, rows, searchKeys]);
+    let result = rows;
+
+    if (q.trim()) {
+      const needle = q.toLowerCase();
+      result = result.filter((row) =>
+        searchKeys.some((k) => String(row[k] ?? "").toLowerCase().includes(needle)),
+      );
+    }
+
+    Object.entries(filterState).forEach(([key, selectedValues]) => {
+      if (selectedValues.size > 0) {
+        result = result.filter((row) => {
+          const filterConfig = filterConfigMap.get(key);
+          const value = filterConfig?.getValue
+            ? filterConfig.getValue(row)
+            : String(row[key as keyof T] ?? "");
+          return selectedValues.has(value);
+        });
+      }
+    });
+
+    return result;
+  }, [q, rows, searchKeys, filterState, filterConfigMap]);
+
+  const toggleFilter = (filterKey: string, value: string) => {
+    setFilterState((prev) => {
+      const newState = { ...prev };
+      if (!newState[filterKey]) {
+        newState[filterKey] = new Set();
+      }
+      const newSet = new Set(newState[filterKey]);
+      if (newSet.has(value)) {
+        newSet.delete(value);
+      } else {
+        newSet.add(value);
+      }
+      if (newSet.size === 0) {
+        delete newState[filterKey];
+      } else {
+        newState[filterKey] = newSet;
+      }
+      return newState;
+    });
+  };
+
+  const clearFilters = () => {
+    setFilterState({});
+  };
+
+  const hasActiveFilters = Object.keys(filterState).length > 0;
 
   return (
     <div className="rounded-xl bg-card border border-border shadow-soft">
@@ -49,9 +122,51 @@ export function DataTable<T extends Record<string, unknown>>({
             className="pr-9 bg-surface-muted border-transparent"
           />
         </div>
-        <Button variant="outline" size="sm" className="gap-1" onClick={() => toast.info("פאנל סינון מתקדם בקרוב")}>
-          <Filter className="h-4 w-4" /> סינון
-        </Button>
+        {filters && filters.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant={hasActiveFilters ? "default" : "outline"}
+                size="sm"
+                className="gap-1"
+              >
+                <Filter className="h-4 w-4" />
+                סינון
+                {hasActiveFilters && (
+                  <span className="inline-block w-2 h-2 rounded-full bg-white ml-2" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>סינון לפי</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {filters.map((filter) => (
+                <div key={String(filter.key)} className="px-2 py-1">
+                  <div className="text-xs font-medium text-muted-foreground mb-2">{filter.label}</div>
+                  {filter.options.map((option) => (
+                    <DropdownMenuCheckboxItem
+                      key={option}
+                      checked={filterState[String(filter.key)]?.has(option) ?? false}
+                      onCheckedChange={() => toggleFilter(String(filter.key), option)}
+                    >
+                      {option}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                  <DropdownMenuSeparator className="my-1" />
+                </div>
+              ))}
+              {hasActiveFilters && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={clearFilters} className="text-muted-foreground">
+                    <X className="h-4 w-4 ml-2" />
+                    נקה סינונים
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         <div className="flex-1" />
         {toolbar}
         <Button

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
-import { DataTable, type Column } from "@/components/data-table";
+import { DataTable, type Column, type FilterConfig } from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { useSuppliers, useCreateSupplier, type SupplierRecord } from "@/lib/queries/suppliers";
 import { SupplierEditButton, SupplierDeleteButton } from "@/components/module-edit-dialogs";
@@ -31,6 +31,11 @@ const columns: Column<SupplierRecord>[] = [
     ),
   },
   { key: "status", header: "סטטוס", render: (r) => <StatusBadge value={r.status} /> },
+];
+
+const filters: FilterConfig<SupplierRecord>[] = [
+  { key: "category", label: "קטגוריה", type: "multi-select", options: ["מזון", "ציוד", "הסעות", "תקשורת", "שיווק", "אחר"] },
+  { key: "status", label: "סטטוס", type: "multi-select", options: ["פעיל", "לא פעיל"] },
 ];
 
 function SuppliersPage() {
@@ -116,6 +121,7 @@ function SuppliersPage() {
           rows={suppliers ?? []}
           columns={columns}
           searchKeys={["name", "category", "contact"]}
+          filters={filters}
           getRowHref={(r) => `/suppliers/${r.id}`}
           rowActions={(r) => (
             <div className="flex items-center justify-end gap-2">

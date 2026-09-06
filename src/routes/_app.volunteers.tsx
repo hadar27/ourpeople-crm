@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Award, Loader2 } from "lucide-react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
-import { DataTable, type Column } from "@/components/data-table";
+import { DataTable, type Column, type FilterConfig } from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { useProjects } from "@/lib/queries/projects";
 import { useVolunteers, useCreateVolunteer, type VolunteerRecord } from "@/lib/queries/volunteers";
@@ -36,6 +36,16 @@ const columns: Column<VolunteerRecord>[] = [
     ),
   },
   { key: "status", header: "סטטוס", render: (r) => <StatusBadge value={r.status} /> },
+];
+
+const filters: FilterConfig<VolunteerRecord>[] = [
+  {
+    key: "availability",
+    label: "זמינות",
+    type: "multi-select",
+    options: ["בוקר", "צהריים", "ערב", "סופי שבוע", "גמיש"],
+  },
+  { key: "status", label: "סטטוס", type: "multi-select", options: ["פעיל", "לא פעיל"] },
 ];
 
 function VolunteersPage() {
@@ -135,6 +145,7 @@ function VolunteersPage() {
           rows={volunteers ?? []}
           columns={columns}
           searchKeys={["name", "project", "availability"]}
+          filters={filters}
           getRowHref={(r) => `/volunteer/${r.id}`}
           rowActions={(r) => (
             <div className="flex items-center justify-end gap-2">
