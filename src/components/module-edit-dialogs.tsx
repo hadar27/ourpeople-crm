@@ -150,6 +150,7 @@ export function VolunteerEditButton({ record, triggerLabel }: { record: Voluntee
       fields={volunteerFields}
       initialValues={{
         name: record.name,
+        idNumber: record.idNumber ?? "",
         phone: record.phone ?? "",
         email: record.email ?? "",
         availability: record.availability,
@@ -166,6 +167,7 @@ export function VolunteerEditButton({ record, triggerLabel }: { record: Voluntee
             id: record.id,
             patch: {
               name: v.name,
+              idNumber: v.idNumber || undefined,
               phone: v.phone || undefined,
               email: v.email || undefined,
               availability: v.availability,
