@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
+import { useState } from "react";
 import {
   ArrowRight,
   Users,
@@ -10,6 +11,7 @@ import {
   Truck,
   PiggyBank,
   Loader2,
+  Link as LinkIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -22,7 +24,10 @@ import { useParticipants } from "@/lib/queries/participants";
 import { useTasksForProject } from "@/lib/queries/tasks";
 import { useProjectExpenses } from "@/lib/queries/project-expenses";
 import { useProjectPhases } from "@/lib/queries/project-phases";
+import { usePendingVolunteerRegistrations, usePendingParticipantRegistrations } from "@/lib/queries/pending-registrations";
 import { ProjectEditButton } from "@/components/module-edit-dialogs";
+import { RegistrationLinksSection } from "@/components/registration-links-section";
+import { ApproveRegistrationsModal } from "@/components/approve-registrations-modal";
 import { toast } from "sonner";
 import { useCanEdit } from "@/lib/permissions";
 
@@ -33,6 +38,7 @@ export const Route = createFileRoute("/_app/project/$id")({
 function ProjectDetail() {
   const { id } = useParams({ from: "/_app/project/$id" });
   const navigate = useNavigate();
+  const [approvalsOpen, setApprovalsOpen] = useState(false);
   const { data: project, isLoading, isError, refetch } = useProject(id);
   const { data: tasksData } = useTasksForProject(project?.id);
   const { data: expensesData } = useProjectExpenses(project?.id);
@@ -40,7 +46,13 @@ function ProjectDetail() {
   const { data: donationsData } = useDonations();
   const { data: volunteersData } = useVolunteers();
   const { data: participantsData } = useParticipants();
+  const { data: pendingVolunteers } = usePendingVolunteerRegistrations(id);
+  const { data: pendingParticipants } = usePendingParticipantRegistrations(id);
   const canViewDonations = useCanEdit("donations");
+
+  const pendingVolunteersCount = pendingVolunteers?.length ?? 0;
+  const pendingParticipantsCount = pendingParticipants?.length ?? 0;
+  const totalPending = pendingVolunteersCount + pendingParticipantsCount;
 
   if (isLoading) {
     return (
@@ -329,6 +341,40 @@ function ProjectDetail() {
         )}
       </div>
 
+      {/* Registration Links and Pending Approvals */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="card-elevated p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="font-semibold flex items-center gap-1.5">
+              <LinkIcon className="h-4 w-4 text-brand" /> קישורי הרשמה
+            </div>
+          </div>
+          <RegistrationLinksSection projectId={id} />
+        </div>
+
+        {totalPending > 0 && (
+          <div className="card-elevated p-5 border-2 border-amber-200 bg-amber-50">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-semibold flex items-center gap-1.5">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" /> הרשמות ממתינות לאישור
+                </div>
+                <div className="text-sm text-amber-700 mt-1">
+                  {pendingVolunteersCount} מתנדבים · {pendingParticipantsCount} משתתפים
+                </div>
+              </div>
+              <Button
+                size="sm"
+                className="bg-amber-600 hover:bg-amber-700"
+                onClick={() => setApprovalsOpen(true)}
+              >
+                סקור
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="card-elevated p-5">
           <div className="font-semibold mb-3">מתנדבים משויכים ({projectVolunteers.length})</div>
@@ -438,6 +484,13 @@ function ProjectDetail() {
           })}
         </div>
       </div>
+
+      {/* Approvals Modal */}
+      <ApproveRegistrationsModal
+        projectId={id}
+        open={approvalsOpen}
+        onOpenChange={setApprovalsOpen}
+      />
     </>
   );
 }

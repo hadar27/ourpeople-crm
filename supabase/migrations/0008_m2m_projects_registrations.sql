@@ -3,6 +3,13 @@
 -- and allows public registration via unique tokens
 
 -- ============================================================
+-- projects (add public read policy for registration links)
+-- ============================================================
+create policy if not exists "public_read" on public.projects
+  for select to anon
+  using (true);
+
+-- ============================================================
 -- project_volunteers (M2M junction table)
 -- ============================================================
 create table if not exists public.project_volunteers (
@@ -57,9 +64,19 @@ create table if not exists public.project_registration_links (
 );
 
 alter table public.project_registration_links enable row level security;
-create policy "authenticated_full_access" on public.project_registration_links
+
+-- Allow anyone to READ links (needed for public registration)
+create policy "public_read" on public.project_registration_links
+  for select to anon, authenticated
+  using (true);
+
+-- Only authenticated users can CREATE/UPDATE/DELETE
+create policy "authenticated_write" on public.project_registration_links
   for all to authenticated
   using (auth.uid() is not null) with check (auth.uid() is not null);
+
+grant select on public.project_registration_links to anon;
+grant select on public.projects to anon;
 grant select, insert, update, delete on public.project_registration_links to authenticated;
 grant usage, select on sequence registration_link_id_seq to authenticated;
 
@@ -102,6 +119,7 @@ create policy "authenticated_access" on public.pending_volunteer_registrations
 
 grant select, insert on public.pending_volunteer_registrations to anon;
 grant select, insert, update, delete on public.pending_volunteer_registrations to authenticated;
+grant usage, select on sequence pending_volunteer_reg_id_seq to anon;
 grant usage, select on sequence pending_volunteer_reg_id_seq to authenticated;
 
 -- ============================================================
@@ -149,4 +167,5 @@ create policy "authenticated_access" on public.pending_participant_registrations
 
 grant select, insert on public.pending_participant_registrations to anon;
 grant select, insert, update, delete on public.pending_participant_registrations to authenticated;
+grant usage, select on sequence pending_participant_reg_id_seq to anon;
 grant usage, select on sequence pending_participant_reg_id_seq to authenticated;
