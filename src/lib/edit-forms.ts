@@ -79,6 +79,13 @@ export const participantFields: FormField[] = [
 export const volunteerFields: FormField[] = [
   { name: "name", label: "שם מלא", required: true },
   {
+    name: "idNumber",
+    label: "ת.ז.",
+    maxLength: 9,
+    validate: validateIdNumber,
+    helper: "9 ספרות",
+  },
+  {
     name: "phone",
     label: "טלפון",
     type: "tel",
