@@ -64,7 +64,7 @@ export const participantFields: FormField[] = [
     label: "סטטוס תשלום",
     type: "select",
     required: true,
-    options: ["שולם", "שולם חלקית", "לא שולם", "לא נדרש תשלום"],
+    options: ["שולם", "לא שולם", "לא נדרש תשלום"],
   },
   {
     name: "documentsComplete",

@@ -39,7 +39,7 @@ function VolunteerDetail() {
           </div>
           <div className="flex gap-2">
             <VolunteerEditButton record={v} />
-            <Button variant="outline" onClick={() => toast.success("המתנדב שובץ מחדש")}>שייך לפרויקט</Button>
+            {/* <Button variant="outline" onClick={() => toast.success("המתנדב שובץ מחדש")}>שייך לפרויקט</Button> */}
           </div>
         </div>
 
