@@ -58,6 +58,7 @@ export function FormDialog({
       const v = (values[f.name] ?? "").trim();
       if (f.required && !v) next[f.name] = "שדה חובה";
       else if (v && f.type === "email" && !/^\S+@\S+\.\S+$/.test(v)) next[f.name] = "אימייל לא תקין";
+      else if (v && f.type === "number" && f.max !== undefined && Number(v) > f.max) next[f.name] = `הערך חייב להיות לכל היותר ${f.max}`;
       else if (v && f.pattern && !f.pattern.test(v)) next[f.name] = f.patternMessage ?? "ערך לא תקין";
       else if (v && f.type === "tel" && !f.pattern && !/^\d{10}$/.test(v)) next[f.name] = "יש להזין 10 ספרות";
     }
@@ -128,6 +129,7 @@ export function FormDialog({
                   type={f.type ?? "text"}
                   placeholder={f.placeholder}
                   maxLength={f.maxLength}
+                  max={f.max}
                   value={values[f.name] ?? ""}
                   onChange={(e) => setField(f.name, e.target.value)}
                 />

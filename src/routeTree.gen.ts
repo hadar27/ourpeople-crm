@@ -24,6 +24,8 @@ import { Route as AppDonorsRouteImport } from './routes/_app.donors'
 import { Route as AppDonationsRouteImport } from './routes/_app.donations'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppAlertsRouteImport } from './routes/_app.alerts'
+import { Route as RegisterVolunteerTokenRouteImport } from './routes/register.volunteer.$token'
+import { Route as RegisterParticipantTokenRouteImport } from './routes/register.participant.$token'
 import { Route as AppVolunteerIdRouteImport } from './routes/_app.volunteer.$id'
 import { Route as AppSuppliersSupplierIdRouteImport } from './routes/_app.suppliers_.$supplierId'
 import { Route as AppProjectIdRouteImport } from './routes/_app.project.$id'
@@ -106,6 +108,17 @@ const AppAlertsRoute = AppAlertsRouteImport.update({
   path: '/alerts',
   getParentRoute: () => AppRoute,
 } as any)
+const RegisterVolunteerTokenRoute = RegisterVolunteerTokenRouteImport.update({
+  id: '/register/volunteer/$token',
+  path: '/register/volunteer/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegisterParticipantTokenRoute =
+  RegisterParticipantTokenRouteImport.update({
+    id: '/register/participant/$token',
+    path: '/register/participant/$token',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AppVolunteerIdRoute = AppVolunteerIdRouteImport.update({
   id: '/volunteer/$id',
   path: '/volunteer/$id',
@@ -165,6 +178,8 @@ export interface FileRoutesByFullPath {
   '/project/$id': typeof AppProjectIdRoute
   '/suppliers/$supplierId': typeof AppSuppliersSupplierIdRoute
   '/volunteer/$id': typeof AppVolunteerIdRoute
+  '/register/participant/$token': typeof RegisterParticipantTokenRoute
+  '/register/volunteer/$token': typeof RegisterVolunteerTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -188,6 +203,8 @@ export interface FileRoutesByTo {
   '/project/$id': typeof AppProjectIdRoute
   '/suppliers/$supplierId': typeof AppSuppliersSupplierIdRoute
   '/volunteer/$id': typeof AppVolunteerIdRoute
+  '/register/participant/$token': typeof RegisterParticipantTokenRoute
+  '/register/volunteer/$token': typeof RegisterVolunteerTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -213,6 +230,8 @@ export interface FileRoutesById {
   '/_app/project/$id': typeof AppProjectIdRoute
   '/_app/suppliers_/$supplierId': typeof AppSuppliersSupplierIdRoute
   '/_app/volunteer/$id': typeof AppVolunteerIdRoute
+  '/register/participant/$token': typeof RegisterParticipantTokenRoute
+  '/register/volunteer/$token': typeof RegisterVolunteerTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -238,6 +257,8 @@ export interface FileRouteTypes {
     | '/project/$id'
     | '/suppliers/$supplierId'
     | '/volunteer/$id'
+    | '/register/participant/$token'
+    | '/register/volunteer/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -261,6 +282,8 @@ export interface FileRouteTypes {
     | '/project/$id'
     | '/suppliers/$supplierId'
     | '/volunteer/$id'
+    | '/register/participant/$token'
+    | '/register/volunteer/$token'
   id:
     | '__root__'
     | '/'
@@ -285,12 +308,16 @@ export interface FileRouteTypes {
     | '/_app/project/$id'
     | '/_app/suppliers_/$supplierId'
     | '/_app/volunteer/$id'
+    | '/register/participant/$token'
+    | '/register/volunteer/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  RegisterParticipantTokenRoute: typeof RegisterParticipantTokenRoute
+  RegisterVolunteerTokenRoute: typeof RegisterVolunteerTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -400,6 +427,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAlertsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/register/volunteer/$token': {
+      id: '/register/volunteer/$token'
+      path: '/register/volunteer/$token'
+      fullPath: '/register/volunteer/$token'
+      preLoaderRoute: typeof RegisterVolunteerTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/register/participant/$token': {
+      id: '/register/participant/$token'
+      path: '/register/participant/$token'
+      fullPath: '/register/participant/$token'
+      preLoaderRoute: typeof RegisterParticipantTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/volunteer/$id': {
       id: '/_app/volunteer/$id'
       path: '/volunteer/$id'
@@ -502,6 +543,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  RegisterParticipantTokenRoute: RegisterParticipantTokenRoute,
+  RegisterVolunteerTokenRoute: RegisterVolunteerTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

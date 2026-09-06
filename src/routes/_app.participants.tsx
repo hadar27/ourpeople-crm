@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader, StatusBadge } from "@/components/page-header";
-import { DataTable, type Column } from "@/components/data-table";
+import { DataTable, type Column, type FilterConfig } from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
 import {
   CalendarClock,
@@ -94,6 +94,27 @@ const columns: Column<ParticipantRecord>[] = [
   },
 ];
 
+const filters: FilterConfig<ParticipantRecord>[] = [
+  {
+    key: "status",
+    label: "סטטוס",
+    type: "multi-select",
+    options: ["ממתין לאישור", "מאושר", "הגיע", "ביטול", "שלא הגיע"],
+  },
+  {
+    key: "source",
+    label: "מקור רישום",
+    type: "multi-select",
+    options: ["טופס דיגיטלי", "QR", "אתר", "צוות פנימי", "ייבוא Excel", "API"],
+  },
+  {
+    key: "paymentStatus",
+    label: "סטטוס תשלום",
+    type: "multi-select",
+    options: ["לא נדרש תשלום", "לא שולם", "שולם חלקית", "שולם"],
+  },
+];
+
 function ParticipantsPage() {
   const { data: participants, isLoading, isError, refetch } = useParticipants();
   const { data: projects } = useProjects();
@@ -101,13 +122,21 @@ function ParticipantsPage() {
 
   // Operational KPIs derived from data
   const list = participants ?? [];
-  const thisWeek = list.length; // mock "upcoming this week"
+  const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  const thisWeek = list.filter((p) => new Date(p.registrationDate) >= sevenDaysAgo).length;
   const needPayment = list.filter(
     (p) => p.paymentStatus === "לא שולם" || p.paymentStatus === "שולם חלקית",
   ).length;
-  const recent = list.filter((p) => new Date(p.registrationDate) >= new Date("2025-05-18")).length;
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const recent = list.filter((p) => new Date(p.registrationDate) >= thirtyDaysAgo).length;
   const missingDocs = list.filter((p) => !p.documentsComplete).length;
-  const newImmigrants = list.filter((p) => p.isNewImmigrant).length;
+  const newImmigrants = list.filter((p) => {
+    if (!p.isNewImmigrant) return false;
+    const regDate = new Date(p.registrationDate);
+    return regDate.getMonth() === now.getMonth() && regDate.getFullYear() === now.getFullYear();
+  }).length;
 
   const projectNames = (projects ?? []).map((p) => p.name);
 
@@ -274,6 +303,7 @@ function ParticipantsPage() {
             rows={list}
             columns={columns}
             searchKeys={["name", "idNumber", "phone", "project"]}
+            filters={filters}
             getRowHref={(r) => `/participants/${r.id}`}
             rowActions={(r) => (
               <div className="flex items-center justify-end gap-2">

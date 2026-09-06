@@ -92,7 +92,25 @@ export function useProjects() {
     queryFn: async () => {
       const { data, error } = await supabase.from("projects").select("*").order("name");
       if (error) throw error;
-      return (data as ProjectRow[]).map(toProjectRecord);
+
+      const { data: expenseData, error: expenseError } = await supabase
+        .from("project_expenses")
+        .select("project_id, amount");
+      if (expenseError) throw expenseError;
+
+      const spentByProject = (expenseData as { project_id: string; amount: number }[]).reduce(
+        (acc, exp) => {
+          acc[exp.project_id] = (acc[exp.project_id] ?? 0) + exp.amount;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
+
+      return (data as ProjectRow[]).map((row) => {
+        const record = toProjectRecord(row);
+        record.spent = spentByProject[record.id] ?? 0;
+        return record;
+      });
     },
   });
 }
@@ -103,7 +121,20 @@ export function useProject(id: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase.from("projects").select("*").eq("id", id).maybeSingle();
       if (error) throw error;
-      return data ? toProjectRecord(data as ProjectRow) : null;
+
+      if (!data) return null;
+
+      const { data: expenseData, error: expenseError } = await supabase
+        .from("project_expenses")
+        .select("amount")
+        .eq("project_id", id);
+      if (expenseError) throw expenseError;
+
+      const spent = (expenseData as { amount: number }[]).reduce((sum, exp) => sum + exp.amount, 0);
+
+      const record = toProjectRecord(data as ProjectRow);
+      record.spent = spent;
+      return record;
     },
     enabled: !!id,
   });

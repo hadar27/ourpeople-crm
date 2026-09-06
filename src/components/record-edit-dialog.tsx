@@ -87,6 +87,7 @@ export function RecordEditDialog({
       const v = (values[f.name] ?? "").trim();
       if (f.required && !v) next[f.name] = "שדה חובה";
       else if (v && f.type === "email" && !/^\S+@\S+\.\S+$/.test(v)) next[f.name] = "אימייל לא תקין";
+      else if (v && f.type === "number" && f.max !== undefined && Number(v) > f.max) next[f.name] = `הערך חייב להיות לכל היותר ${f.max}`;
       else if (v && f.validate) {
         const result = f.validate(v);
         if (result !== true) next[f.name] = typeof result === "string" ? result : f.patternMessage ?? "ערך לא תקין";
@@ -187,6 +188,7 @@ export function RecordEditDialog({
                   type={f.type ?? "text"}
                   placeholder={f.placeholder}
                   maxLength={f.maxLength}
+                  max={f.max}
                   value={values[f.name] ?? ""}
                   onChange={(e) => setField(f.name, e.target.value)}
                 />
