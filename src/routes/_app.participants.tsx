@@ -122,13 +122,21 @@ function ParticipantsPage() {
 
   // Operational KPIs derived from data
   const list = participants ?? [];
-  const thisWeek = list.length; // mock "upcoming this week"
+  const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  const thisWeek = list.filter((p) => new Date(p.registrationDate) >= sevenDaysAgo).length;
   const needPayment = list.filter(
     (p) => p.paymentStatus === "לא שולם" || p.paymentStatus === "שולם חלקית",
   ).length;
-  const recent = list.filter((p) => new Date(p.registrationDate) >= new Date("2025-05-18")).length;
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const recent = list.filter((p) => new Date(p.registrationDate) >= thirtyDaysAgo).length;
   const missingDocs = list.filter((p) => !p.documentsComplete).length;
-  const newImmigrants = list.filter((p) => p.isNewImmigrant).length;
+  const newImmigrants = list.filter((p) => {
+    if (!p.isNewImmigrant) return false;
+    const regDate = new Date(p.registrationDate);
+    return regDate.getMonth() === now.getMonth() && regDate.getFullYear() === now.getFullYear();
+  }).length;
 
   const projectNames = (projects ?? []).map((p) => p.name);
 

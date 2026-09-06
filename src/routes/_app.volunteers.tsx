@@ -54,6 +54,12 @@ function VolunteersPage() {
   const createVolunteer = useCreateVolunteer();
   const projectOptions = [...(projects ?? []).map((p) => p.name), UNASSIGNED];
 
+  // Calculate real aggregations
+  const activeVolunteers = volunteers?.filter((v) => v.status === "פעיל").length ?? 0;
+  const totalHours = volunteers?.reduce((sum, v) => sum + (v.hours ?? 0), 0) ?? 0;
+  const activeProjects = new Set(volunteers?.filter((v) => v.project).map((v) => v.project)).size;
+  const topVolunteer = volunteers?.reduce((max, v) => (!max || v.hours > max.hours ? v : max), undefined);
+
   return (
     <>
       <PageHeader
@@ -111,23 +117,25 @@ function VolunteersPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">מתנדבים פעילים</div>
-          <div className="text-xl font-bold mt-1">186</div>
+          <div className="text-xl font-bold mt-1">{activeVolunteers}</div>
         </div>
         <div className="card-elevated p-4">
-          <div className="text-xs text-muted-foreground">שעות החודש</div>
-          <div className="text-xl font-bold mt-1">3,240</div>
+          <div className="text-xs text-muted-foreground">סה״כ שעות</div>
+          <div className="text-xl font-bold mt-1">{totalHours.toLocaleString()}</div>
         </div>
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">פרויקטים פעילים</div>
-          <div className="text-xl font-bold mt-1">14</div>
+          <div className="text-xl font-bold mt-1">{activeProjects}</div>
         </div>
-        <div className="card-elevated p-4 bg-soft-gradient flex items-center gap-3">
-          <Award className="h-8 w-8 text-brand-deep" />
-          <div>
-            <div className="text-xs text-muted-foreground">מתנדב/ת החודש</div>
-            <div className="text-sm font-bold">פאדי נסר</div>
+        {topVolunteer && (
+          <div className="card-elevated p-4 bg-soft-gradient flex items-center gap-3">
+            <Award className="h-8 w-8 text-brand-deep" />
+            <div>
+              <div className="text-xs text-muted-foreground">מתנדב/ת מובילה</div>
+              <div className="text-sm font-bold">{topVolunteer.name}</div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
       {isLoading ? (
         <div className="card-elevated flex items-center justify-center gap-2 p-16 text-muted-foreground">

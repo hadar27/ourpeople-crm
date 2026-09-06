@@ -4,6 +4,7 @@ import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column, type FilterConfig } from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { useDonors, useCreateDonor, type DonorRecord } from "@/lib/queries/donors";
+import { useAllInteractions } from "@/lib/queries/interactions";
 import { DonorEditButton, DonorDeleteButton } from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/donors")({
@@ -51,7 +52,24 @@ const filters: FilterConfig<DonorRecord>[] = [
 
 function DonorsPage() {
   const { data: donors, isLoading, isError, refetch } = useDonors();
+  const { data: interactions } = useAllInteractions();
   const createDonor = useCreateDonor();
+
+  // Calculate real aggregations
+  const totalDonors = donors?.length ?? 0;
+  const activeDonors = donors?.filter((d) => d.status === "פעיל").length ?? 0;
+  const repeatDonors = donors?.filter((d) => d.totalDonated > 0).length ?? 0;
+  const avgDonation =
+    donors && donors.length > 0
+      ? Math.round(donors.reduce((sum, d) => sum + d.totalDonated, 0) / donors.length)
+      : 0;
+
+  // Count meetings this month (type = "פגישה")
+  const now = new Date();
+  const thisMonth = interactions?.filter((i) => {
+    const iDate = new Date(i.date);
+    return iDate.getMonth() === now.getMonth() && iDate.getFullYear() === now.getFullYear() && i.type === "פגישה";
+  }).length ?? 0;
 
   return (
     <>
@@ -112,19 +130,19 @@ function DonorsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">סה״כ תורמים</div>
-          <div className="text-xl font-bold mt-1">412</div>
+          <div className="text-xl font-bold mt-1">{totalDonors}</div>
         </div>
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">תורמים חוזרים</div>
-          <div className="text-xl font-bold mt-1">198</div>
+          <div className="text-xl font-bold mt-1">{repeatDonors}</div>
         </div>
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">תרומה ממוצעת</div>
-          <div className="text-xl font-bold mt-1">₪3,240</div>
+          <div className="text-xl font-bold mt-1">₪{avgDonation.toLocaleString()}</div>
         </div>
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">פגישות החודש</div>
-          <div className="text-xl font-bold mt-1">22</div>
+          <div className="text-xl font-bold mt-1">{thisMonth}</div>
         </div>
       </div>
       {isLoading ? (
