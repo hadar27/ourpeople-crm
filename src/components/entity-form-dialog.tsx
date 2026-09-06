@@ -22,6 +22,7 @@ export interface FormField {
   patternMessage?: string;
   maxLength?: number;
   helper?: string;
+  validate?: (value: string) => boolean | string;
 }
 
 interface EntityFormDialogProps {
@@ -62,7 +63,10 @@ export function EntityFormDialog({
       const v = (values[f.name] ?? "").trim();
       if (f.required && !v) next[f.name] = "שדה חובה";
       else if (v && f.type === "email" && !/^\S+@\S+\.\S+$/.test(v)) next[f.name] = "אימייל לא תקין";
-      else if (v && f.pattern && !f.pattern.test(v)) next[f.name] = f.patternMessage ?? "ערך לא תקין";
+      else if (v && f.validate) {
+        const result = f.validate(v);
+        if (result !== true) next[f.name] = typeof result === "string" ? result : f.patternMessage ?? "ערך לא תקין";
+      } else if (v && f.pattern && !f.pattern.test(v)) next[f.name] = f.patternMessage ?? "ערך לא תקין";
       else if (v && f.type === "tel" && !f.pattern && !/^[\d\-+\s()]{7,}$/.test(v)) next[f.name] = "טלפון לא תקין";
     }
     setErrors(next);

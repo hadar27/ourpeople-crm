@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 
 export type VolunteerRecord = {
   id: string;
+  idNumber?: string;
   name: string;
   availability: string;
   projectId?: string;
@@ -17,6 +18,7 @@ export type VolunteerRecord = {
 
 type VolunteerRow = {
   id: string;
+  id_number: string | null;
   name: string;
   availability: string;
   project_id: string | null;
@@ -32,6 +34,7 @@ type VolunteerRow = {
 function toVolunteerRecord(row: VolunteerRow): VolunteerRecord {
   return {
     id: row.id,
+    idNumber: row.id_number ?? undefined,
     name: row.name,
     availability: row.availability,
     projectId: row.project_id ?? undefined,
@@ -47,6 +50,7 @@ function toVolunteerRecord(row: VolunteerRow): VolunteerRecord {
 
 function toRow(patch: Partial<VolunteerRecord>): Record<string, unknown> {
   const row: Record<string, unknown> = {};
+  if (patch.idNumber !== undefined) row.id_number = patch.idNumber ?? null;
   if (patch.name !== undefined) row.name = patch.name;
   if (patch.availability !== undefined) row.availability = patch.availability;
   if (patch.projectId !== undefined) row.project_id = patch.projectId ?? null;

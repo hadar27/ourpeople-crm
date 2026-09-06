@@ -2,9 +2,12 @@
 // Keeping them in one place means the table row edit and the profile page edit
 // always show identical fields and validation.
 import type { FormField } from "@/components/entity-form-dialog";
+import { validateIsraeliId } from "@/lib/validation";
 
 export const ID_PATTERN = /^\d{9}$/;
 export const PHONE_PATTERN = /^\d{10}$/;
+
+const validateIdNumber = (id: string) => validateIsraeliId(id) || "ת.ז. לא תקינה";
 
 export const participantFields: FormField[] = [
   { name: "name", label: "שם מלא", required: true },
@@ -13,8 +16,7 @@ export const participantFields: FormField[] = [
     label: "ת.ז.",
     required: true,
     maxLength: 9,
-    pattern: ID_PATTERN,
-    patternMessage: "ת.ז. חייבת להכיל 9 ספרות",
+    validate: validateIdNumber,
     helper: "9 ספרות",
   },
   {
@@ -76,6 +78,13 @@ export const participantFields: FormField[] = [
 
 export const volunteerFields: FormField[] = [
   { name: "name", label: "שם מלא", required: true },
+  {
+    name: "idNumber",
+    label: "ת.ז.",
+    maxLength: 9,
+    validate: validateIdNumber,
+    helper: "9 ספרות",
+  },
   {
     name: "phone",
     label: "טלפון",
