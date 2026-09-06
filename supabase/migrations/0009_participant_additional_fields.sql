@@ -7,14 +7,14 @@
 
 alter table public.participants
 add column date_of_birth date,
-add column sex text check (sex in ('זכר', 'נקבה', 'אחר', 'מעדיף לא לציין')),
+add column sex text check (sex in ('זכר', 'נקבה')),
 add column parent_name text,
 add column parent_phone text,
 add column food_allergies text;
 
 alter table public.pending_participant_registrations
 add column date_of_birth date,
-add column sex text check (sex in ('זכר', 'נקבה', 'אחר', 'מעדיף לא לציין')),
+add column sex text check (sex in ('זכר', 'נקבה')),
 add column parent_name text,
 add column parent_phone text,
 add column food_allergies text;

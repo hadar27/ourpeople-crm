@@ -26,6 +26,11 @@ export type ParticipantRecord = {
   address?: string;
   city?: string;
   notes?: string;
+  dateOfBirth?: string;
+  sex?: "זכר" | "נקבה";
+  parentName?: string;
+  parentPhone?: string;
+  foodAllergies?: string;
 };
 
 type ParticipantRow = {
@@ -45,6 +50,11 @@ type ParticipantRow = {
   address: string | null;
   city: string | null;
   notes: string | null;
+  date_of_birth: string | null;
+  sex: string | null;
+  parent_name: string | null;
+  parent_phone: string | null;
+  food_allergies: string | null;
   projects: { id: string; name: string; type: string; price: number } | null;
 };
 
@@ -69,6 +79,11 @@ function toParticipantRecord(row: ParticipantRow): ParticipantRecord {
     address: row.address ?? undefined,
     city: row.city ?? undefined,
     notes: row.notes ?? undefined,
+    dateOfBirth: row.date_of_birth ?? undefined,
+    sex: (row.sex as ParticipantRecord["sex"]) ?? undefined,
+    parentName: row.parent_name ?? undefined,
+    parentPhone: row.parent_phone ?? undefined,
+    foodAllergies: row.food_allergies ?? undefined,
   };
 }
 
@@ -89,6 +104,11 @@ function toRow(patch: Partial<ParticipantRecord>): Record<string, unknown> {
   if (patch.address !== undefined) row.address = patch.address ?? null;
   if (patch.city !== undefined) row.city = patch.city ?? null;
   if (patch.notes !== undefined) row.notes = patch.notes ?? null;
+  if (patch.dateOfBirth !== undefined) row.date_of_birth = patch.dateOfBirth ?? null;
+  if (patch.sex !== undefined) row.sex = patch.sex ?? null;
+  if (patch.parentName !== undefined) row.parent_name = patch.parentName ?? null;
+  if (patch.parentPhone !== undefined) row.parent_phone = patch.parentPhone ?? null;
+  if (patch.foodAllergies !== undefined) row.food_allergies = patch.foodAllergies ?? null;
   return row;
 }
 

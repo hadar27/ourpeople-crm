@@ -32,9 +32,13 @@ type FormData = {
   idNumber: string;
   phone: string;
   email: string;
+  dateOfBirth: string;
+  sex: string;
+  parentName: string;
+  parentPhone: string;
+  hasAllergyWarning: boolean;
+  foodAllergies: string;
   registrationDate: string;
-  status: string;
-  paymentStatus: string;
   documentsComplete: boolean;
   isNewImmigrant: boolean;
   immigrationYear: string;
@@ -55,9 +59,13 @@ function ParticipantRegistrationPage() {
     idNumber: "",
     phone: "",
     email: "",
+    dateOfBirth: "",
+    sex: "",
+    parentName: "",
+    parentPhone: "",
+    hasAllergyWarning: false,
+    foodAllergies: "",
     registrationDate: new Date().toISOString().split("T")[0],
-    status: "ממתין לאישור",
-    paymentStatus: "לא שולם",
     documentsComplete: false,
     isNewImmigrant: false,
     immigrationYear: "",
@@ -164,9 +172,14 @@ function ParticipantRegistrationPage() {
           id_number: formData.idNumber,
           phone: formData.phone,
           email: formData.email || null,
+          date_of_birth: formData.dateOfBirth || null,
+          sex: formData.sex || null,
+          parent_name: formData.parentName || null,
+          parent_phone: formData.parentPhone || null,
+          food_allergies: formData.hasAllergyWarning ? formData.foodAllergies || null : null,
           registration_date: formData.registrationDate,
-          status: formData.status,
-          payment_status: formData.paymentStatus,
+          status: "ממתין לאישור",
+          payment_status: "לא שולם",
           documents_complete: formData.documentsComplete,
           is_new_immigrant: formData.isNewImmigrant,
           immigration_year: formData.immigrationYear ? parseInt(formData.immigrationYear) : null,
@@ -184,9 +197,13 @@ function ParticipantRegistrationPage() {
         idNumber: "",
         phone: "",
         email: "",
+        dateOfBirth: "",
+        sex: "",
+        parentName: "",
+        parentPhone: "",
+        hasAllergyWarning: false,
+        foodAllergies: "",
         registrationDate: new Date().toISOString().split("T")[0],
-        status: "ממתין לאישור",
-        paymentStatus: "לא שולם",
         documentsComplete: false,
         isNewImmigrant: false,
         immigrationYear: "",
@@ -313,6 +330,63 @@ function ParticipantRegistrationPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
+                  <Label htmlFor="dateOfBirth">תאריך לידה</Label>
+                  <Input
+                    id="dateOfBirth"
+                    name="dateOfBirth"
+                    type="date"
+                    value={formData.dateOfBirth}
+                    onChange={handleChange}
+                    disabled={submitting}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="sex">מין</Label>
+                  <Select
+                    value={formData.sex}
+                    onValueChange={(value) => handleSelectChange("sex", value)}
+                  >
+                    <SelectTrigger disabled={submitting}>
+                      <SelectValue placeholder="בחר מין" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="זכר">זכר</SelectItem>
+                      <SelectItem value="נקבה">נקבה</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="parentName">שם הורה/אפוטרופוס</Label>
+                  <Input
+                    id="parentName"
+                    name="parentName"
+                    value={formData.parentName}
+                    onChange={handleChange}
+                    placeholder="שם ההורה"
+                    disabled={submitting}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="parentPhone">טלפון הורה</Label>
+                  <Input
+                    id="parentPhone"
+                    name="parentPhone"
+                    type="tel"
+                    value={formData.parentPhone}
+                    onChange={handleChange}
+                    placeholder="0501234567"
+                    disabled={submitting}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
                   <Label htmlFor="registrationDate">תאריך הרשמה</Label>
                   <Input
                     id="registrationDate"
@@ -350,56 +424,12 @@ function ParticipantRegistrationPage() {
               </div>
             </div>
 
-            {/* Status */}
+            {/* Document Status */}
             <div className="space-y-2">
               <h3 className="text-sm font-semibold text-muted-foreground">
-                מצב
+                מידע נוסף
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="status">סטטוס</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value) =>
-                      handleSelectChange("status", value)
-                    }
-                  >
-                    <SelectTrigger disabled={submitting}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="מאושר">מאושר</SelectItem>
-                      <SelectItem value="ממתין לתשלום">ממתין לתשלום</SelectItem>
-                      <SelectItem value="ממתין לאישור">ממתין לאישור</SelectItem>
-                      <SelectItem value="טיוטה">טיוטה</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="paymentStatus">סטטוס תשלום</Label>
-                  <Select
-                    value={formData.paymentStatus}
-                    onValueChange={(value) =>
-                      handleSelectChange("paymentStatus", value)
-                    }
-                  >
-                    <SelectTrigger disabled={submitting}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="שולם">שולם</SelectItem>
-                      <SelectItem value="שולם חלקית">שולם חלקית</SelectItem>
-                      <SelectItem value="לא שולם">לא שולם</SelectItem>
-                      <SelectItem value="לא נדרש תשלום">
-                        לא נדרש תשלום
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 pt-2">
+              <div className="flex items-center gap-2">
                 <Checkbox
                   id="documentsComplete"
                   name="documentsComplete"
@@ -424,7 +454,7 @@ function ParticipantRegistrationPage() {
             {/* Immigration Info */}
             <div className="space-y-2">
               <h3 className="text-sm font-semibold text-muted-foreground">
-                מידע כלליים
+                מידע כללי
               </h3>
               <div className="flex items-center gap-2">
                 <Checkbox
@@ -459,6 +489,48 @@ function ParticipantRegistrationPage() {
                     placeholder="2022"
                     min="1900"
                     max={new Date().getFullYear()}
+                    disabled={submitting}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Food Allergies */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-muted-foreground">
+                אלרגיות ודיאטה
+              </h3>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="hasAllergyWarning"
+                  name="hasAllergyWarning"
+                  checked={formData.hasAllergyWarning}
+                  onCheckedChange={(checked) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      hasAllergyWarning: checked as boolean,
+                    }));
+                  }}
+                  disabled={submitting}
+                />
+                <Label
+                  htmlFor="hasAllergyWarning"
+                  className="cursor-pointer font-normal"
+                >
+                  יש לי אלרגיה לאוכל
+                </Label>
+              </div>
+
+              {formData.hasAllergyWarning && (
+                <div>
+                  <Label htmlFor="foodAllergies">פרטי האלרגיה</Label>
+                  <Textarea
+                    id="foodAllergies"
+                    name="foodAllergies"
+                    value={formData.foodAllergies}
+                    onChange={handleChange}
+                    placeholder="תאר את האלרגיות והתגובות..."
+                    rows={3}
                     disabled={submitting}
                   />
                 </div>
