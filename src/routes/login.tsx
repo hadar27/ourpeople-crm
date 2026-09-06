@@ -9,15 +9,26 @@ import { toast } from "sonner";
 import logo from "@/assets/logo.png";
 import { supabase } from "@/lib/supabase";
 
+const DEBUG_CREDENTIALS = [
+  { email: "sandra@ourpeople.org.il", password: "sandra1234" },
+  { email: "eliezer@ourpeople.org.il", password: "eli1234" },
+  { email: "sara@ourpeople.org.il", password: "sara1234" },
+];
+
 export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("sarah@ourpeople.org");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const prefillDebugCredentials = (cred: (typeof DEBUG_CREDENTIALS)[0]) => {
+    setEmail(cred.email);
+    setPassword(cred.password);
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,6 +98,24 @@ function LoginPage() {
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="pr-9" />
             </div>
           </div>
+
+          {import.meta.env.DEV && (
+            <div className="rounded-lg bg-blue-50 p-3 space-y-2">
+              <p className="text-xs font-medium text-blue-900">Debug Credentials</p>
+              <div className="flex flex-wrap gap-1">
+                {DEBUG_CREDENTIALS.map((cred) => (
+                  <button
+                    key={cred.email}
+                    type="button"
+                    onClick={() => prefillDebugCredentials(cred)}
+                    className="text-xs px-2 py-1 rounded bg-blue-200 hover:bg-blue-300 text-blue-900"
+                  >
+                    {cred.email.split("@")[0]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center justify-between text-sm">
             <label className="flex items-center gap-2 cursor-pointer">
