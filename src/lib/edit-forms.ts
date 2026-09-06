@@ -113,7 +113,7 @@ export const volunteerFields: FormField[] = [
   { name: "email", label: "אימייל", type: "email" },
   { name: "availability", label: "זמינות", required: true },
   { name: "project", label: "פרויקט משויך", required: true },
-  { name: "hours", label: "שעות התנדבות", type: "number" },
+  { name: "hours", label: "שעות התנדבות", type: "number", max: 120 },
   {
     name: "status",
     label: "סטטוס",
