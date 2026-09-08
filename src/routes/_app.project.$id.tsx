@@ -222,7 +222,14 @@ function ProjectDetail() {
                 description="רישום הוצאה חדשה על חשבון הפרויקט."
                 successMessage="ההוצאה נוספה לפרויקט"
                 fields={projectExpenseFields}
-                customValidate={(v) => (Number(v.amount) > 0 ? null : "יש להזין סכום חיובי.")}
+                customValidate={(v) => {
+                  const amount = Number(v.amount);
+                  if (!(amount > 0)) return "יש להזין סכום חיובי.";
+                  if (totalExpenses + amount > project.budget) {
+                    return "סכום ההוצאה חורג מתקציב הפרויקט.";
+                  }
+                  return null;
+                }}
                 onCreate={async (v) => {
                   const supplier = (suppliersData ?? []).find((s) => s.name === v.supplier);
                   try {
