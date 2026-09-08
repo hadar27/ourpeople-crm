@@ -29,6 +29,39 @@ export type FilterConfig<T> = {
   getValue?: (row: T) => string;
 };
 
+function toCsvCellValue(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (Array.isArray(value)) return value.join("; ");
+  if (typeof value === "boolean") return value ? "כן" : "לא";
+  return String(value);
+}
+
+function escapeCsvCell(value: string): string {
+  return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
+
+function downloadCsv<T extends Record<string, unknown>>(
+  filename: string,
+  columns: Column<T>[],
+  rows: T[],
+) {
+  const lines = [
+    columns.map((c) => escapeCsvCell(c.header)).join(","),
+    ...rows.map((row) =>
+      columns.map((c) => escapeCsvCell(toCsvCellValue(row[c.key as keyof T]))).join(","),
+    ),
+  ];
+  const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 export function DataTable<T extends Record<string, unknown>>({
   rows,
   columns,
@@ -37,6 +70,7 @@ export function DataTable<T extends Record<string, unknown>>({
   getRowHref,
   rowActions,
   filters,
+  exportFilename = "export",
 }: {
   rows: T[];
   columns: Column<T>[];
@@ -46,6 +80,8 @@ export function DataTable<T extends Record<string, unknown>>({
   /** Rendered in a trailing cell, outside the row link (e.g. an edit button). */
   rowActions?: (row: T) => ReactNode;
   filters?: FilterConfig<T>[];
+  /** Base filename (without extension) used for the CSV export. */
+  exportFilename?: string;
 }) {
   const [q, setQ] = useState("");
   const [filterState, setFilterState] = useState<Record<string, Set<string>>>({});
@@ -64,7 +100,11 @@ export function DataTable<T extends Record<string, unknown>>({
     if (q.trim()) {
       const needle = q.toLowerCase();
       result = result.filter((row) =>
-        searchKeys.some((k) => String(row[k] ?? "").toLowerCase().includes(needle)),
+        searchKeys.some((k) =>
+          String(row[k] ?? "")
+            .toLowerCase()
+            .includes(needle),
+        ),
       );
     }
 
@@ -142,7 +182,9 @@ export function DataTable<T extends Record<string, unknown>>({
               <DropdownMenuSeparator />
               {filters.map((filter) => (
                 <div key={String(filter.key)} className="px-2 py-1">
-                  <div className="text-xs font-medium text-muted-foreground mb-2">{filter.label}</div>
+                  <div className="text-xs font-medium text-muted-foreground mb-2">
+                    {filter.label}
+                  </div>
                   {filter.options.map((option) => (
                     <DropdownMenuCheckboxItem
                       key={option}
@@ -173,7 +215,14 @@ export function DataTable<T extends Record<string, unknown>>({
           variant="outline"
           size="sm"
           className="gap-1"
-          onClick={() => toast.success(`יוצאו ${filtered.length} רשומות לאקסל`)}
+          onClick={() => {
+            downloadCsv(
+              `${exportFilename}-${new Date().toISOString().slice(0, 10)}.csv`,
+              columns,
+              filtered,
+            );
+            toast.success(`יוצאו ${filtered.length} רשומות לאקסל`);
+          }}
         >
           <Download className="h-4 w-4" /> ייצוא Excel
         </Button>
@@ -240,7 +289,10 @@ export function DataTable<T extends Record<string, unknown>>({
             })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={columns.length + (getRowHref ? 1 : 0) + (rowActions ? 1 : 0)} className="px-4 py-16 text-center">
+                <td
+                  colSpan={columns.length + (getRowHref ? 1 : 0) + (rowActions ? 1 : 0)}
+                  className="px-4 py-16 text-center"
+                >
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <Search className="h-8 w-8 opacity-40" />
                     <div className="font-medium">לא נמצאו תוצאות</div>
@@ -258,11 +310,17 @@ export function DataTable<T extends Record<string, unknown>>({
           מציג {filtered.length} מתוך {rows.length} רשומות
         </span>
         <div className="flex items-center gap-1">
-          <button className="px-2 py-1 rounded border border-border hover:bg-surface-muted disabled:opacity-40" disabled>
+          <button
+            className="px-2 py-1 rounded border border-border hover:bg-surface-muted disabled:opacity-40"
+            disabled
+          >
             הקודם
           </button>
           <span className="px-3 py-1 rounded bg-brand text-white">1</span>
-          <button className="px-2 py-1 rounded border border-border hover:bg-surface-muted disabled:opacity-40" disabled>
+          <button
+            className="px-2 py-1 rounded border border-border hover:bg-surface-muted disabled:opacity-40"
+            disabled
+          >
             הבא
           </button>
         </div>

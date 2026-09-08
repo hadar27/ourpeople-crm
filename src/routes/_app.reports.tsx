@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader, StatCard } from "@/components/page-header";
 import { Activity, Users } from "lucide-react";
@@ -13,12 +14,32 @@ import {
   AreaChart,
   Area,
 } from "recharts";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { DataTable, type Column } from "@/components/data-table";
 import { useDonations } from "@/lib/queries/donations";
 import { useDonors } from "@/lib/queries/donors";
 import { useProjects } from "@/lib/queries/projects";
 import { useVolunteers } from "@/lib/queries/volunteers";
+import { useParticipants, type ParticipantRecord } from "@/lib/queries/participants";
 import { monthlyDonationTotals } from "@/lib/dashboard-metrics";
 import { useCanEdit } from "@/lib/permissions";
+
+const NEW_IMMIGRANTS_YEARS_BACK = 15;
+
+const newImmigrantColumns: Column<ParticipantRecord>[] = [
+  { key: "name", header: "שם מלא", render: (r) => <span className="font-medium">{r.name}</span> },
+  { key: "idNumber", header: "ת.ז." },
+  { key: "phone", header: "טלפון" },
+  { key: "project", header: "פרויקט" },
+  { key: "city", header: "עיר" },
+  { key: "immigrationYear", header: "שנת עלייה" },
+];
 
 export const Route = createFileRoute("/_app/reports")({
   component: ReportsPage,
@@ -29,12 +50,23 @@ function ReportsPage() {
   const { data: donors } = useDonors();
   const { data: projects } = useProjects();
   const { data: volunteers } = useVolunteers();
+  const { data: participants } = useParticipants();
   const canViewDonations = useCanEdit("donations");
+  const [newImmigrantsOpen, setNewImmigrantsOpen] = useState(false);
 
   const donationList = donations ?? [];
   const donorList = donors ?? [];
   const projectList = projects ?? [];
   const volunteerList = volunteers ?? [];
+  const participantList = participants ?? [];
+
+  const currentYear = new Date().getFullYear();
+  const newImmigrantsList = participantList.filter(
+    (p) =>
+      p.isNewImmigrant &&
+      p.immigrationYear !== undefined &&
+      currentYear - p.immigrationYear <= NEW_IMMIGRANTS_YEARS_BACK,
+  );
 
   const totalVolunteerHours = volunteerList.reduce((s, v) => s + v.hours, 0);
   const donationCountByDonor = new Map<string, number>();
@@ -113,6 +145,34 @@ function ReportsPage() {
           </ResponsiveContainer>
         </div>
       </div>
+
+      <div className="mt-6">
+        <button
+          type="button"
+          onClick={() => setNewImmigrantsOpen(true)}
+          className="text-sm text-brand underline hover:text-brand-deep"
+        >
+          עולים חדשים שעלו ב-{NEW_IMMIGRANTS_YEARS_BACK} השנים האחרונות ({newImmigrantsList.length})
+        </button>
+      </div>
+
+      <Dialog open={newImmigrantsOpen} onOpenChange={setNewImmigrantsOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>עולים חדשים - {NEW_IMMIGRANTS_YEARS_BACK} השנים האחרונות</DialogTitle>
+            <DialogDescription>
+              משתתפים המסומנים כעולים חדשים, שעלו ב-{NEW_IMMIGRANTS_YEARS_BACK} השנים האחרונות או
+              פחות.
+            </DialogDescription>
+          </DialogHeader>
+          <DataTable
+            rows={newImmigrantsList}
+            columns={newImmigrantColumns}
+            searchKeys={["name", "idNumber", "phone", "city"]}
+            exportFilename="olim-chadashim"
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
