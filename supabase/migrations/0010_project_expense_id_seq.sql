@@ -7,6 +7,7 @@ create or replace function next_project_expense_id() returns text
 language sql as $$
   select 'PE-' || nextval('project_expense_id_seq')::text;
 $$;
+grant usage, select on sequence project_expense_id_seq to authenticated;
 
 alter table public.project_expenses
   alter column id set default next_project_expense_id();

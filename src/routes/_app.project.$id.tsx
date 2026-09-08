@@ -22,10 +22,16 @@ import { useDonations } from "@/lib/queries/donations";
 import { useVolunteers } from "@/lib/queries/volunteers";
 import { useParticipants } from "@/lib/queries/participants";
 import { useTasksForProject } from "@/lib/queries/tasks";
-import { useProjectExpenses } from "@/lib/queries/project-expenses";
+import { useProjectExpenses, useCreateProjectExpense } from "@/lib/queries/project-expenses";
 import { useProjectPhases } from "@/lib/queries/project-phases";
-import { usePendingVolunteerRegistrations, usePendingParticipantRegistrations } from "@/lib/queries/pending-registrations";
+import { useSuppliers } from "@/lib/queries/suppliers";
+import {
+  usePendingVolunteerRegistrations,
+  usePendingParticipantRegistrations,
+} from "@/lib/queries/pending-registrations";
 import { ProjectEditButton } from "@/components/module-edit-dialogs";
+import { EntityFormDialog } from "@/components/entity-form-dialog";
+import { projectExpenseFields } from "@/lib/edit-forms";
 import { RegistrationLinksSection } from "@/components/registration-links-section";
 import { ApproveRegistrationsModal } from "@/components/approve-registrations-modal";
 import { toast } from "sonner";
@@ -48,7 +54,10 @@ function ProjectDetail() {
   const { data: participantsData } = useParticipants();
   const { data: pendingVolunteers } = usePendingVolunteerRegistrations(id);
   const { data: pendingParticipants } = usePendingParticipantRegistrations(id);
+  const { data: suppliersData } = useSuppliers();
   const canViewDonations = useCanEdit("donations");
+  const canEditProjects = useCanEdit("projects");
+  const createProjectExpense = useCreateProjectExpense();
 
   const pendingVolunteersCount = pendingVolunteers?.length ?? 0;
   const pendingParticipantsCount = pendingParticipants?.length ?? 0;
@@ -201,13 +210,40 @@ function ProjectDetail() {
                 הוצאות לפי ספק וקטגוריה · סה״כ ₪{totalExpenses.toLocaleString()}
               </div>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => toast.success("ההוצאה נוספה לפרויקט")}
-            >
-              + הוצאה
-            </Button>
+            {canEditProjects && (
+              <EntityFormDialog
+                triggerLabel="הוצאה"
+                triggerNode={
+                  <Button size="sm" variant="outline">
+                    + הוצאה
+                  </Button>
+                }
+                title="הוספת הוצאה לפרויקט"
+                description="רישום הוצאה חדשה על חשבון הפרויקט."
+                successMessage="ההוצאה נוספה לפרויקט"
+                fields={projectExpenseFields}
+                customValidate={(v) => (Number(v.amount) > 0 ? null : "יש להזין סכום חיובי.")}
+                onCreate={async (v) => {
+                  const supplier = (suppliersData ?? []).find((s) => s.name === v.supplier);
+                  try {
+                    await createProjectExpense.mutateAsync({
+                      projectId: project.id,
+                      category: v.category,
+                      amount: Number(v.amount),
+                      date: v.date,
+                      supplierId: supplier?.id,
+                      status: v.status as "שולם" | "ממתין" | "חלקי",
+                    });
+                    return { ok: true };
+                  } catch (err) {
+                    return {
+                      ok: false,
+                      error: err instanceof Error ? err.message : "שמירת ההוצאה נכשלה",
+                    };
+                  }
+                }}
+              />
+            )}
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { projectKeys } from "@/lib/queries/projects";
 
 export type ProjectExpenseRecord = {
   id: string;
@@ -36,11 +37,23 @@ function toProjectExpenseRecord(row: ProjectExpenseRow): ProjectExpenseRecord {
   };
 }
 
+function toRow(patch: Partial<ProjectExpenseRecord>): Record<string, unknown> {
+  const row: Record<string, unknown> = {};
+  if (patch.projectId !== undefined) row.project_id = patch.projectId;
+  if (patch.category !== undefined) row.category = patch.category;
+  if (patch.supplierId !== undefined) row.supplier_id = patch.supplierId ?? null;
+  if (patch.amount !== undefined) row.amount = patch.amount;
+  if (patch.date !== undefined) row.date = patch.date;
+  if (patch.status !== undefined) row.status = patch.status;
+  return row;
+}
+
 const SELECT = "*, suppliers(name)";
 
 export const projectExpenseKeys = {
   all: ["projectExpenses"] as const,
-  forProject: (projectId: string | undefined) => [...projectExpenseKeys.all, "project", projectId] as const,
+  forProject: (projectId: string | undefined) =>
+    [...projectExpenseKeys.all, "project", projectId] as const,
 };
 
 export function useProjectExpenses(projectId: string | undefined) {
@@ -56,5 +69,25 @@ export function useProjectExpenses(projectId: string | undefined) {
       return (data as unknown as ProjectExpenseRow[]).map(toProjectExpenseRecord);
     },
     enabled: !!projectId,
+  });
+}
+
+export function useCreateProjectExpense() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (values: Partial<ProjectExpenseRecord>) => {
+      const { data, error } = await supabase
+        .from("project_expenses")
+        .insert(toRow(values))
+        .select(SELECT)
+        .single();
+      if (error) throw error;
+      return toProjectExpenseRecord(data as unknown as ProjectExpenseRow);
+    },
+    onSuccess: (record) => {
+      queryClient.invalidateQueries({ queryKey: projectExpenseKeys.forProject(record.projectId) });
+      queryClient.invalidateQueries({ queryKey: projectKeys.list() });
+      queryClient.invalidateQueries({ queryKey: projectKeys.detail(record.projectId) });
+    },
   });
 }
