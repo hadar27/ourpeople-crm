@@ -75,7 +75,7 @@ export function RegistrationLinksSection({ projectId }: RegistrationLinksSection
             ) : (
               <>
                 <Plus className="h-4 w-4 mr-2" />
-                יצור קישור
+                 קישור
               </>
             )}
           </Button>
@@ -119,7 +119,7 @@ export function RegistrationLinksSection({ projectId }: RegistrationLinksSection
             ) : (
               <>
                 <Plus className="h-4 w-4 mr-2" />
-                יצור קישור
+                 קישור
               </>
             )}
           </Button>
