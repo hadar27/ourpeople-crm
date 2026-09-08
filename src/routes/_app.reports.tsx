@@ -25,7 +25,7 @@ import { DataTable, type Column } from "@/components/data-table";
 import { useDonations } from "@/lib/queries/donations";
 import { useDonors } from "@/lib/queries/donors";
 import { useProjects, type ProjectRecord } from "@/lib/queries/projects";
-import { useVolunteers } from "@/lib/queries/volunteers";
+import { useVolunteers, type VolunteerRecord } from "@/lib/queries/volunteers";
 import { useParticipants, type ParticipantRecord } from "@/lib/queries/participants";
 import { monthlyDonationTotals } from "@/lib/dashboard-metrics";
 import { useCanEdit } from "@/lib/permissions";
@@ -52,6 +52,13 @@ const budgetCapColumns: Column<ProjectWithRatio>[] = [
   { key: "ratioPercent", header: "אחוז ביצוע", render: (r) => `${r.ratioPercent}%` },
 ];
 
+const volunteerHoursColumns: Column<VolunteerRecord>[] = [
+  { key: "name", header: "שם מלא", render: (r) => <span className="font-medium">{r.name}</span> },
+  { key: "project", header: "פרויקט" },
+  { key: "hours", header: "שעות התנדבות", render: (r) => `${r.hours} שעות` },
+  { key: "status", header: "סטטוס" },
+];
+
 export const Route = createFileRoute("/_app/reports")({
   component: ReportsPage,
 });
@@ -65,6 +72,7 @@ function ReportsPage() {
   const canViewDonations = useCanEdit("donations");
   const [newImmigrantsOpen, setNewImmigrantsOpen] = useState(false);
   const [budgetCapOpen, setBudgetCapOpen] = useState(false);
+  const [volunteerHoursOpen, setVolunteerHoursOpen] = useState(false);
 
   const donationList = donations ?? [];
   const donorList = donors ?? [];
@@ -91,6 +99,12 @@ function ReportsPage() {
   const budgetCapList: ProjectWithRatio[] = projectList
     .filter((p) => p.budget > 0 && p.spent / p.budget >= BUDGET_CAP_RATIO)
     .map((p) => ({ ...p, ratioPercent: Math.round((p.spent / p.budget) * 100) }));
+
+  const currentMonthLabel = new Date().toLocaleDateString("he-IL", {
+    month: "long",
+    year: "numeric",
+  });
+  const volunteerHoursList = [...volunteerList].sort((a, b) => b.hours - a.hours);
 
   const monthlyDonations = monthlyDonationTotals(donationList);
   const budgetVsActual = projectList.map((p) => ({
@@ -178,6 +192,13 @@ function ReportsPage() {
           פרויקטים המתקרבים לתקרת התקציב ({Math.round(BUDGET_CAP_RATIO * 100)}%+) (
           {budgetCapList.length})
         </button>
+        <button
+          type="button"
+          onClick={() => setVolunteerHoursOpen(true)}
+          className="text-sm text-brand underline hover:text-brand-deep text-right"
+        >
+          סה״כ שעות התנדבות לפי מתנדב/ת - {currentMonthLabel} ({volunteerHoursList.length})
+        </button>
       </div>
 
       <Dialog open={newImmigrantsOpen} onOpenChange={setNewImmigrantsOpen}>
@@ -212,6 +233,23 @@ function ReportsPage() {
             columns={budgetCapColumns}
             searchKeys={["name", "manager"]}
             exportFilename="tikrat-tazkiv"
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={volunteerHoursOpen} onOpenChange={setVolunteerHoursOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>סה״כ שעות התנדבות לפי מתנדב/ת - {currentMonthLabel}</DialogTitle>
+            <DialogDescription>
+              סך שעות ההתנדבות המדווחות עבור כל מתנדב/ת בחודש הקלנדרי הנוכחי.
+            </DialogDescription>
+          </DialogHeader>
+          <DataTable
+            rows={volunteerHoursList}
+            columns={volunteerHoursColumns}
+            searchKeys={["name", "project"]}
+            exportFilename="shaot-hitnadvut"
           />
         </DialogContent>
       </Dialog>
