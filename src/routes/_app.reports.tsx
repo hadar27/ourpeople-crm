@@ -24,13 +24,14 @@ import {
 import { DataTable, type Column } from "@/components/data-table";
 import { useDonations } from "@/lib/queries/donations";
 import { useDonors } from "@/lib/queries/donors";
-import { useProjects } from "@/lib/queries/projects";
+import { useProjects, type ProjectRecord } from "@/lib/queries/projects";
 import { useVolunteers } from "@/lib/queries/volunteers";
 import { useParticipants, type ParticipantRecord } from "@/lib/queries/participants";
 import { monthlyDonationTotals } from "@/lib/dashboard-metrics";
 import { useCanEdit } from "@/lib/permissions";
 
 const NEW_IMMIGRANTS_YEARS_BACK = 15;
+const BUDGET_CAP_RATIO = 0.9;
 
 const newImmigrantColumns: Column<ParticipantRecord>[] = [
   { key: "name", header: "שם מלא", render: (r) => <span className="font-medium">{r.name}</span> },
@@ -39,6 +40,16 @@ const newImmigrantColumns: Column<ParticipantRecord>[] = [
   { key: "project", header: "פרויקט" },
   { key: "city", header: "עיר" },
   { key: "immigrationYear", header: "שנת עלייה" },
+];
+
+type ProjectWithRatio = ProjectRecord & { ratioPercent: number };
+
+const budgetCapColumns: Column<ProjectWithRatio>[] = [
+  { key: "name", header: "פרויקט", render: (r) => <span className="font-medium">{r.name}</span> },
+  { key: "manager", header: "מנהל/ת" },
+  { key: "budget", header: "תקציב", render: (r) => `₪${r.budget.toLocaleString()}` },
+  { key: "spent", header: "ביצוע", render: (r) => `₪${r.spent.toLocaleString()}` },
+  { key: "ratioPercent", header: "אחוז ביצוע", render: (r) => `${r.ratioPercent}%` },
 ];
 
 export const Route = createFileRoute("/_app/reports")({
@@ -53,6 +64,7 @@ function ReportsPage() {
   const { data: participants } = useParticipants();
   const canViewDonations = useCanEdit("donations");
   const [newImmigrantsOpen, setNewImmigrantsOpen] = useState(false);
+  const [budgetCapOpen, setBudgetCapOpen] = useState(false);
 
   const donationList = donations ?? [];
   const donorList = donors ?? [];
@@ -75,6 +87,10 @@ function ReportsPage() {
     donationCountByDonor.set(d.donorId, (donationCountByDonor.get(d.donorId) ?? 0) + 1);
   });
   const repeatDonorCount = [...donationCountByDonor.values()].filter((count) => count > 1).length;
+
+  const budgetCapList: ProjectWithRatio[] = projectList
+    .filter((p) => p.budget > 0 && p.spent / p.budget >= BUDGET_CAP_RATIO)
+    .map((p) => ({ ...p, ratioPercent: Math.round((p.spent / p.budget) * 100) }));
 
   const monthlyDonations = monthlyDonationTotals(donationList);
   const budgetVsActual = projectList.map((p) => ({
@@ -146,13 +162,21 @@ function ReportsPage() {
         </div>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 flex flex-col gap-2">
         <button
           type="button"
           onClick={() => setNewImmigrantsOpen(true)}
-          className="text-sm text-brand underline hover:text-brand-deep"
+          className="text-sm text-brand underline hover:text-brand-deep text-right"
         >
           עולים חדשים שעלו ב-{NEW_IMMIGRANTS_YEARS_BACK} השנים האחרונות ({newImmigrantsList.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setBudgetCapOpen(true)}
+          className="text-sm text-brand underline hover:text-brand-deep text-right"
+        >
+          פרויקטים המתקרבים לתקרת התקציב ({Math.round(BUDGET_CAP_RATIO * 100)}%+) (
+          {budgetCapList.length})
         </button>
       </div>
 
@@ -170,6 +194,24 @@ function ReportsPage() {
             columns={newImmigrantColumns}
             searchKeys={["name", "idNumber", "phone", "city"]}
             exportFilename="olim-chadashim"
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={budgetCapOpen} onOpenChange={setBudgetCapOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>פרויקטים המתקרבים לתקרת התקציב</DialogTitle>
+            <DialogDescription>
+              פרויקטים שביצוע התקציב שלהם הגיע ל-{Math.round(BUDGET_CAP_RATIO * 100)}% מהתקציב או
+              יותר.
+            </DialogDescription>
+          </DialogHeader>
+          <DataTable
+            rows={budgetCapList}
+            columns={budgetCapColumns}
+            searchKeys={["name", "manager"]}
+            exportFilename="tikrat-tazkiv"
           />
         </DialogContent>
       </Dialog>
