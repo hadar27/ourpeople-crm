@@ -340,6 +340,20 @@ export const expenseFields: FormField[] = [
   { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
 ];
 
+export const projectExpenseFields: FormField[] = [
+  { name: "category", label: "קטגוריית הוצאה", required: true },
+  { name: "amount", label: "סכום (₪)", type: "number", required: true },
+  { name: "date", label: "תאריך", type: "date", required: true },
+  { name: "supplier", label: "ספק" },
+  {
+    name: "status",
+    label: "סטטוס תשלום",
+    type: "select",
+    required: true,
+    options: ["שולם", "ממתין", "חלקי"],
+  },
+];
+
 export const userFields: FormField[] = [
   { name: "name", label: "שם מלא", required: true },
   { name: "email", label: "דוא״ל", type: "email", required: true },

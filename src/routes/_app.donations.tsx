@@ -60,6 +60,12 @@ function DonationsPage() {
   const donorOptions = [...(donors ?? []).map((d) => d.name), ANONYMOUS_DONOR];
   const projectOptions = (projects ?? []).map((p) => p.name);
 
+  const thisMonthPrefix = new Date().toISOString().slice(0, 7);
+  const donationsThisMonth = (donations ?? []).filter((d) => d.date?.startsWith(thisMonthPrefix));
+  const totalThisMonth = donationsThisMonth.reduce((sum, d) => sum + d.amount, 0);
+  const receiptsIssued = donationsThisMonth.filter((d) => d.receipt === "הופק").length;
+  const receiptsMissing = donationsThisMonth.filter((d) => d.receipt === "חסר").length;
+
   return (
     <>
       <PageHeader
@@ -129,19 +135,19 @@ function DonationsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="card-elevated p-4 bg-brand-gradient text-white">
           <div className="text-xs opacity-80">סך תרומות החודש</div>
-          <div className="text-2xl font-bold mt-1">₪290,800</div>
+          <div className="text-2xl font-bold mt-1">₪{totalThisMonth.toLocaleString()}</div>
         </div>
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">תרומות החודש</div>
-          <div className="text-xl font-bold mt-1">47</div>
+          <div className="text-xl font-bold mt-1">{donationsThisMonth.length}</div>
         </div>
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">קבלות הופקו</div>
-          <div className="text-xl font-bold mt-1">41</div>
+          <div className="text-xl font-bold mt-1">{receiptsIssued}</div>
         </div>
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">קבלות חסרות</div>
-          <div className="text-xl font-bold mt-1 text-rose-600">6</div>
+          <div className="text-xl font-bold mt-1 text-rose-600">{receiptsMissing}</div>
         </div>
       </div>
       {isLoading ? (
