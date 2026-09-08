@@ -201,8 +201,8 @@ function ProjectDetail() {
       </div>
 
       {/* Financial breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div className="card-elevated p-5 lg:col-span-2">
+      <div className="grid grid-cols-1 gap-6 mb-6">
+        <div className="card-elevated p-5">
           <div className="flex items-center justify-between mb-3">
             <div>
               <div className="text-lg font-semibold">פירוט פיננסי</div>
@@ -310,7 +310,7 @@ function ProjectDetail() {
           )}
         </div>
 
-        <div className="space-y-4">
+        {/* <div className="space-y-4">
           {canViewDonations && (
             <div className="card-elevated p-5">
               <div className="font-semibold mb-2 flex items-center gap-1.5">
@@ -361,7 +361,7 @@ function ProjectDetail() {
               </div>
             )}
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Gantt */}
