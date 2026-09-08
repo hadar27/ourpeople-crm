@@ -14,7 +14,12 @@ import { useAllInteractions } from "./queries/interactions";
 import { useAllFollowUps } from "./queries/follow-ups";
 import { useAllAssistance } from "./queries/assistance";
 import { useAllAllocations } from "./queries/allocations";
-import type { DonorInteraction, FollowUpTask, AssistanceRecord, DonationAllocation } from "./crm-types";
+import type {
+  DonorInteraction,
+  FollowUpTask,
+  AssistanceRecord,
+  DonationAllocation,
+} from "./crm-types";
 import { daysBetween, isOverdue } from "./crm-seed";
 
 export type AlertSeverity = "גבוהה" | "בינונית" | "נמוכה";
@@ -40,6 +45,9 @@ export type AlertEngineData = {
   allocations: DonationAllocation[];
 };
 
+/** Count of distinct rule blocks implemented in generateAlerts() below — bump when adding/removing a rule. */
+export const ALERT_RULE_COUNT = 10;
+
 const REQUIRED_VOLUNTEERS_PER_PROJECT: Record<string, number> = {
   "קייטנת קיץ 2025": 30,
   "תכנית נוער שכונתית": 15,
@@ -49,8 +57,17 @@ const REQUIRED_VOLUNTEERS_PER_PROJECT: Record<string, number> = {
 };
 
 export function generateAlerts(data: AlertEngineData): Alert[] {
-  const { projects, volunteers, donations, suppliers, interactions, followUps, families, assistance, allocations } =
-    data;
+  const {
+    projects,
+    volunteers,
+    donations,
+    suppliers,
+    interactions,
+    followUps,
+    families,
+    assistance,
+    allocations,
+  } = data;
   const out: Alert[] = [];
   let i = 1;
   const id = () => `A-${String(i++).padStart(3, "0")}`;
@@ -197,7 +214,9 @@ export function generateAlerts(data: AlertEngineData): Alert[] {
   // Unallocated donations
   allocations.length &&
     donations.forEach((d) => {
-      const alloc = allocations.filter((a) => a.donationId === d.id).reduce((s, a) => s + a.amount, 0);
+      const alloc = allocations
+        .filter((a) => a.donationId === d.id)
+        .reduce((s, a) => s + a.amount, 0);
       if (alloc < d.amount) {
         out.push({
           id: id(),

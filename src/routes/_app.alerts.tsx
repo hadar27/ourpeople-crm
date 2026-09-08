@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AlertTriangle, CheckCircle2, Bell } from "lucide-react";
 import { useState } from "react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
-import { useAlerts, moduleRoute } from "@/lib/business-rules";
+import { useAlerts, moduleRoute, ALERT_RULE_COUNT } from "@/lib/business-rules";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/alerts")({
@@ -24,7 +24,7 @@ function AlertsPage() {
         <div className="card-elevated p-4"><div className="text-xs text-muted-foreground">חמורות</div><div className="text-2xl font-bold mt-1 text-rose-600">{high}</div></div>
         <div className="card-elevated p-4"><div className="text-xs text-muted-foreground">בינוניות</div><div className="text-2xl font-bold mt-1 text-amber-600">{mid}</div></div>
         <div className="card-elevated p-4"><div className="text-xs text-muted-foreground">נמוכות</div><div className="text-2xl font-bold mt-1 text-brand">{low}</div></div>
-        <div className="card-elevated p-4 bg-soft-gradient"><div className="text-xs text-muted-foreground">חוקים פעילים</div><div className="text-2xl font-bold mt-1">10</div></div>
+        <div className="card-elevated p-4 bg-soft-gradient"><div className="text-xs text-muted-foreground">חוקים פעילים</div><div className="text-2xl font-bold mt-1">{ALERT_RULE_COUNT}</div></div>
       </div>
 
       <div className="card-elevated p-5">

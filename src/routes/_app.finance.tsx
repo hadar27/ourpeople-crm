@@ -76,6 +76,20 @@ function FinancePage() {
     budget: p.budget,
     actual: p.spent,
   }));
+
+  const currentYear = String(new Date().getFullYear());
+  const incomeThisYear = (income ?? [])
+    .filter((i) => i.date?.startsWith(currentYear))
+    .reduce((sum, i) => sum + i.amount, 0);
+  const expensesThisYear = (expenses ?? [])
+    .filter((e) => e.date?.startsWith(currentYear))
+    .reduce((sum, e) => sum + e.amount, 0);
+  const netCashFlow = incomeThisYear - expensesThisYear;
+  const totalBudget = (projects ?? []).reduce((sum, p) => sum + p.budget, 0);
+  const expensesBudgetPct =
+    totalBudget > 0 ? Math.round((expensesThisYear / totalBudget) * 100) : 0;
+  const openExpenses = (expenses ?? []).filter((e) => e.status !== "שולם");
+  const openExpensesTotal = openExpenses.reduce((sum, e) => sum + e.amount, 0);
   return (
     <>
       <PageHeader
@@ -179,27 +193,27 @@ function FinancePage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <StatCard
           label="הכנסות השנה"
-          value="₪1.42M"
-          delta="▲ 9.2% מהתחזית"
+          value={`₪${incomeThisYear.toLocaleString()}`}
+          delta={`${currentYear}`}
           icon={<TrendingUp className="h-5 w-5" />}
           tone="brand"
         />
         <StatCard
           label="הוצאות השנה"
-          value="₪936K"
-          delta="62% מהתקציב"
+          value={`₪${expensesThisYear.toLocaleString()}`}
+          delta={`${expensesBudgetPct}% מהתקציב`}
           icon={<TrendingDown className="h-5 w-5" />}
         />
         <StatCard
           label="תזרים נקי"
-          value="₪484K"
-          delta="יתרה חיובית"
+          value={`₪${netCashFlow.toLocaleString()}`}
+          delta={netCashFlow >= 0 ? "יתרה חיובית" : "יתרה שלילית"}
           icon={<Wallet className="h-5 w-5" />}
         />
         <StatCard
           label="חשבוניות פתוחות"
-          value="11"
-          delta="₪82,300 לתשלום"
+          value={`${openExpenses.length}`}
+          delta={`₪${openExpensesTotal.toLocaleString()} לתשלום`}
           icon={<Receipt className="h-5 w-5" />}
         />
       </div>

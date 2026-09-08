@@ -4,6 +4,7 @@ import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column, type FilterConfig } from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { useSuppliers, useCreateSupplier, type SupplierRecord } from "@/lib/queries/suppliers";
+import { useExpenses } from "@/lib/queries/expenses";
 import { SupplierEditButton, SupplierDeleteButton } from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/suppliers")({
@@ -40,7 +41,15 @@ const filters: FilterConfig<SupplierRecord>[] = [
 
 function SuppliersPage() {
   const { data: suppliers, isLoading, isError, refetch } = useSuppliers();
+  const { data: expenses } = useExpenses();
   const createSupplier = useCreateSupplier();
+
+  const activeSuppliers = (suppliers ?? []).filter((s) => s.status === "פעיל").length;
+  const activeContracts = (suppliers ?? []).reduce((sum, s) => sum + s.contracts, 0);
+  const openInvoicesTotal = (suppliers ?? []).reduce((sum, s) => sum + s.openInvoices, 0);
+  const outstandingBalance = (expenses ?? [])
+    .filter((e) => e.supplierId && e.status !== "שולם")
+    .reduce((sum, e) => sum + e.amount, 0);
 
   return (
     <>
@@ -90,19 +99,19 @@ function SuppliersPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">ספקים פעילים</div>
-          <div className="text-xl font-bold mt-1">24</div>
+          <div className="text-xl font-bold mt-1">{activeSuppliers}</div>
         </div>
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">חוזים בתוקף</div>
-          <div className="text-xl font-bold mt-1">38</div>
+          <div className="text-xl font-bold mt-1">{activeContracts}</div>
         </div>
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">חשבוניות פתוחות</div>
-          <div className="text-xl font-bold mt-1 text-amber-600">7</div>
+          <div className="text-xl font-bold mt-1 text-amber-600">{openInvoicesTotal}</div>
         </div>
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">יתרת תשלום</div>
-          <div className="text-xl font-bold mt-1">₪82,300</div>
+          <div className="text-xl font-bold mt-1">₪{outstandingBalance.toLocaleString()}</div>
         </div>
       </div>
       {isLoading ? (
