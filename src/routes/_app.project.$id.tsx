@@ -278,6 +278,8 @@ function ProjectDetail() {
                       date: v.date,
                       supplierId: supplier?.id,
                       status: v.status as "שולם" | "ממתין" | "חלקי",
+                      description: v.description,
+                      reference: v.reference,
                     });
                     return { ok: true };
                   } catch (err) {
@@ -297,6 +299,7 @@ function ProjectDetail() {
                   <th className="text-right py-2 font-medium">קטגוריה</th>
                   <th className="text-right py-2 font-medium">ספק</th>
                   <th className="text-right py-2 font-medium">תאריך</th>
+                  <th className="text-right py-2 font-medium">תיאור / אסמכתא</th>
                   <th className="text-right py-2 font-medium">סטטוס</th>
                   <th className="text-left py-2 font-medium">סכום</th>
                 </tr>
@@ -304,7 +307,7 @@ function ProjectDetail() {
               <tbody>
                 {expenses.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-6 text-sm text-muted-foreground">
+                    <td colSpan={6} className="text-center py-6 text-sm text-muted-foreground">
                       טרם נרשמו הוצאות
                     </td>
                   </tr>
@@ -314,6 +317,10 @@ function ProjectDetail() {
                       <td className="py-2 font-medium">{e.category}</td>
                       <td className="py-2 text-muted-foreground">{e.supplier ?? "—"}</td>
                       <td className="py-2 text-muted-foreground">{e.date}</td>
+                      <td className="py-2 text-muted-foreground">
+                        {e.description ?? "—"}
+                        {e.reference ? ` · ${e.reference}` : ""}
+                      </td>
                       <td className="py-2">
                         <StatusBadge value={e.status} />
                       </td>

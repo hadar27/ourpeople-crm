@@ -44,7 +44,7 @@ const nav = [
   { to: "/families", label: "מוטבים ומשפחות", icon: Home },
   { to: "/projects", label: "פרויקטים", icon: FolderKanban },
   { to: "/suppliers", label: "ספקים", icon: Truck },
-  { to: "/finance", label: "כספים ERP", icon: Wallet, module: "finance" },
+  { to: "/finance", label: "כספים ותקציבים", icon: Wallet, module: "finance" },
   { to: "/alerts", label: "התראות", icon: Bell },
   { to: "/reports", label: "KPI ודוחות", icon: BarChart3 },
   { to: "/users", label: "משתמשים והרשאות", icon: ShieldCheck, module: "users" },
@@ -58,7 +58,7 @@ export function AppShell() {
   const user = useCurrentUser();
   const moduleAccess: Partial<Record<EditableModule, boolean>> = {
     donations: useCanEdit("donations"),
-    finance: useCanEdit("finance"),
+    finance: useCanEdit("finance") || user?.role === "מנהל פרויקטים",
     users: useCanEdit("users"),
   };
   const visibleNav = nav.filter((item) => !item.module || moduleAccess[item.module]);

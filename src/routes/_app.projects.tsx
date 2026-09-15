@@ -49,7 +49,12 @@ function ProjectsPage() {
             successMessage="פרויקט חדש נוצר בהצלחה"
             fields={[
               { name: "name", label: "שם פרויקט", required: true, colSpan: 2 },
-              { name: "budget", label: "תקציב (₪)", type: "number", required: true },
+              {
+                name: "budget",
+                label: "הקצאת תקציב ראשוני מהקופה (₪)",
+                type: "number",
+                required: true,
+              },
               {
                 name: "status",
                 label: "סטטוס",

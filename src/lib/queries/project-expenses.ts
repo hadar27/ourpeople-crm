@@ -11,6 +11,9 @@ export type ProjectExpenseRecord = {
   amount: number;
   date: string;
   status: "שולם" | "ממתין" | "חלקי";
+  description?: string;
+  reference?: string;
+  createdBy?: string;
 };
 
 type ProjectExpenseRow = {
@@ -21,6 +24,9 @@ type ProjectExpenseRow = {
   amount: number;
   date: string;
   status: string;
+  description: string | null;
+  reference: string | null;
+  created_by: string | null;
   suppliers: { name: string } | null;
 };
 
@@ -34,6 +40,9 @@ function toProjectExpenseRecord(row: ProjectExpenseRow): ProjectExpenseRecord {
     amount: row.amount,
     date: row.date,
     status: row.status as ProjectExpenseRecord["status"],
+    description: row.description ?? undefined,
+    reference: row.reference ?? undefined,
+    createdBy: row.created_by ?? undefined,
   };
 }
 
@@ -45,6 +54,9 @@ function toRow(patch: Partial<ProjectExpenseRecord>): Record<string, unknown> {
   if (patch.amount !== undefined) row.amount = patch.amount;
   if (patch.date !== undefined) row.date = patch.date;
   if (patch.status !== undefined) row.status = patch.status;
+  if (patch.description !== undefined) row.description = patch.description ?? null;
+  if (patch.reference !== undefined) row.reference = patch.reference ?? null;
+  if (patch.createdBy !== undefined) row.created_by = patch.createdBy ?? null;
   return row;
 }
 
@@ -52,9 +64,24 @@ const SELECT = "*, suppliers(name)";
 
 export const projectExpenseKeys = {
   all: ["projectExpenses"] as const,
+  list: () => [...projectExpenseKeys.all, "list"] as const,
   forProject: (projectId: string | undefined) =>
     [...projectExpenseKeys.all, "project", projectId] as const,
 };
+
+export function useAllProjectExpenses() {
+  return useQuery({
+    queryKey: projectExpenseKeys.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_expenses")
+        .select(SELECT)
+        .order("date", { ascending: false });
+      if (error) throw error;
+      return (data as unknown as ProjectExpenseRow[]).map(toProjectExpenseRecord);
+    },
+  });
+}
 
 export function useProjectExpenses(projectId: string | undefined) {
   return useQuery({
@@ -86,6 +113,23 @@ export function useCreateProjectExpense() {
     },
     onSuccess: (record) => {
       queryClient.invalidateQueries({ queryKey: projectExpenseKeys.forProject(record.projectId) });
+      queryClient.invalidateQueries({ queryKey: projectExpenseKeys.list() });
+      queryClient.invalidateQueries({ queryKey: projectKeys.list() });
+      queryClient.invalidateQueries({ queryKey: projectKeys.detail(record.projectId) });
+    },
+  });
+}
+
+export function useDeleteProjectExpense() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (record: ProjectExpenseRecord) => {
+      const { error } = await supabase.from("project_expenses").delete().eq("id", record.id);
+      if (error) throw error;
+      return record;
+    },
+    onSuccess: (record) => {
+      queryClient.invalidateQueries({ queryKey: projectExpenseKeys.all });
       queryClient.invalidateQueries({ queryKey: projectKeys.list() });
       queryClient.invalidateQueries({ queryKey: projectKeys.detail(record.projectId) });
     },

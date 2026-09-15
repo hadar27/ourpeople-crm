@@ -404,8 +404,7 @@ export function ProjectEditButton({ record, triggerLabel }: { record: ProjectRec
       triggerLabel={triggerLabel}
       title={`עריכת פרויקט — ${record.name}`}
       description={`עדכון פרטי הפרויקט ${record.id}. משימות, תרומות והוצאות משויכות נשמרות.`}
-      fields={projectFields}
-      sensitiveFields={["budget"]}
+      fields={projectFields.filter((field) => field.name !== "budget")}
       initialValues={{
         name: record.name,
         description: record.description ?? "",
@@ -413,16 +412,11 @@ export function ProjectEditButton({ record, triggerLabel }: { record: ProjectRec
         manager: record.manager,
         startDate: record.startDate ?? "",
         endDate: record.endDate ?? "",
-        budget: String(record.budget),
         requiredVolunteers: String(record.requiredVolunteers ?? record.volunteers),
         suppliers: record.suppliers ?? "",
         notes: record.notes ?? "",
       }}
       customValidate={(v) => {
-        const budget = Number(v.budget);
-        if (!budget || budget <= 0) return "יש להזין תקציב חיובי.";
-        if (budget < record.spent)
-          return `התקציב אינו יכול להיות נמוך מהביצוע בפועל (₪${record.spent.toLocaleString()}).`;
         if (v.startDate && v.endDate && v.startDate > v.endDate)
           return "תאריך הסיום חייב להיות אחרי תאריך ההתחלה.";
         return null;
@@ -438,7 +432,6 @@ export function ProjectEditButton({ record, triggerLabel }: { record: ProjectRec
               manager: v.manager,
               startDate: v.startDate || undefined,
               endDate: v.endDate || undefined,
-              budget: Number(v.budget),
               requiredVolunteers: Number(v.requiredVolunteers) || undefined,
               suppliers: v.suppliers || undefined,
               notes: v.notes || undefined,

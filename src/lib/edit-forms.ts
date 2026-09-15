@@ -358,6 +358,8 @@ export const projectExpenseFields: FormField[] = [
     required: true,
     options: ["שולם", "ממתין", "חלקי"],
   },
+  { name: "description", label: "תיאור ההוצאה", type: "textarea", required: true, colSpan: 2 },
+  { name: "reference", label: "אסמכתא", required: true, colSpan: 2 },
 ];
 
 export const userFields: FormField[] = [

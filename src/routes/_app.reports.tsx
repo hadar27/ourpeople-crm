@@ -34,7 +34,7 @@ import { useDonors } from "@/lib/queries/donors";
 import { useProjects, type ProjectRecord } from "@/lib/queries/projects";
 import { useVolunteers, useAllProjectVolunteerAssignments } from "@/lib/queries/volunteers";
 import { useParticipants, type ParticipantRecord } from "@/lib/queries/participants";
-import { useExpenses } from "@/lib/queries/expenses";
+import { useAllProjectExpenses } from "@/lib/queries/project-expenses";
 import { useFamilies } from "@/lib/queries/families";
 import { useAllAssistance } from "@/lib/queries/assistance";
 import { useAllAllocations } from "@/lib/queries/allocations";
@@ -163,7 +163,7 @@ function ReportsPage() {
   const { data: volunteers } = useVolunteers();
   const { data: volunteerAssignments } = useAllProjectVolunteerAssignments();
   const { data: participants } = useParticipants();
-  const { data: expenses } = useExpenses();
+  const { data: expenses } = useAllProjectExpenses();
   const { data: families } = useFamilies();
   const { data: assistance } = useAllAssistance();
   const { data: allocations } = useAllAllocations();
@@ -213,7 +213,7 @@ function ReportsPage() {
   const supplierLiabilityRows: ReportRow[] = expenseList
     .filter((expense) => expense.supplier && expense.status !== "שולם")
     .map((expense) => ({
-      supplier: expense.supplier,
+      supplier: expense.supplier ?? "—",
       balance: expense.amount,
       date: expense.date,
       category: expense.category,

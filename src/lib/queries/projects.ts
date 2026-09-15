@@ -8,6 +8,9 @@ export type ProjectRecord = {
   type: "חינמית" | "בתשלום";
   price: number;
   budget: number;
+  initialBudget: number;
+  approvedAdditions: number;
+  releasedAmount: number;
   spent: number;
   progress: number;
   volunteers: number;
@@ -28,6 +31,9 @@ type ProjectRow = {
   type: string;
   price: number;
   budget: number;
+  initial_budget: number;
+  approved_additions: number;
+  released_amount: number;
   spent: number;
   progress: number;
   volunteers: number;
@@ -49,6 +55,9 @@ function toProjectRecord(row: ProjectRow): ProjectRecord {
     type: row.type as ProjectRecord["type"],
     price: row.price,
     budget: row.budget,
+    initialBudget: row.initial_budget ?? row.budget,
+    approvedAdditions: row.approved_additions ?? 0,
+    releasedAmount: row.released_amount ?? 0,
     spent: row.spent,
     progress: row.progress,
     volunteers: row.volunteers,
