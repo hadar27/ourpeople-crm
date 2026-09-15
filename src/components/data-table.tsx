@@ -24,8 +24,8 @@ export type Column<T> = {
 export type FilterConfig<T> = {
   key: keyof T | string;
   label: string;
-  type: "select" | "multi-select";
-  options: string[];
+  type: "select" | "multi-select" | "date";
+  options?: string[];
   getValue?: (row: T) => string;
 };
 
@@ -185,15 +185,33 @@ export function DataTable<T extends Record<string, unknown>>({
                   <div className="text-xs font-medium text-muted-foreground mb-2">
                     {filter.label}
                   </div>
-                  {filter.options.map((option) => (
-                    <DropdownMenuCheckboxItem
-                      key={option}
-                      checked={filterState[String(filter.key)]?.has(option) ?? false}
-                      onCheckedChange={() => toggleFilter(String(filter.key), option)}
-                    >
-                      {option}
-                    </DropdownMenuCheckboxItem>
-                  ))}
+                  {filter.type === "date" ? (
+                    <Input
+                      type="date"
+                      value={Array.from(filterState[String(filter.key)] ?? [])[0] ?? ""}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setFilterState((prev) => {
+                          const next = { ...prev };
+                          if (value) next[String(filter.key)] = new Set([value]);
+                          else delete next[String(filter.key)];
+                          return next;
+                        });
+                      }}
+                      onKeyDown={(event) => event.stopPropagation()}
+                      className="h-9"
+                    />
+                  ) : (
+                    filter.options?.map((option) => (
+                      <DropdownMenuCheckboxItem
+                        key={option}
+                        checked={filterState[String(filter.key)]?.has(option) ?? false}
+                        onCheckedChange={() => toggleFilter(String(filter.key), option)}
+                      >
+                        {option}
+                      </DropdownMenuCheckboxItem>
+                    ))
+                  )}
                   <DropdownMenuSeparator className="my-1" />
                 </div>
               ))}

@@ -7,11 +7,6 @@ import {
   CreditCard,
   UserPlus,
   FileWarning,
-  Globe2,
-  QrCode,
-  Sparkles,
-  Database,
-  Upload,
   Users as UsersIcon,
   Loader2,
 } from "lucide-react";
@@ -28,40 +23,6 @@ export const Route = createFileRoute("/_app/participants")({
   component: ParticipantsPage,
 });
 
-function SourceBadge({ source }: { source: RegistrationSource }) {
-  const map: Record<RegistrationSource, { icon: React.ReactNode; cls: string }> = {
-    "טופס דיגיטלי": {
-      icon: <Sparkles className="h-3 w-3" />,
-      cls: "bg-brand-light text-brand-deep border-brand/20",
-    },
-    QR: {
-      icon: <QrCode className="h-3 w-3" />,
-      cls: "bg-violet-50 text-violet-700 border-violet-200",
-    },
-    אתר: { icon: <Globe2 className="h-3 w-3" />, cls: "bg-sky-50 text-sky-700 border-sky-200" },
-    "צוות פנימי": {
-      icon: <UsersIcon className="h-3 w-3" />,
-      cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    },
-    "ייבוא Excel": {
-      icon: <Upload className="h-3 w-3" />,
-      cls: "bg-amber-50 text-amber-700 border-amber-200",
-    },
-    API: {
-      icon: <Database className="h-3 w-3" />,
-      cls: "bg-slate-100 text-slate-700 border-slate-200",
-    },
-  };
-  const m = map[source];
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${m.cls}`}
-    >
-      {m.icon} {source}
-    </span>
-  );
-}
-
 const columns: Column<ParticipantRecord>[] = [
   { key: "name", header: "שם מלא", render: (r) => <span className="font-medium">{r.name}</span> },
   { key: "idNumber", header: "ת.ז." },
@@ -76,7 +37,6 @@ const columns: Column<ParticipantRecord>[] = [
       </div>
     ),
   },
-  { key: "source", header: "מקור רישום", render: (r) => <SourceBadge source={r.source} /> },
   { key: "registrationDate", header: "תאריך רישום" },
   { key: "status", header: "סטטוס", render: (r) => <StatusBadge value={r.status} /> },
   { key: "paymentStatus", header: "תשלום", render: (r) => <StatusBadge value={r.paymentStatus} /> },
@@ -95,6 +55,11 @@ const columns: Column<ParticipantRecord>[] = [
 ];
 
 const filters: FilterConfig<ParticipantRecord>[] = [
+  {
+    key: "registrationDate",
+    label: "תאריך רישום",
+    type: "date",
+  },
   {
     key: "status",
     label: "סטטוס",
