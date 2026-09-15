@@ -262,7 +262,7 @@ export const supplierFields: FormField[] = [
     type: "select",
     options: ["מזומן", "שוטף +30", "שוטף +60", "שוטף +90"],
   },
-  { name: "status", label: "סטטוס", type: "select", required: true, options: ["פעיל", "מושעה"] },
+  { name: "status", label: "סטטוס", type: "select", required: true, options: ["שולם", "לא שולם"] },
   { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
 ];
 

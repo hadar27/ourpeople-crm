@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Users, HeartHandshake, AlertTriangle, HandHeart, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader, StatusBadge } from "@/components/page-header";
-import { DataTable, type Column } from "@/components/data-table";
+import { DataTable, type Column, type FilterConfig } from "@/components/data-table";
 import { FormDialog } from "@/components/form-dialog";
 import { useFamilies, useCreateFamily, type FamilyRecord } from "@/lib/queries/families";
 import { useAllAssistance } from "@/lib/queries/assistance";
@@ -78,6 +78,26 @@ function FamiliesPage() {
   const totalAid = (assistance ?? [])
     .filter((a) => a.status !== "נדחה")
     .reduce((s, a) => s + (a.amount ?? 0), 0);
+  const familyFilters: FilterConfig<Record<string, unknown>>[] = [
+    {
+      key: "status",
+      label: "סטטוס",
+      type: "multi-select",
+      options: ["ממתינה לאישור", "בטיפול פעיל", "מלווה", "בסיכון", "סגורה"],
+    },
+    {
+      key: "city",
+      label: "יישוב",
+      type: "multi-select",
+      options: [...new Set(list.map((family) => family.city).filter(Boolean))].sort(),
+    },
+    {
+      key: "assignedStaff",
+      label: "רכז/ת מלווה",
+      type: "multi-select",
+      options: [...new Set(list.map((family) => family.assignedStaff).filter(Boolean))].sort(),
+    },
+  ];
 
   const handleAdd = async (v: Record<string, string>) => {
     try {
@@ -198,6 +218,7 @@ function FamiliesPage() {
           rows={list as unknown as Record<string, unknown>[]}
           columns={columns}
           searchKeys={["familyName", "mainContact", "city", "countryOfOrigin", "assignedStaff"]}
+          filters={familyFilters}
           getRowHref={(r) => `/families/${String(r.id)}`}
         />
       )}

@@ -18,6 +18,7 @@ import { StatusBadge } from "@/components/page-header";
 import { GanttChart } from "@/components/gantt-chart";
 import { useProject, useUpdateProject, type ProjectRecord } from "@/lib/queries/projects";
 import { useDonations } from "@/lib/queries/donations";
+import { useAllAllocations } from "@/lib/queries/allocations";
 import {
   useAssignVolunteerToProject,
   useProjectVolunteerIds,
@@ -52,6 +53,7 @@ function ProjectDetail() {
   const { data: expensesData } = useProjectExpenses(project?.id);
   const { data: phasesData } = useProjectPhases(project?.id);
   const { data: donationsData } = useDonations();
+  const { data: allocationsData } = useAllAllocations();
   const { data: volunteersData } = useVolunteers();
   const { data: projectVolunteerIdsData } = useProjectVolunteerIds(id);
   const { data: participantsData } = useParticipants();
@@ -106,7 +108,22 @@ function ProjectDetail() {
   }
 
   const projectTasks = tasksData ?? [];
-  const projectDonations = (donationsData ?? []).filter((d) => d.projectId === project.id);
+  const allocations = allocationsData ?? [];
+  const allocatedDonationIds = new Set(allocations.map((allocation) => allocation.donationId));
+  const projectAllocationAmounts = allocations
+    .filter((allocation) => allocation.projectId === project.id)
+    .reduce((amounts, allocation) => {
+      amounts.set(
+        allocation.donationId,
+        (amounts.get(allocation.donationId) ?? 0) + allocation.amount,
+      );
+      return amounts;
+    }, new Map<string, number>());
+  const projectDonations = (donationsData ?? []).filter(
+    (donation) =>
+      projectAllocationAmounts.has(donation.id) ||
+      (donation.projectId === project.id && !allocatedDonationIds.has(donation.id)),
+  );
   const projectVolunteerIds = new Set(projectVolunteerIdsData ?? []);
   const projectVolunteers = (volunteersData ?? []).filter(
     (v) => projectVolunteerIds.has(v.id) || v.projectId === project.id,
@@ -119,7 +136,12 @@ function ProjectDetail() {
   const participantsCount = (participantsData ?? []).filter(
     (p) => p.projectId === project.id,
   ).length;
-  const totalDonations = projectDonations.reduce((s, d) => s + d.amount, 0);
+  const donationAmountForProject = (donationId: string, originalAmount: number) =>
+    projectAllocationAmounts.get(donationId) ?? originalAmount;
+  const totalDonations = projectDonations.reduce(
+    (sum, donation) => sum + donationAmountForProject(donation.id, donation.amount),
+    0,
+  );
   const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
   const remainingBudget = project.budget - project.spent;
   const budgetRatio = Math.round((project.spent / project.budget) * 100);
@@ -509,7 +531,9 @@ function ProjectDetail() {
                       className="flex items-center justify-between p-2 rounded-lg hover:bg-surface-muted"
                     >
                       <span className="text-sm">{d.donor}</span>
-                      <span className="text-sm font-semibold">₪{d.amount.toLocaleString()}</span>
+                      <span className="text-sm font-semibold">
+                        ₪{donationAmountForProject(d.id, d.amount).toLocaleString()}
+                      </span>
                     </Link>
                   </li>
                 ))}

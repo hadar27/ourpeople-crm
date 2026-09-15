@@ -8,7 +8,7 @@ export type SupplierRecord = {
   contact: string;
   contracts: number;
   openInvoices: number;
-  status: "פעיל" | "מושעה";
+  status: "שולם" | "לא שולם";
   phone?: string;
   email?: string;
   address?: string;

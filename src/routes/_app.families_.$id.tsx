@@ -1,15 +1,35 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { ArrowRight, Users, HandHeart, FileText, CalendarClock, Plus, CheckCircle2, Home, Loader2 } from "lucide-react";
+import {
+  ArrowRight,
+  Users,
+  HandHeart,
+  FileText,
+  CalendarClock,
+  Plus,
+  CheckCircle2,
+  Home,
+  Loader2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/page-header";
-import { MiniStat, SectionCard, EmptyState, Timeline, type TimelineItem } from "@/components/detail-kit";
+import {
+  MiniStat,
+  SectionCard,
+  EmptyState,
+  Timeline,
+  type TimelineItem,
+} from "@/components/detail-kit";
 import { FormDialog } from "@/components/form-dialog";
 import { isOverdue, TODAY } from "@/lib/crm-seed";
 import { useFamily } from "@/lib/queries/families";
 import { useProjects } from "@/lib/queries/projects";
 import { useFamilyMembers, useCreateFamilyMember } from "@/lib/queries/family-members";
-import { useAssistanceForFamily, useCreateAssistance, useSetAssistanceStatus } from "@/lib/queries/assistance";
+import {
+  useAssistanceForFamily,
+  useCreateAssistance,
+  useSetAssistanceStatus,
+} from "@/lib/queries/assistance";
 import { useFollowUpsForEntity, useCompleteFollowUp } from "@/lib/queries/follow-ups";
 import { useDocumentsForEntity } from "@/lib/queries/documents";
 import type { AssistanceNeed } from "@/lib/crm-types";
@@ -20,7 +40,16 @@ export const Route = createFileRoute("/_app/families_/$id")({
   component: FamilyProfile,
 });
 
-const NEEDS: AssistanceNeed[] = ["מזון", "דיור", "תעסוקה", "חינוך", "בריאות", "משפטי", "ריהוט", "עברית"];
+const NEEDS: AssistanceNeed[] = [
+  "מזון",
+  "דיור",
+  "תעסוקה",
+  "חינוך",
+  "בריאות",
+  "משפטי",
+  "ריהוט",
+  "עברית",
+];
 
 function FamilyProfile() {
   const { id } = useParams({ from: "/_app/families_/$id" });
@@ -46,9 +75,17 @@ function FamilyProfile() {
   if (isError || !family) {
     return (
       <div className="card-elevated p-8 text-center">
-        תיק משפחה לא נמצא. <Link to="/families" className="text-brand">חזרה</Link>
+        תיק משפחה לא נמצא.{" "}
+        <Link to="/families" className="text-brand">
+          חזרה
+        </Link>
         {isError && (
-          <button onClick={() => refetch()} className="block mx-auto mt-2 text-sm text-brand hover:underline">נסה שוב</button>
+          <button
+            onClick={() => refetch()}
+            className="block mx-auto mt-2 text-sm text-brand hover:underline"
+          >
+            נסה שוב
+          </button>
         )}
       </div>
     );
@@ -60,7 +97,9 @@ function FamilyProfile() {
   const assistanceList = assistance ?? [];
   const followUpsList = followUps ?? [];
   const sortedAid = [...assistanceList].sort((a, b) => (a.date < b.date ? 1 : -1));
-  const totalAid = sortedAid.filter((a) => a.status !== "נדחה").reduce((s, a) => s + (a.amount ?? 0), 0);
+  const totalAid = sortedAid
+    .filter((a) => a.status !== "נדחה")
+    .reduce((s, a) => s + (a.amount ?? 0), 0);
   const pending = sortedAid.filter((a) => a.status === "ממתין");
   const openTasks = followUpsList.filter((f) => f.status !== "הושלם");
   const minors = membersList.filter((m) => m.status === "קטין").length;
@@ -69,7 +108,9 @@ function FamilyProfile() {
     id: a.id,
     title: (
       <span className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs bg-secondary text-brand-deep px-2 py-0.5 rounded-full">{a.type}</span>
+        <span className="text-xs bg-secondary text-brand-deep px-2 py-0.5 rounded-full">
+          {a.type}
+        </span>
         {a.description}
         <StatusBadge value={a.status} />
       </span>
@@ -78,7 +119,14 @@ function FamilyProfile() {
       a.projectId ? ` · ${projects.find((p) => p.id === a.projectId)?.name ?? a.projectId}` : ""
     }`,
     date: a.date,
-    tone: a.status === "סופק" ? "good" : a.status === "ממתין" ? "warn" : a.status === "נדחה" ? "danger" : "brand",
+    tone:
+      a.status === "סופק"
+        ? "good"
+        : a.status === "ממתין"
+          ? "warn"
+          : a.status === "נדחה"
+            ? "danger"
+            : "brand",
   }));
 
   const addAid = async (v: Record<string, string>) => {
@@ -115,7 +163,10 @@ function FamilyProfile() {
 
   return (
     <>
-      <Link to="/families" className="text-sm text-brand inline-flex items-center gap-1 mb-4 hover:underline">
+      <Link
+        to="/families"
+        className="text-sm text-brand inline-flex items-center gap-1 mb-4 hover:underline"
+      >
         <ArrowRight className="h-4 w-4" /> חזרה לרשימת המשפחות
       </Link>
 
@@ -128,7 +179,8 @@ function FamilyProfile() {
             <div>
               <h1 className="text-2xl font-bold">{family.familyName}</h1>
               <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground flex-wrap">
-                <span>{family.id}</span>·<span>{family.city}</span>·<span>{family.countryOfOrigin}</span>·
+                <span>{family.id}</span>·<span>{family.city}</span>·
+                <span>{family.countryOfOrigin}</span>·
                 <StatusBadge value={family.status} />
               </div>
             </div>
@@ -146,26 +198,51 @@ function FamilyProfile() {
               successMessage="רשומת הסיוע נוספה וממתינה לאישור"
               fields={[
                 { name: "type", label: "סוג סיוע", type: "select", required: true, options: NEEDS },
-                { name: "amount", label: "סכום (₪)", type: "number", helper: "אם הסיוע אינו כספי — השאירו ריק" },
+                {
+                  name: "amount",
+                  label: "סכום (₪)",
+                  type: "number",
+                  helper: "אם הסיוע אינו כספי — השאירו ריק",
+                },
                 { name: "description", label: "תיאור", required: true, colSpan: 2 },
                 { name: "date", label: "תאריך", type: "date", required: true },
-                { name: "staff", label: "איש צוות", required: true, placeholder: family.assignedStaff },
-                { name: "projectId", label: "שיוך לפרויקט", type: "select", options: projects.map((p) => p.name) },
+                {
+                  name: "staff",
+                  label: "איש צוות",
+                  required: true,
+                  placeholder: family.assignedStaff,
+                },
+                {
+                  name: "projectId",
+                  label: "שיוך לפרויקט",
+                  type: "select",
+                  options: projects.map((p) => p.name),
+                },
               ]}
               onSubmit={addAid}
             />
-            <Button variant="outline" onClick={() => toast.success("דוח תיק משפחה יוצא ל-PDF")}>
-              <FileText className="h-4 w-4 ml-1" /> ייצוא תיק
-            </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
-          <MiniStat label="נפשות" value={`${family.membersCount} (${minors} קטינים)`} icon={<Users className="h-4 w-4" />} />
-          <MiniStat label="סך סיוע" value={`₪${totalAid.toLocaleString()}`} icon={<HandHeart className="h-4 w-4" />} />
-          <MiniStat label="בקשות ממתינות" value={String(pending.length)} tone={pending.length ? "warn" : "good"} />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-6">
+          <MiniStat
+            label="נפשות"
+            value={`${family.membersCount} (${minors} קטינים)`}
+            icon={<Users className="h-4 w-4" />}
+          />
+          <MiniStat
+            label="סך סיוע"
+            value={`₪${totalAid.toLocaleString()}`}
+            icon={<HandHeart className="h-4 w-4" />}
+          />
+          <MiniStat
+            label="בקשות ממתינות"
+            value={String(pending.length)}
+            tone={pending.length ? "warn" : "good"}
+          />
           <MiniStat label="רכז/ת מלווה" value={family.assignedStaff} />
           <MiniStat label="תאריך עלייה" value={family.immigrationDate} />
+          <MiniStat label="טלפון" value={family.phone} />
         </div>
 
         {family.notes && (
@@ -234,9 +311,21 @@ function FamilyProfile() {
                 successMessage="בן המשפחה נוסף לתיק"
                 fields={[
                   { name: "name", label: "שם מלא", required: true },
-                  { name: "relation", label: "קרבה", type: "select", required: true, options: ["ראש משפחה", "בן/בת זוג", "ילד/ה", "הורה", "אחר"] },
+                  {
+                    name: "relation",
+                    label: "קרבה",
+                    type: "select",
+                    required: true,
+                    options: ["ראש משפחה", "בן/בת זוג", "ילד/ה", "הורה", "אחר"],
+                  },
                   { name: "birthYear", label: "שנת לידה", type: "number", required: true },
-                  { name: "status", label: "מעמד", type: "select", required: true, options: ["מבוגר", "קטין", "סטודנט", "גמלאי"] },
+                  {
+                    name: "status",
+                    label: "מעמד",
+                    type: "select",
+                    required: true,
+                    options: ["מבוגר", "קטין", "סטודנט", "גמלאי"],
+                  },
                   { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
                 ]}
                 onSubmit={addMember}
@@ -284,14 +373,19 @@ function FamilyProfile() {
                   <li
                     key={t.id}
                     className={`flex items-center justify-between gap-3 flex-wrap rounded-lg border p-4 ${
-                      isOverdue(t.dueDate) ? "border-rose-200 bg-rose-50" : "border-border bg-surface-muted"
+                      isOverdue(t.dueDate)
+                        ? "border-rose-200 bg-rose-50"
+                        : "border-border bg-surface-muted"
                     }`}
                   >
                     <div>
                       <div className="font-medium text-sm">{t.title}</div>
                       <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                        <CalendarClock className="h-3.5 w-3.5" /> יעד {t.dueDate} · אחראי {t.assignee}
-                        {isOverdue(t.dueDate) && <span className="text-rose-600 font-medium">· באיחור</span>}
+                        <CalendarClock className="h-3.5 w-3.5" /> יעד {t.dueDate} · אחראי{" "}
+                        {t.assignee}
+                        {isOverdue(t.dueDate) && (
+                          <span className="text-rose-600 font-medium">· באיחור</span>
+                        )}
                       </div>
                     </div>
                     <Button
@@ -322,7 +416,10 @@ function FamilyProfile() {
             ) : (
               <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {documents.map((d) => (
-                  <li key={d.id} className="flex items-center gap-3 rounded-lg border border-border bg-surface-muted p-3">
+                  <li
+                    key={d.id}
+                    className="flex items-center gap-3 rounded-lg border border-border bg-surface-muted p-3"
+                  >
                     <FileText className="h-5 w-5 text-brand shrink-0" />
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium truncate">{d.name}</div>

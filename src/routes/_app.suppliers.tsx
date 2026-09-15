@@ -35,8 +35,13 @@ const columns: Column<SupplierRecord>[] = [
 ];
 
 const filters: FilterConfig<SupplierRecord>[] = [
-  { key: "category", label: "קטגוריה", type: "multi-select", options: ["מזון", "ציוד", "הסעות", "תקשורת", "שיווק", "אחר"] },
-  { key: "status", label: "סטטוס", type: "multi-select", options: ["פעיל", "לא פעיל"] },
+  {
+    key: "category",
+    label: "קטגוריה",
+    type: "multi-select",
+    options: ["מזון", "ציוד", "הסעות", "תקשורת", "שיווק", "אחר"],
+  },
+  { key: "status", label: "סטטוס", type: "multi-select", options: ["שולם", "לא שולם"] },
 ];
 
 function SuppliersPage() {
@@ -44,7 +49,7 @@ function SuppliersPage() {
   const { data: expenses } = useExpenses();
   const createSupplier = useCreateSupplier();
 
-  const activeSuppliers = (suppliers ?? []).filter((s) => s.status === "פעיל").length;
+  const paidSuppliers = (suppliers ?? []).filter((s) => s.status === "שולם").length;
   const activeContracts = (suppliers ?? []).reduce((sum, s) => sum + s.contracts, 0);
   const openInvoicesTotal = (suppliers ?? []).reduce((sum, s) => sum + s.openInvoices, 0);
   const outstandingBalance = (expenses ?? [])
@@ -87,6 +92,7 @@ function SuppliersPage() {
                   email: v.email || undefined,
                   taxId: v.taxId || undefined,
                   notes: v.notes || undefined,
+                  status: "לא שולם",
                 });
                 return { ok: true };
               } catch (err) {
@@ -98,8 +104,8 @@ function SuppliersPage() {
       />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="card-elevated p-4">
-          <div className="text-xs text-muted-foreground">ספקים פעילים</div>
-          <div className="text-xl font-bold mt-1">{activeSuppliers}</div>
+          <div className="text-xs text-muted-foreground">ספקים ששולמו</div>
+          <div className="text-xl font-bold mt-1">{paidSuppliers}</div>
         </div>
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">חוזים בתוקף</div>
