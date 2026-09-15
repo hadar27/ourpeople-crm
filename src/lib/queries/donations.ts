@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { donorKeys } from "@/lib/queries/donors";
 
 export const ANONYMOUS_DONOR = "תרומה אנונימית";
 
@@ -118,6 +119,7 @@ export function useDeleteDonation() {
     onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: donationKeys.list() });
       queryClient.invalidateQueries({ queryKey: donationKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: donorKeys.all });
     },
   });
 }
@@ -136,6 +138,7 @@ export function useCreateDonation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: donationKeys.list() });
+      queryClient.invalidateQueries({ queryKey: donorKeys.all });
     },
   });
 }
@@ -156,6 +159,7 @@ export function useUpdateDonation() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: donationKeys.list() });
       queryClient.invalidateQueries({ queryKey: donationKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: donorKeys.all });
     },
   });
 }

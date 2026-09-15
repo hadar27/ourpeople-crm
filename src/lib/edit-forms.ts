@@ -133,6 +133,13 @@ export const volunteerFields: FormField[] = [
 
 export const donorFields: FormField[] = [
   { name: "name", label: "שם תורם", required: true },
+  {
+    name: "idNumber",
+    label: "תעודת זהות / ח.פ.",
+    maxLength: 9,
+    pattern: /^\d{9}$/,
+    patternMessage: "יש להזין 9 ספרות",
+  },
   { name: "contact", label: "איש קשר" },
   {
     name: "phone",
@@ -158,7 +165,6 @@ export const donorFields: FormField[] = [
     options: ["טלפון", 'דוא"ל', "WhatsApp", "פגישה"],
   },
   { name: "status", label: "סטטוס", type: "select", required: true, options: ["פעיל", "לא פעיל"] },
-  { name: "interests", label: "תחומי עניין", colSpan: 2, helper: "מופרדים בפסיק" },
   { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
 ];
 

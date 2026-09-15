@@ -9,6 +9,7 @@ export type DonorRecord = {
   lastDonation: string;
   interests: string[];
   status: "פעיל" | "לא פעיל";
+  idNumber?: string;
   contact?: string;
   phone?: string;
   email?: string;
@@ -25,6 +26,7 @@ type DonorRow = {
   last_donation: string | null;
   interests: string[];
   status: string;
+  id_number: string | null;
   contact: string | null;
   phone: string | null;
   email: string | null;
@@ -42,6 +44,7 @@ function toDonorRecord(row: DonorRow): DonorRecord {
     lastDonation: row.last_donation ?? "",
     interests: row.interests ?? [],
     status: row.status as DonorRecord["status"],
+    idNumber: row.id_number ?? undefined,
     contact: row.contact ?? undefined,
     phone: row.phone ?? undefined,
     email: row.email ?? undefined,
@@ -59,6 +62,7 @@ function toRow(patch: Partial<DonorRecord>): Record<string, unknown> {
   if (patch.lastDonation !== undefined) row.last_donation = patch.lastDonation || null;
   if (patch.interests !== undefined) row.interests = patch.interests;
   if (patch.status !== undefined) row.status = patch.status;
+  if (patch.idNumber !== undefined) row.id_number = patch.idNumber ?? null;
   if (patch.contact !== undefined) row.contact = patch.contact ?? null;
   if (patch.phone !== undefined) row.phone = patch.phone ?? null;
   if (patch.email !== undefined) row.email = patch.email ?? null;

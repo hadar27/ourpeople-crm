@@ -213,6 +213,7 @@ export function DonorEditButton({ record, triggerLabel }: { record: DonorRecord 
       fields={donorFields}
       initialValues={{
         name: record.name,
+        idNumber: record.idNumber ?? "",
         contact: record.contact ?? "",
         phone: record.phone ?? "",
         email: record.email ?? "",
@@ -220,7 +221,6 @@ export function DonorEditButton({ record, triggerLabel }: { record: DonorRecord 
         address: record.address ?? "",
         preferredChannel: record.preferredChannel ?? "",
         status: record.status,
-        interests: record.interests.join(", "),
         notes: record.notes ?? "",
       }}
       onSave={async (v) => {
@@ -229,6 +229,7 @@ export function DonorEditButton({ record, triggerLabel }: { record: DonorRecord 
             id: record.id,
             patch: {
               name: v.name,
+              idNumber: v.idNumber || undefined,
               contact: v.contact || undefined,
               phone: v.phone || undefined,
               email: v.email || undefined,
@@ -236,7 +237,6 @@ export function DonorEditButton({ record, triggerLabel }: { record: DonorRecord 
               address: v.address || undefined,
               preferredChannel: v.preferredChannel || undefined,
               status: v.status as DonorRecord["status"],
-              interests: splitList(v.interests),
               notes: v.notes || undefined,
             },
           });

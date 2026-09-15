@@ -13,6 +13,9 @@ export const Route = createFileRoute("/_app/donors")({
 
 const columns: Column<DonorRecord>[] = [
   { key: "name", header: "שם תורם", render: (r) => <span className="font-medium">{r.name}</span> },
+  { key: "idNumber", header: "ת.ז. / ח.פ.", render: (r) => r.idNumber || "—" },
+  { key: "phone", header: "טלפון", render: (r) => r.phone || "—" },
+  { key: "email", header: "אימייל", render: (r) => r.email || "—" },
   { key: "type", header: "סוג", render: (r) => <StatusBadge value={r.type} /> },
   {
     key: "totalDonated",
@@ -22,19 +25,6 @@ const columns: Column<DonorRecord>[] = [
     ),
   },
   { key: "lastDonation", header: "תרומה אחרונה" },
-  {
-    key: "interests",
-    header: "תחומי עניין",
-    render: (r) => (
-      <div className="flex flex-wrap gap-1">
-        {r.interests.map((i) => (
-          <span key={i} className="text-xs bg-secondary text-brand-deep px-2 py-0.5 rounded-full">
-            {i}
-          </span>
-        ))}
-      </div>
-    ),
-  },
   { key: "status", header: "סטטוס", render: (r) => <StatusBadge value={r.status} /> },
 ];
 
@@ -47,7 +37,13 @@ const getDonorSize = (donor: DonorRecord): string => {
 const filters: FilterConfig<DonorRecord>[] = [
   { key: "type", label: "סוג תורם", type: "multi-select", options: ["פרטי", "תאגיד", "קרן"] },
   { key: "status", label: "סטטוס", type: "multi-select", options: ["פעיל", "לא פעיל"] },
-  { key: "donorSize", label: "גודל תורם", type: "multi-select", options: ["קטן", "בינוני", "גדול"], getValue: getDonorSize },
+  {
+    key: "donorSize",
+    label: "גודל תורם",
+    type: "multi-select",
+    options: ["קטן", "בינוני", "גדול"],
+    getValue: getDonorSize,
+  },
 ];
 
 function DonorsPage() {
@@ -66,10 +62,15 @@ function DonorsPage() {
 
   // Count meetings this month (type = "פגישה")
   const now = new Date();
-  const thisMonth = interactions?.filter((i) => {
-    const iDate = new Date(i.date);
-    return iDate.getMonth() === now.getMonth() && iDate.getFullYear() === now.getFullYear() && i.type === "פגישה";
-  }).length ?? 0;
+  const thisMonth =
+    interactions?.filter((i) => {
+      const iDate = new Date(i.date);
+      return (
+        iDate.getMonth() === now.getMonth() &&
+        iDate.getFullYear() === now.getFullYear() &&
+        i.type === "פגישה"
+      );
+    }).length ?? 0;
 
   return (
     <>
@@ -84,6 +85,13 @@ function DonorsPage() {
             successMessage="תורם חדש נוסף בהצלחה"
             fields={[
               { name: "name", label: "שם תורם", required: true },
+              {
+                name: "idNumber",
+                label: "תעודת זהות / ח.פ.",
+                maxLength: 9,
+                pattern: /^\d{9}$/,
+                patternMessage: "יש להזין 9 ספרות",
+              },
               { name: "phone", label: "טלפון", type: "tel", required: true },
               { name: "email", label: "אימייל", type: "email" },
               {
@@ -93,27 +101,17 @@ function DonorsPage() {
                 required: true,
                 options: ["פרטי", "תאגיד", "קרן"],
               },
-              {
-                name: "interests",
-                label: "תחומי עניין",
-                colSpan: 2,
-                placeholder: "חינוך, בריאות, רווחה...",
-              },
               { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
             ]}
             onCreate={async (v) => {
               try {
                 await createDonor.mutateAsync({
                   name: v.name,
+                  idNumber: v.idNumber || undefined,
                   phone: v.phone || undefined,
                   email: v.email || undefined,
                   type: v.type as DonorRecord["type"],
-                  interests: v.interests
-                    ? v.interests
-                        .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean)
-                    : [],
+                  interests: [],
                   status: "פעיל",
                   totalDonated: 0,
                   lastDonation: "",
@@ -160,7 +158,7 @@ function DonorsPage() {
         <DataTable
           rows={donors ?? []}
           columns={columns}
-          searchKeys={["name", "type"]}
+          searchKeys={["name", "idNumber", "phone", "email", "type"]}
           filters={filters}
           getRowHref={(r) => `/donor/${r.id}`}
           rowActions={(r) => (

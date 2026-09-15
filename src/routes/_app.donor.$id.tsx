@@ -3,13 +3,22 @@ import {
   ArrowRight,
   Mail,
   Phone,
-  Heart,
   Gift,
   MessageSquarePlus,
   CheckCircle2,
   CalendarClock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/page-header";
 import {
@@ -67,6 +76,7 @@ function DonorDetail() {
   }
 
   const history = (donations ?? []).filter((d) => d.donorId === donor.id);
+  const totalDonated = history.reduce((sum, donation) => sum + donation.amount, 0);
   const sorted = [...interactions].sort((a, b) => (a.date < b.date ? 1 : -1));
   const openFollowUps = sorted.filter((i) => i.followUpDate && i.status !== "הושלם");
   const overdue = openFollowUps.filter((i) => isOverdue(i.followUpDate));
@@ -234,19 +244,58 @@ function DonorDetail() {
               onSubmit={handleLog}
             />
             <DonorEditButton record={donor} />
-            <Button variant="outline" onClick={() => toast.success("שיחה נרשמה ביומן")}>
-              <Phone className="h-4 w-4 ml-1" /> חיוג
-            </Button>
-            <Button variant="outline" onClick={() => toast.success("פנייה נשלחה")}>
-              <Mail className="h-4 w-4 ml-1" /> שלח פנייה
-            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Phone className="h-4 w-4 ml-1" /> חיוג
+                </Button>
+              </DialogTrigger>
+              <DialogContent dir="rtl" className="sm:max-w-md">
+                <DialogHeader className="text-right">
+                  <DialogTitle>מספר הטלפון של {donor.name}</DialogTitle>
+                  <DialogDescription>ניתן להעתיק את המספר ולבצע את השיחה.</DialogDescription>
+                </DialogHeader>
+                <div
+                  className="rounded-xl border bg-surface-muted p-5 text-center text-2xl font-bold tabular-nums"
+                  dir="ltr"
+                >
+                  {donor.phone || "לא הוזן מספר טלפון"}
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="outline">סגור</Button>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Mail className="h-4 w-4 ml-1" /> שלח פנייה
+                </Button>
+              </DialogTrigger>
+              <DialogContent dir="rtl" className="sm:max-w-lg">
+                <DialogHeader className="text-right">
+                  <DialogTitle>תצוגת הודעה לשליחה</DialogTitle>
+                  <DialogDescription>הודעת תודה קבועה עבור {donor.name}</DialogDescription>
+                </DialogHeader>
+                <div className="rounded-xl border bg-surface-muted p-4 text-sm leading-7 whitespace-pre-line">
+                  {`שלום ${donor.name},\n\nתודה רבה על תרומתך הנדיבה לעמותת Our People. תרומתך מסייעת לנו להמשיך בעשייה ולתמוך בקהילות ובמשפחות הזקוקות לכך.\n\nבהערכה רבה,\nצוות Our People`}
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="outline">סגור</Button>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
           <MiniStat
             label="סך תרומות"
-            value={`₪${donor.totalDonated.toLocaleString()}`}
+            value={`₪${totalDonated.toLocaleString()}`}
             icon={<Gift className="h-4 w-4" />}
           />
           <MiniStat label="מספר תרומות" value={String(history.length)} />
@@ -256,11 +305,16 @@ function DonorDetail() {
             value={String(openFollowUps.length)}
             tone={overdue.length > 0 ? "danger" : "default"}
           />
-          <MiniStat
-            label="תחומי עניין"
-            value={donor.interests.join(", ")}
-            icon={<Heart className="h-4 w-4" />}
-          />
+        </div>
+
+        <div className="mt-4 rounded-xl border border-border bg-surface-muted p-4">
+          <div className="font-semibold mb-3">פרטי תורם</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+            <ContactDetail label="תעודת זהות / ח.פ." value={donor.idNumber} />
+            <ContactDetail label="טלפון" value={donor.phone} />
+            <ContactDetail label="אימייל" value={donor.email} />
+            <ContactDetail label="כתובת" value={donor.address} />
+          </div>
         </div>
 
         {overdue.length > 0 && (
@@ -373,5 +427,14 @@ function DonorDetail() {
         </TabsContent>
       </Tabs>
     </>
+  );
+}
+
+function ContactDetail({ label, value }: { label: string; value?: string }) {
+  return (
+    <div>
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="font-medium mt-1 break-words">{value || "לא הוזן"}</div>
+    </div>
   );
 }
