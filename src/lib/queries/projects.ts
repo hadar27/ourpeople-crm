@@ -18,6 +18,7 @@ export type ProjectRecord = {
   requiredVolunteers?: number;
   suppliers?: string;
   notes?: string;
+  insights?: string;
 };
 
 type ProjectRow = {
@@ -37,6 +38,7 @@ type ProjectRow = {
   required_volunteers: number | null;
   suppliers: string | null;
   notes: string | null;
+  insights: string | null;
 };
 
 function toProjectRecord(row: ProjectRow): ProjectRecord {
@@ -57,6 +59,7 @@ function toProjectRecord(row: ProjectRow): ProjectRecord {
     requiredVolunteers: row.required_volunteers ?? undefined,
     suppliers: row.suppliers ?? undefined,
     notes: row.notes ?? undefined,
+    insights: row.insights ?? undefined,
   };
 }
 
@@ -74,9 +77,11 @@ function toRow(patch: Partial<ProjectRecord>): Record<string, unknown> {
   if (patch.description !== undefined) row.description = patch.description ?? null;
   if (patch.startDate !== undefined) row.start_date = patch.startDate || null;
   if (patch.endDate !== undefined) row.end_date = patch.endDate || null;
-  if (patch.requiredVolunteers !== undefined) row.required_volunteers = patch.requiredVolunteers ?? null;
+  if (patch.requiredVolunteers !== undefined)
+    row.required_volunteers = patch.requiredVolunteers ?? null;
   if (patch.suppliers !== undefined) row.suppliers = patch.suppliers ?? null;
   if (patch.notes !== undefined) row.notes = patch.notes ?? null;
+  if (patch.insights !== undefined) row.insights = patch.insights ?? null;
   return row;
 }
 
@@ -119,7 +124,11 @@ export function useProject(id: string | undefined) {
   return useQuery({
     queryKey: projectKeys.detail(id),
     queryFn: async () => {
-      const { data, error } = await supabase.from("projects").select("*").eq("id", id).maybeSingle();
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
       if (error) throw error;
 
       if (!data) return null;
@@ -144,7 +153,11 @@ export function useCreateProject() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (values: Partial<ProjectRecord>) => {
-      const { data, error } = await supabase.from("projects").insert(toRow(values)).select().single();
+      const { data, error } = await supabase
+        .from("projects")
+        .insert(toRow(values))
+        .select()
+        .single();
       if (error) throw error;
       return toProjectRecord(data as ProjectRow);
     },

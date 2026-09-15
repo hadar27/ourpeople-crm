@@ -69,6 +69,8 @@ export const volunteerKeys = {
   all: ["volunteers"] as const,
   list: () => [...volunteerKeys.all, "list"] as const,
   detail: (id: string | undefined) => [...volunteerKeys.all, "detail", id] as const,
+  forProject: (projectId: string | undefined) =>
+    [...volunteerKeys.all, "project", projectId] as const,
 };
 
 export function useVolunteers() {
@@ -78,6 +80,37 @@ export function useVolunteers() {
       const { data, error } = await supabase.from("volunteers").select(SELECT).order("name");
       if (error) throw error;
       return (data as unknown as VolunteerRow[]).map(toVolunteerRecord);
+    },
+  });
+}
+
+export function useProjectVolunteerIds(projectId: string | undefined) {
+  return useQuery({
+    queryKey: volunteerKeys.forProject(projectId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_volunteers")
+        .select("volunteer_id")
+        .eq("project_id", projectId);
+      if (error) throw error;
+      return (data as { volunteer_id: string }[]).map((row) => row.volunteer_id);
+    },
+    enabled: !!projectId,
+  });
+}
+
+export function useAssignVolunteerToProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, volunteerId }: { projectId: string; volunteerId: string }) => {
+      const { error } = await supabase
+        .from("project_volunteers")
+        .insert({ project_id: projectId, volunteer_id: volunteerId });
+      if (error) throw error;
+    },
+    onSuccess: (_data, values) => {
+      queryClient.invalidateQueries({ queryKey: volunteerKeys.forProject(values.projectId) });
+      queryClient.invalidateQueries({ queryKey: volunteerKeys.list() });
     },
   });
 }

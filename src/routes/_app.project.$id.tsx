@@ -5,23 +5,26 @@ import {
   Users,
   Wallet,
   Calendar,
-  CheckCircle2,
   AlertTriangle,
   UserCheck,
-  Truck,
   PiggyBank,
   Loader2,
   Link as LinkIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/page-header";
 import { GanttChart } from "@/components/gantt-chart";
-import { useProject } from "@/lib/queries/projects";
+import { useProject, useUpdateProject, type ProjectRecord } from "@/lib/queries/projects";
 import { useDonations } from "@/lib/queries/donations";
-import { useVolunteers } from "@/lib/queries/volunteers";
+import {
+  useAssignVolunteerToProject,
+  useProjectVolunteerIds,
+  useVolunteers,
+} from "@/lib/queries/volunteers";
 import { useParticipants } from "@/lib/queries/participants";
-import { useTasksForProject } from "@/lib/queries/tasks";
+import { useCreateTask, useTasksForProject } from "@/lib/queries/tasks";
 import { useProjectExpenses, useCreateProjectExpense } from "@/lib/queries/project-expenses";
 import { useProjectPhases } from "@/lib/queries/project-phases";
 import { useSuppliers } from "@/lib/queries/suppliers";
@@ -34,7 +37,6 @@ import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { projectExpenseFields } from "@/lib/edit-forms";
 import { RegistrationLinksSection } from "@/components/registration-links-section";
 import { ApproveRegistrationsModal } from "@/components/approve-registrations-modal";
-import { toast } from "sonner";
 import { useCanEdit } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_app/project/$id")({
@@ -51,6 +53,7 @@ function ProjectDetail() {
   const { data: phasesData } = useProjectPhases(project?.id);
   const { data: donationsData } = useDonations();
   const { data: volunteersData } = useVolunteers();
+  const { data: projectVolunteerIdsData } = useProjectVolunteerIds(id);
   const { data: participantsData } = useParticipants();
   const { data: pendingVolunteers } = usePendingVolunteerRegistrations(id);
   const { data: pendingParticipants } = usePendingParticipantRegistrations(id);
@@ -58,6 +61,8 @@ function ProjectDetail() {
   const canViewDonations = useCanEdit("donations");
   const canEditProjects = useCanEdit("projects");
   const createProjectExpense = useCreateProjectExpense();
+  const createTask = useCreateTask();
+  const assignVolunteer = useAssignVolunteerToProject();
 
   const pendingVolunteersCount = pendingVolunteers?.length ?? 0;
   const pendingParticipantsCount = pendingParticipants?.length ?? 0;
@@ -102,7 +107,13 @@ function ProjectDetail() {
 
   const projectTasks = tasksData ?? [];
   const projectDonations = (donationsData ?? []).filter((d) => d.projectId === project.id);
-  const projectVolunteers = (volunteersData ?? []).filter((v) => v.projectId === project.id);
+  const projectVolunteerIds = new Set(projectVolunteerIdsData ?? []);
+  const projectVolunteers = (volunteersData ?? []).filter(
+    (v) => projectVolunteerIds.has(v.id) || v.projectId === project.id,
+  );
+  const availableVolunteers = (volunteersData ?? []).filter(
+    (v) => v.status === "פעיל" && !projectVolunteerIds.has(v.id) && v.projectId !== project.id,
+  );
   const expenses = expensesData ?? [];
   const phases = phasesData ?? [];
   const participantsCount = (participantsData ?? []).filter(
@@ -112,7 +123,19 @@ function ProjectDetail() {
   const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
   const remainingBudget = project.budget - project.spent;
   const budgetRatio = Math.round((project.spent / project.budget) * 100);
-  const health = budgetRatio > 90 ? "סיכון" : project.progress < 30 ? "בהתנעה" : "תקין";
+  const ganttItems = [
+    ...phases,
+    ...projectTasks
+      .filter((task) => task.startDate && task.endDate)
+      .map((task) => ({
+        id: `task-${task.id}`,
+        name: `משימה: ${task.title}`,
+        owner: task.assignee,
+        start: task.startDate!,
+        end: task.endDate!,
+        progress: task.column === "done" ? 100 : task.column === "doing" ? 50 : 0,
+      })),
+  ];
 
   // Expense by category
   const byCategory = expenses.reduce<Record<string, number>>((acc, e) => {
@@ -141,17 +164,10 @@ function ProjectDetail() {
             <h1 className="text-2xl font-bold mt-1">{project.name}</h1>
             <div className="flex items-center gap-2 mt-3">
               <StatusBadge value={project.status} />
-              <StatusBadge value={health} />
             </div>
           </div>
           <div className="flex gap-2">
             <ProjectEditButton record={project} />
-            <Button
-              className="bg-brand hover:bg-brand-deep"
-              onClick={() => toast.info("פתיחת דוח פרויקט")}
-            >
-              צור דוח
-            </Button>
           </div>
         </div>
 
@@ -182,7 +198,7 @@ function ProjectDetail() {
           <Metric
             icon={<Users className="h-4 w-4" />}
             label="מתנדבים"
-            value={String(project.volunteers)}
+            value={String(projectVolunteers.length)}
           />
           <Metric
             icon={<Calendar className="h-4 w-4" />}
@@ -375,12 +391,12 @@ function ProjectDetail() {
             + שלב
           </Button> */}
         </div>
-        {phases.length === 0 ? (
+        {ganttItems.length === 0 ? (
           <div className="text-center py-8 text-sm text-muted-foreground">
-            טרם הוגדרו שלבים לפרויקט
+            טרם הוגדרו שלבים או משימות עם תאריכים לפרויקט
           </div>
         ) : (
-          <GanttChart phases={phases} />
+          <GanttChart phases={ganttItems} />
         )}
       </div>
 
@@ -420,7 +436,44 @@ function ProjectDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="card-elevated p-5">
-          <div className="font-semibold mb-3">מתנדבים משויכים ({projectVolunteers.length})</div>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="font-semibold">מתנדבים משויכים ({projectVolunteers.length})</div>
+            {canEditProjects && availableVolunteers.length > 0 && (
+              <EntityFormDialog
+                triggerLabel="שייך מתנדב"
+                title="שיוך מתנדב לפרויקט"
+                description="בחרו מתנדב פעיל להוספה לפרויקט."
+                successMessage="המתנדב שויך לפרויקט"
+                fields={[
+                  {
+                    name: "volunteer",
+                    label: "מתנדב",
+                    type: "select",
+                    required: true,
+                    options: availableVolunteers.map((v) => `${v.name} (${v.id})`),
+                  },
+                ]}
+                onCreate={async (values) => {
+                  const volunteer = availableVolunteers.find(
+                    (v) => `${v.name} (${v.id})` === values.volunteer,
+                  );
+                  if (!volunteer) return { ok: false, error: "המתנדב לא נמצא" };
+                  try {
+                    await assignVolunteer.mutateAsync({
+                      projectId: project.id,
+                      volunteerId: volunteer.id,
+                    });
+                    return { ok: true };
+                  } catch (err) {
+                    return {
+                      ok: false,
+                      error: err instanceof Error ? err.message : "השמירה נכשלה",
+                    };
+                  }
+                }}
+              />
+            )}
+          </div>
           {projectVolunteers.length === 0 ? (
             <EmptyState text="אין מתנדבים משויכים" />
           ) : (
@@ -465,35 +518,57 @@ function ProjectDetail() {
           </div>
         )}
 
-        <div className="card-elevated p-5">
-          <div className="font-semibold mb-3">בריאות פרויקט</div>
-          <ul className="space-y-2 text-sm">
-            <HealthRow
-              label="תקציב"
-              ok={budgetRatio <= 90}
-              msg={budgetRatio > 90 ? `ניצול ${budgetRatio}% — חריגה צפויה` : "במסגרת"}
-            />
-            <HealthRow
-              label="מתנדבים"
-              ok={project.volunteers >= 10}
-              msg={project.volunteers >= 10 ? "מספיק כוח אדם" : "חוסר במתנדבים"}
-            />
-            <HealthRow
-              label="לו״ז"
-              ok={project.progress >= 30}
-              msg={project.progress >= 30 ? "מתקדם לפי תכנון" : "בהתנעה"}
-            />
-            <HealthRow label="קבלות" ok={true} msg="כל הקבלות הופקו" />
-          </ul>
-        </div>
+        <ProjectInsights project={project} canEdit={canEditProjects} />
       </div>
 
       <div className="card-elevated p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="text-lg font-semibold">לוח משימות</div>
-          <Button size="sm" variant="outline" onClick={() => toast.success("משימה חדשה נוספה")}>
-            + משימה
-          </Button>
+          {canEditProjects && (
+            <EntityFormDialog
+              triggerLabel="משימה"
+              title="הוספת משימה לפרויקט"
+              description="משימה עם תאריכי התחלה וסיום תוצג גם בגאנט."
+              successMessage="המשימה נוספה בהצלחה"
+              fields={[
+                { name: "title", label: "שם המשימה", required: true, colSpan: 2 },
+                { name: "assignee", label: "אחראי/ת", required: true },
+                {
+                  name: "status",
+                  label: "סטטוס",
+                  type: "select",
+                  required: true,
+                  options: ["לביצוע", "בעבודה", "הושלם"],
+                },
+                { name: "startDate", label: "תאריך התחלה", type: "date", required: true },
+                { name: "endDate", label: "תאריך סיום", type: "date", required: true },
+              ]}
+              customValidate={(values) =>
+                values.startDate > values.endDate
+                  ? "תאריך הסיום חייב להיות אחרי תאריך ההתחלה"
+                  : null
+              }
+              onCreate={async (values) => {
+                const columns = { לביצוע: "todo", בעבודה: "doing", הושלם: "done" } as const;
+                try {
+                  await createTask.mutateAsync({
+                    title: values.title,
+                    projectId: project.id,
+                    assignee: values.assignee,
+                    column: columns[values.status as keyof typeof columns],
+                    startDate: values.startDate,
+                    endDate: values.endDate,
+                  });
+                  return { ok: true };
+                } catch (err) {
+                  return {
+                    ok: false,
+                    error: err instanceof Error ? err.message : "שמירת המשימה נכשלה",
+                  };
+                }
+              }}
+            />
+          )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {(["todo", "doing", "done"] as const).map((col) => {
@@ -570,17 +645,32 @@ function Metric({
   );
 }
 
-function HealthRow({ label, ok, msg }: { label: string; ok: boolean; msg: string }) {
+function ProjectInsights({ project, canEdit }: { project: ProjectRecord; canEdit: boolean }) {
+  const [value, setValue] = useState(project.insights ?? "");
+  const updateProject = useUpdateProject();
+
   return (
-    <li className="flex items-center gap-2">
-      {ok ? (
-        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-      ) : (
-        <AlertTriangle className="h-4 w-4 text-amber-600" />
+    <div className="card-elevated p-5">
+      <div className="font-semibold mb-1">תובנות</div>
+      <div className="text-xs text-muted-foreground mb-3">מסקנות, דגשים והמלצות להמשך הפרויקט</div>
+      <Textarea
+        value={value}
+        onChange={(event) => setValue(event.target.value)}
+        placeholder="הוסיפו תובנות על הפרויקט..."
+        rows={6}
+        disabled={!canEdit || updateProject.isPending}
+      />
+      {canEdit && (
+        <Button
+          size="sm"
+          className="mt-3 bg-brand hover:bg-brand-deep"
+          disabled={updateProject.isPending || value === (project.insights ?? "")}
+          onClick={() => updateProject.mutate({ id: project.id, patch: { insights: value } })}
+        >
+          {updateProject.isPending ? "שומר..." : "שמור תובנות"}
+        </Button>
       )}
-      <span className="font-medium">{label}:</span>
-      <span className="text-muted-foreground">{msg}</span>
-    </li>
+    </div>
   );
 }
 

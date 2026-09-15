@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
 export type TaskRecord = {
@@ -8,6 +8,8 @@ export type TaskRecord = {
   project: string;
   assignee: string;
   column: "todo" | "doing" | "done";
+  startDate?: string;
+  endDate?: string;
 };
 
 type TaskRow = {
@@ -16,6 +18,8 @@ type TaskRow = {
   project_id: string;
   assignee: string;
   board_column: string;
+  start_date: string | null;
+  end_date: string | null;
   projects: { name: string } | null;
 };
 
@@ -27,6 +31,8 @@ function toTaskRecord(row: TaskRow): TaskRecord {
     project: row.projects?.name ?? row.project_id,
     assignee: row.assignee,
     column: row.board_column as TaskRecord["column"],
+    startDate: row.start_date ?? undefined,
+    endDate: row.end_date ?? undefined,
   };
 }
 
@@ -62,5 +68,31 @@ export function useTasksForProject(projectId: string | undefined) {
       return (data as unknown as TaskRow[]).map(toTaskRecord);
     },
     enabled: !!projectId,
+  });
+}
+
+export function useCreateTask() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (values: Omit<TaskRecord, "id" | "project">) => {
+      const { data, error } = await supabase
+        .from("tasks")
+        .insert({
+          title: values.title,
+          project_id: values.projectId,
+          assignee: values.assignee,
+          board_column: values.column,
+          start_date: values.startDate || null,
+          end_date: values.endDate || null,
+        })
+        .select(SELECT)
+        .single();
+      if (error) throw error;
+      return toTaskRecord(data as unknown as TaskRow);
+    },
+    onSuccess: (_data, values) => {
+      queryClient.invalidateQueries({ queryKey: taskKeys.list() });
+      queryClient.invalidateQueries({ queryKey: taskKeys.forProject(values.projectId) });
+    },
   });
 }
