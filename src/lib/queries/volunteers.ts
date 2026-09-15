@@ -16,6 +16,11 @@ export type VolunteerRecord = {
   notes?: string;
 };
 
+export type ProjectVolunteerAssignment = {
+  projectId: string;
+  volunteerId: string;
+};
+
 type VolunteerRow = {
   id: string;
   id_number: string | null;
@@ -71,6 +76,7 @@ export const volunteerKeys = {
   detail: (id: string | undefined) => [...volunteerKeys.all, "detail", id] as const,
   forProject: (projectId: string | undefined) =>
     [...volunteerKeys.all, "project", projectId] as const,
+  assignments: () => [...volunteerKeys.all, "assignments"] as const,
 };
 
 export function useVolunteers() {
@@ -96,6 +102,22 @@ export function useProjectVolunteerIds(projectId: string | undefined) {
       return (data as { volunteer_id: string }[]).map((row) => row.volunteer_id);
     },
     enabled: !!projectId,
+  });
+}
+
+export function useAllProjectVolunteerAssignments() {
+  return useQuery({
+    queryKey: volunteerKeys.assignments(),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_volunteers")
+        .select("project_id, volunteer_id");
+      if (error) throw error;
+      return (data as { project_id: string; volunteer_id: string }[]).map((row) => ({
+        projectId: row.project_id,
+        volunteerId: row.volunteer_id,
+      }));
+    },
   });
 }
 
