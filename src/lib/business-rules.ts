@@ -136,7 +136,7 @@ export function generateAlerts(data: AlertEngineData): Alert[] {
         title: `חשבוניות פתוחות — ${s.name}`,
         severity: s.openInvoices >= 2 ? "בינונית" : "נמוכה",
         module: "ספקים",
-        rule: `${s.openInvoices} חשבוניות פתוחות מעל 30 יום`,
+        rule: `${s.openInvoices} חשבוניות פתוחות לתשלום`,
         createdAt: "השבוע",
       });
     });

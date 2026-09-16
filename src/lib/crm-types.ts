@@ -87,6 +87,7 @@ export type EntityDocument = {
   kind: string;
   uploadedAt: string;
   uploadedBy: string;
+  storagePath?: string;
 };
 
 export type ActivityEntry = {
@@ -100,7 +101,8 @@ export type ActivityEntry = {
 };
 
 // ---------- Beneficiaries & families ----------
-export type AssistanceNeed = "מזון" | "דיור" | "תעסוקה" | "חינוך" | "בריאות" | "משפטי" | "ריהוט" | "עברית";
+export type AssistanceNeed =
+  "מזון" | "דיור" | "תעסוקה" | "חינוך" | "בריאות" | "משפטי" | "ריהוט" | "עברית";
 export type FamilyStatus = "בטיפול פעיל" | "ממתינה לאישור" | "מלווה" | "סגורה" | "בסיכון";
 
 export type BeneficiaryFamily = {

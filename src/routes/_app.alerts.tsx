@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AlertTriangle, CheckCircle2, Bell } from "lucide-react";
 import { useState } from "react";
-import { PageHeader, StatusBadge } from "@/components/page-header";
+import { PageHeader } from "@/components/page-header";
 import { useAlerts, moduleRoute } from "@/lib/business-rules";
 import { toast } from "sonner";
 
@@ -50,16 +50,11 @@ function AlertsPage() {
                   key={a.id}
                   className="flex items-start gap-3 p-4 rounded-lg border border-border bg-surface-muted hover:bg-white transition-colors"
                 >
-                  <div
-                    className={`p-2 rounded-lg ${a.severity === "גבוהה" ? "bg-rose-50 text-rose-600" : a.severity === "בינונית" ? "bg-amber-50 text-amber-600" : "bg-secondary text-brand"}`}
-                  >
+                  <div className="p-2 rounded-lg bg-secondary text-brand">
                     <AlertTriangle className="h-5 w-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className="font-semibold">{a.title}</div>
-                      <StatusBadge value={a.severity} />
-                    </div>
+                    <div className="font-semibold">{a.title}</div>
                     <div className="text-xs text-muted-foreground mt-1">
                       מודול: <span className="font-medium text-foreground">{a.module}</span> · חוק:{" "}
                       {a.rule} · נוצר ב-{a.createdAt}

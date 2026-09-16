@@ -1,12 +1,12 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
+import { useRef } from "react";
 import {
   ArrowRight,
   Building2,
   FileText,
   Receipt,
-  Wallet,
   Phone,
-  ShoppingCart,
+  Upload,
   History,
   AlertTriangle,
   Loader2,
@@ -14,16 +14,27 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/page-header";
-import { MiniStat, SectionCard, EmptyState, RecordNotFound, Timeline, type TimelineItem } from "@/components/detail-kit";
+import {
+  MiniStat,
+  SectionCard,
+  EmptyState,
+  RecordNotFound,
+  Timeline,
+  type TimelineItem,
+} from "@/components/detail-kit";
 import { useSupplier } from "@/lib/queries/suppliers";
 import { useContractsForSupplier } from "@/lib/queries/contracts";
 import { usePurchaseOrdersForSupplier } from "@/lib/queries/purchase-orders";
 import { useSupplierInvoicesForSupplier } from "@/lib/queries/supplier-invoices";
 import { useSupplierPaymentsForSupplier } from "@/lib/queries/supplier-payments";
-import { useDocumentsForEntity } from "@/lib/queries/documents";
+import {
+  downloadEntityDocument,
+  useDocumentsForEntity,
+  useUploadEntityDocument,
+} from "@/lib/queries/documents";
 import { useActivityLogForEntity } from "@/lib/queries/activity-log";
 import { SupplierEditButton } from "@/components/module-edit-dialogs";
-import { daysBetween, isOverdue } from "@/lib/crm-seed";
+import { isOverdue } from "@/lib/crm-seed";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/suppliers_/$supplierId")({
@@ -38,6 +49,8 @@ function SupplierProfile() {
   const { data: invoicesData } = useSupplierInvoicesForSupplier(id);
   const { data: paymentsData } = useSupplierPaymentsForSupplier(id);
   const { data: documentsData } = useDocumentsForEntity("supplier", id);
+  const uploadDocument = useUploadEntityDocument();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: activityData } = useActivityLogForEntity("supplier", id);
 
   if (isLoading) {
@@ -78,10 +91,30 @@ function SupplierProfile() {
   const activity = activityData ?? [];
   const activeContracts = contracts.filter((c) => c.status === "בתוקף");
   const contractValue = activeContracts.reduce((s, c) => s + c.value, 0);
+  const approvedOrdersValue = purchaseOrders
+    .filter((order) => order.status === "מאושרת")
+    .reduce((sum, order) => sum + order.amount, 0);
   const invoiced = invoices.reduce((s, i) => s + i.amount, 0);
   const paid = payments.reduce((s, p) => s + p.amount, 0);
   const balance = invoiced - paid;
   const overdueInvoices = invoices.filter((i) => i.status !== "שולם" && isOverdue(i.dueDate));
+
+  const handleDocumentUpload = async (file?: File) => {
+    if (!file) return;
+    try {
+      await uploadDocument.mutateAsync({
+        entityType: "supplier",
+        entityId: id,
+        file,
+        kind: "קבלה",
+      });
+      toast.success("הקבלה הועלתה ונשמרה בהצלחה");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "העלאת הקבלה נכשלה");
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const timeline: TimelineItem[] = activity
     .slice()
@@ -96,7 +129,10 @@ function SupplierProfile() {
 
   return (
     <>
-      <Link to="/suppliers" className="text-sm text-brand inline-flex items-center gap-1 mb-4 hover:underline">
+      <Link
+        to="/suppliers"
+        className="text-sm text-brand inline-flex items-center gap-1 mb-4 hover:underline"
+      >
         <ArrowRight className="h-4 w-4" /> חזרה לרשימת הספקים
       </Link>
 
@@ -120,19 +156,21 @@ function SupplierProfile() {
           </div>
           <div className="flex gap-2 flex-wrap">
             <SupplierEditButton record={supplier} />
-            <Button variant="outline" onClick={() => toast.success("דוח ספק יוצא לאקסל")}>
-              <FileText className="h-4 w-4 ml-1" /> דוח ספק
-            </Button>
-            <Button className="bg-brand hover:bg-brand-deep" onClick={() => toast.success("בקשת תשלום נשלחה להנהלת חשבונות")}>
-              <Wallet className="h-4 w-4 ml-1" /> בקשת תשלום
-            </Button>
           </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
-          <MiniStat label="חוזים בתוקף" value={String(activeContracts.length)} icon={<FileText className="h-4 w-4" />} />
+          <MiniStat
+            label="חוזים בתוקף"
+            value={String(activeContracts.length)}
+            icon={<FileText className="h-4 w-4" />}
+          />
           <MiniStat label="היקף התקשרות" value={`₪${contractValue.toLocaleString()}`} />
-          <MiniStat label="סך חויב" value={`₪${invoiced.toLocaleString()}`} icon={<Receipt className="h-4 w-4" />} />
+          <MiniStat
+            label="סך חויב"
+            value={`₪${invoiced.toLocaleString()}`}
+            icon={<Receipt className="h-4 w-4" />}
+          />
           <MiniStat label="שולם" value={`₪${paid.toLocaleString()}`} tone="good" />
           <MiniStat
             label="יתרה לתשלום"
@@ -145,24 +183,32 @@ function SupplierProfile() {
           <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3 text-sm flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
             {overdueInvoices.length} חשבוניות באיחור בסך ₪
-            {overdueInvoices.reduce((s, i) => s + i.amount, 0).toLocaleString()} — הוותק הגבוה ביותר{" "}
-            {Math.max(...overdueInvoices.map((i) => daysBetween(i.dueDate)))} ימים.
+            {overdueInvoices.reduce((s, i) => s + i.amount, 0).toLocaleString()}.
           </div>
         )}
       </div>
 
-      <Tabs defaultValue="contracts" dir="rtl">
+      <Tabs defaultValue="invoices" dir="rtl">
         <TabsList className="mb-4 flex-wrap h-auto">
-          <TabsTrigger value="contracts">חוזים ({contracts.length})</TabsTrigger>
-          <TabsTrigger value="pos">הזמנות רכש ({purchaseOrders.length})</TabsTrigger>
-          <TabsTrigger value="invoices">חשבוניות ({invoices.length})</TabsTrigger>
+          <TabsTrigger value="invoices">חשבוניות והתחייבויות ({invoices.length})</TabsTrigger>
           <TabsTrigger value="payments">תשלומים ({payments.length})</TabsTrigger>
           <TabsTrigger value="docs">מסמכים ({documents.length})</TabsTrigger>
           <TabsTrigger value="activity">היסטוריית פעילות</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="contracts">
-          <SectionCard title="חוזים והתקשרויות">
+        <TabsContent value="invoices" className="space-y-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <MiniStat label="התחייבות בחוזים" value={`₪${contractValue.toLocaleString()}`} />
+            <MiniStat label="הזמנות מאושרות" value={`₪${approvedOrdersValue.toLocaleString()}`} />
+            <MiniStat label="חשבוניות שהתקבלו" value={`₪${invoiced.toLocaleString()}`} />
+            <MiniStat
+              label="יתרה לתשלום"
+              value={`₪${balance.toLocaleString()}`}
+              tone={balance > 0 ? "warn" : "good"}
+            />
+          </div>
+
+          <SectionCard title="בסיס ההתחייבות — חוזים">
             {contracts.length === 0 ? (
               <EmptyState text="אין חוזים רשומים" />
             ) : (
@@ -172,7 +218,11 @@ function SupplierProfile() {
                   c.id,
                   <span className="font-medium">{c.title}</span>,
                   c.projectId ? (
-                    <Link to="/project/$id" params={{ id: c.projectId }} className="text-brand hover:underline">
+                    <Link
+                      to="/project/$id"
+                      params={{ id: c.projectId }}
+                      className="text-brand hover:underline"
+                    >
                       {c.projectName ?? c.projectId}
                     </Link>
                   ) : (
@@ -187,10 +237,7 @@ function SupplierProfile() {
               />
             )}
           </SectionCard>
-        </TabsContent>
-
-        <TabsContent value="pos">
-          <SectionCard title="הזמנות רכש">
+          <SectionCard title="הזמנות רכש והתחייבויות מאושרות">
             {purchaseOrders.length === 0 ? (
               <EmptyState text="אין הזמנות רכש" />
             ) : (
@@ -207,25 +254,23 @@ function SupplierProfile() {
               />
             )}
           </SectionCard>
-        </TabsContent>
-
-        <TabsContent value="invoices">
-          <SectionCard title="חשבוניות">
+          <SectionCard title="חשבוניות שהתקבלו">
             {invoices.length === 0 ? (
               <EmptyState text="אין חשבוניות" />
             ) : (
               <Table
-                head={["מזהה", "פרויקט", "סכום", "הופקה", "לתשלום עד", "גיול", "סטטוס"]}
+                head={["מזהה", "פרויקט", "סכום", "הופקה", "לתשלום עד", "סטטוס"]}
                 rows={invoices.map((i) => {
                   const late = i.status !== "שולם" && isOverdue(i.dueDate);
                   return [
                     i.id,
                     i.projectName ?? "—",
-                    <span className="font-semibold tabular-nums">₪{i.amount.toLocaleString()}</span>,
+                    <span className="font-semibold tabular-nums">
+                      ₪{i.amount.toLocaleString()}
+                    </span>,
                     <span className="text-muted-foreground">{i.issueDate}</span>,
-                    <span className={late ? "text-rose-600 font-medium" : "text-muted-foreground"}>{i.dueDate}</span>,
                     <span className={late ? "text-rose-600 font-medium" : "text-muted-foreground"}>
-                      {late ? `${daysBetween(i.dueDate)} ימים באיחור` : "—"}
+                      {i.dueDate}
                     </span>,
                     <StatusBadge value={i.status} />,
                   ];
@@ -258,8 +303,14 @@ function SupplierProfile() {
           <SectionCard
             title="מסמכים"
             actions={
-              <Button variant="outline" size="sm" onClick={() => toast.info("העלאת מסמכים תתאפשר עם חיבור האחסון")}>
-                <ShoppingCart className="h-4 w-4 ml-1" /> העלה מסמך
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={uploadDocument.isPending}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-4 w-4 ml-1" />
+                {uploadDocument.isPending ? "מעלה..." : "העלה קבלה"}
               </Button>
             }
           >
@@ -268,7 +319,10 @@ function SupplierProfile() {
             ) : (
               <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {documents.map((d) => (
-                  <li key={d.id} className="flex items-center gap-3 rounded-lg border border-border bg-surface-muted p-3">
+                  <li
+                    key={d.id}
+                    className="flex items-center gap-3 rounded-lg border border-border bg-surface-muted p-3"
+                  >
                     <FileText className="h-5 w-5 text-brand shrink-0" />
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium truncate">{d.name}</div>
@@ -276,7 +330,16 @@ function SupplierProfile() {
                         {d.kind} · הועלה ב-{d.uploadedAt} על ידי {d.uploadedBy}
                       </div>
                     </div>
-                    <button className="text-xs text-brand hover:underline" onClick={() => toast.success("המסמך הורד")}>
+                    <button
+                      className="text-xs text-brand hover:underline"
+                      onClick={async () => {
+                        try {
+                          await downloadEntityDocument(d);
+                        } catch (error) {
+                          toast.error(error instanceof Error ? error.message : "הורדת המסמך נכשלה");
+                        }
+                      }}
+                    >
                       הורדה
                     </button>
                   </li>
@@ -284,6 +347,13 @@ function SupplierProfile() {
               </ul>
             )}
           </SectionCard>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf,image/jpeg,image/png"
+            className="hidden"
+            onChange={(event) => handleDocumentUpload(event.target.files?.[0])}
+          />
         </TabsContent>
 
         <TabsContent value="activity">
