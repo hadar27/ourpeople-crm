@@ -33,6 +33,15 @@ export type ParticipantRecord = {
   foodAllergies?: string;
 };
 
+export type ParticipantProjectRecord = {
+  id: string;
+  name: string;
+  status: "פעיל" | "בתכנון" | "הסתיים";
+  startDate?: string;
+  endDate?: string;
+  joinedDate?: string;
+};
+
 type ParticipantRow = {
   id: string;
   name: string;
@@ -120,6 +129,8 @@ export const participantKeys = {
   detail: (id: string | undefined) => [...participantKeys.all, "detail", id] as const,
   forProject: (projectId: string | undefined) =>
     [...participantKeys.all, "project", projectId] as const,
+  projectsForParticipant: (participantId: string | undefined) =>
+    [...participantKeys.all, "participantProjects", participantId] as const,
 };
 
 export function useParticipants() {
@@ -167,6 +178,41 @@ export function useAssignParticipantToProject() {
       queryClient.invalidateQueries({ queryKey: participantKeys.forProject(values.projectId) });
       queryClient.invalidateQueries({ queryKey: participantKeys.list() });
     },
+  });
+}
+
+export function useProjectsForParticipant(participantId: string | undefined) {
+  return useQuery({
+    queryKey: participantKeys.projectsForParticipant(participantId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_participants")
+        .select("joined_date, projects(id, name, status, start_date, end_date)")
+        .eq("participant_id", participantId);
+      if (error) throw error;
+      return (
+        data as unknown as {
+          joined_date: string;
+          projects: {
+            id: string;
+            name: string;
+            status: ParticipantProjectRecord["status"];
+            start_date: string | null;
+            end_date: string | null;
+          } | null;
+        }[]
+      )
+        .filter((row) => row.projects)
+        .map((row) => ({
+          id: row.projects!.id,
+          name: row.projects!.name,
+          status: row.projects!.status,
+          startDate: row.projects!.start_date ?? undefined,
+          endDate: row.projects!.end_date ?? undefined,
+          joinedDate: row.joined_date,
+        }));
+    },
+    enabled: !!participantId,
   });
 }
 

@@ -27,16 +27,6 @@ const columns: Column<ParticipantRecord>[] = [
   { key: "name", header: "שם מלא", render: (r) => <span className="font-medium">{r.name}</span> },
   { key: "idNumber", header: "ת.ז." },
   { key: "phone", header: "טלפון" },
-  {
-    key: "project",
-    header: "פרויקט",
-    render: (r) => (
-      <div className="flex flex-col">
-        <span>{r.project}</span>
-        <span className="text-[11px] text-muted-foreground">{r.projectType}</span>
-      </div>
-    ),
-  },
   { key: "registrationDate", header: "תאריך רישום" },
   { key: "status", header: "סטטוס", render: (r) => <StatusBadge value={r.status} /> },
   { key: "paymentStatus", header: "תשלום", render: (r) => <StatusBadge value={r.paymentStatus} /> },
@@ -54,23 +44,12 @@ const columns: Column<ParticipantRecord>[] = [
   },
 ];
 
-const filters: FilterConfig<ParticipantRecord>[] = [
-  {
-    key: "registrationDate",
-    label: "תאריך רישום",
-    type: "date",
-  },
+const baseFilters: FilterConfig<ParticipantRecord>[] = [
   {
     key: "status",
     label: "סטטוס",
     type: "multi-select",
     options: ["ממתין לאישור", "מאושר", "הגיע", "ביטול", "שלא הגיע"],
-  },
-  {
-    key: "source",
-    label: "מקור רישום",
-    type: "multi-select",
-    options: ["טופס דיגיטלי", "QR", "אתר", "צוות פנימי", "ייבוא Excel", "API"],
   },
   {
     key: "paymentStatus",
@@ -86,7 +65,24 @@ function ParticipantsPage() {
   const createParticipant = useCreateParticipant();
 
   // Operational KPIs derived from data
-  const list = participants ?? [];
+  const list = [...(participants ?? [])].sort(
+    (first, second) =>
+      new Date(second.registrationDate).getTime() - new Date(first.registrationDate).getTime(),
+  );
+  const monthFormatter = new Intl.DateTimeFormat("he-IL", { month: "long", year: "numeric" });
+  const registrationMonth = (participant: ParticipantRecord) =>
+    monthFormatter.format(new Date(`${participant.registrationDate}T12:00:00`));
+  const monthOptions = Array.from(new Set(list.map(registrationMonth)));
+  const filters: FilterConfig<ParticipantRecord>[] = [
+    {
+      key: "registrationMonth",
+      label: "חודש רישום",
+      type: "multi-select",
+      options: monthOptions,
+      getValue: registrationMonth,
+    },
+    ...baseFilters,
+  ];
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
@@ -267,7 +263,7 @@ function ParticipantsPage() {
           <DataTable
             rows={list}
             columns={columns}
-            searchKeys={["name", "idNumber", "phone", "project"]}
+            searchKeys={["name", "idNumber", "phone"]}
             filters={filters}
             getRowHref={(r) => `/participants/${r.id}`}
             rowActions={(r) => (

@@ -13,7 +13,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/page-header";
 import { MiniStat, SectionCard, EmptyState, RecordNotFound } from "@/components/detail-kit";
-import { useParticipant } from "@/lib/queries/participants";
+import {
+  type ParticipantProjectRecord,
+  useParticipant,
+  useProjectsForParticipant,
+} from "@/lib/queries/participants";
 import { useProjects } from "@/lib/queries/projects";
 import { ParticipantEditButton } from "@/components/module-edit-dialogs";
 import { Loader2 } from "lucide-react";
@@ -23,9 +27,15 @@ export const Route = createFileRoute("/_app/participants_/$participantId")({
   head: () => ({
     meta: [
       { title: "כרטיס נרשם | Our People" },
-      { name: "description", content: "כרטיס משתתף: פרטי רישום, סטטוס תשלום, מסמכים ופעילות משויכת." },
+      {
+        name: "description",
+        content: "כרטיס משתתף: פרטי רישום, סטטוס תשלום, מסמכים ופעילות משויכת.",
+      },
       { property: "og:title", content: "כרטיס נרשם | Our People" },
-      { property: "og:description", content: "פרטי רישום, תשלום ומסמכים של משתתף בפעילויות העמותה." },
+      {
+        property: "og:description",
+        content: "פרטי רישום, תשלום ומסמכים של משתתף בפעילויות העמותה.",
+      },
     ],
   }),
 });
@@ -33,6 +43,7 @@ export const Route = createFileRoute("/_app/participants_/$participantId")({
 function ParticipantProfile() {
   const { participantId } = useParams({ from: "/_app/participants_/$participantId" });
   const { data: participant, isLoading, isError, refetch } = useParticipant(participantId);
+  const { data: assignedProjects } = useProjectsForParticipant(participantId);
   const { data: projects } = useProjects();
 
   if (isLoading) {
@@ -47,7 +58,9 @@ function ParticipantProfile() {
     return (
       <div className="card-elevated flex flex-col items-center gap-3 p-16 text-center">
         <div className="text-sm text-muted-foreground">אירעה שגיאה בטעינת הנרשם.</div>
-        <button onClick={() => refetch()} className="text-sm text-brand hover:underline">נסה שוב</button>
+        <button onClick={() => refetch()} className="text-sm text-brand hover:underline">
+          נסה שוב
+        </button>
       </div>
     );
   }
@@ -65,15 +78,42 @@ function ParticipantProfile() {
 
   const price = participant.projectPrice;
   const relatedProject = (projects ?? []).find((p) => p.id === participant.projectId);
+  const projectsById = new Map<string, ParticipantProjectRecord>();
 
-  const paidFully = participant.paymentStatus === "שולם" || participant.paymentStatus === "לא נדרש תשלום";
-  const balance = paidFully ? 0 : participant.paymentStatus === "שולם חלקית" ? Math.round(price / 2) : price;
+  if (relatedProject) {
+    projectsById.set(relatedProject.id, {
+      id: relatedProject.id,
+      name: relatedProject.name,
+      status: relatedProject.status,
+      startDate: relatedProject.startDate,
+      endDate: relatedProject.endDate,
+    });
+  }
+
+  for (const project of assignedProjects ?? []) {
+    projectsById.set(project.id, project);
+  }
+
+  const participantProjects = Array.from(projectsById.values()).sort((first, second) =>
+    (second.startDate ?? "").localeCompare(first.startDate ?? ""),
+  );
+
+  const paidFully =
+    participant.paymentStatus === "שולם" || participant.paymentStatus === "לא נדרש תשלום";
+  const balance = paidFully
+    ? 0
+    : participant.paymentStatus === "שולם חלקית"
+      ? Math.round(price / 2)
+      : price;
 
   return (
     <>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <Link to="/participants" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-brand mb-2">
+          <Link
+            to="/participants"
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-brand mb-2"
+          >
             <ArrowRight className="h-3.5 w-3.5" /> חזרה לרשימת הנרשמים
           </Link>
           <div className="flex items-center gap-3">
@@ -96,11 +136,30 @@ function ParticipantProfile() {
       </div>
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        <MiniStat icon={<CalendarClock className="h-4 w-4" />} label="תאריך רישום" value={participant.registrationDate} />
-        <MiniStat icon={<CreditCard className="h-4 w-4" />} label="עלות הפעילות" value={price ? `₪${price.toLocaleString()}` : "ללא עלות"} />
-        <MiniStat icon={<CreditCard className="h-4 w-4" />} label="יתרה לתשלום" value={balance ? `₪${balance.toLocaleString()}` : "₪0"} tone={balance ? "warn" : "good"} />
         <MiniStat
-          icon={participant.documentsComplete ? <BadgeCheck className="h-4 w-4" /> : <FileWarning className="h-4 w-4" />}
+          icon={<CalendarClock className="h-4 w-4" />}
+          label="תאריך רישום"
+          value={participant.registrationDate}
+        />
+        <MiniStat
+          icon={<CreditCard className="h-4 w-4" />}
+          label="עלות הפעילות"
+          value={price ? `₪${price.toLocaleString()}` : "ללא עלות"}
+        />
+        <MiniStat
+          icon={<CreditCard className="h-4 w-4" />}
+          label="יתרה לתשלום"
+          value={balance ? `₪${balance.toLocaleString()}` : "₪0"}
+          tone={balance ? "warn" : "good"}
+        />
+        <MiniStat
+          icon={
+            participant.documentsComplete ? (
+              <BadgeCheck className="h-4 w-4" />
+            ) : (
+              <FileWarning className="h-4 w-4" />
+            )
+          }
           label="מסמכים"
           value={participant.documentsComplete ? "הושלמו" : "חסרים"}
           tone={participant.documentsComplete ? "good" : "warn"}
@@ -112,35 +171,67 @@ function ParticipantProfile() {
           <div className="divide-y divide-border text-sm">
             <Row label="טלפון" value={participant.phone} />
             <Row label="אימייל" value="—" icon={<Mail className="h-3.5 w-3.5" />} />
-            <Row label="מקור רישום" value={participant.source} icon={<Globe2 className="h-3.5 w-3.5" />} />
-            <Row label="עולה חדש/ה" value={participant.isNewImmigrant ? `כן · שנת עלייה ${participant.immigrationYear ?? "—"}` : "לא"} />
-          </div>
-        </SectionCard>
-
-        <SectionCard title="פעילות ורישום" icon={<CalendarClock className="h-4 w-4" />}>
-          <div className="divide-y divide-border text-sm">
             <Row
-              label="פרויקט"
+              label="מקור רישום"
+              value={participant.source}
+              icon={<Globe2 className="h-3.5 w-3.5" />}
+            />
+            <Row
+              label="עולה חדש/ה"
               value={
-                relatedProject ? (
-                  <Link to="/project/$id" params={{ id: relatedProject.id }} className="text-brand hover:underline">
-                    {relatedProject.name}
-                  </Link>
-                ) : (
-                  participant.project
-                )
+                participant.isNewImmigrant
+                  ? `כן · שנת עלייה ${participant.immigrationYear ?? "—"}`
+                  : "לא"
               }
             />
-            <Row label="סוג פרויקט" value={participant.projectType} />
-            <Row label="סטטוס רישום" value={<StatusBadge value={participant.status} />} />
           </div>
         </SectionCard>
 
-        <SectionCard title="מסמכים" icon={<FileWarning className="h-4 w-4" />} className="lg:col-span-2">
-          {participant.documentsComplete ? (
-            <div className="text-sm text-emerald-700 font-medium">כל המסמכים הנדרשים הוגשו ואומתו.</div>
+        <SectionCard title="פרויקטים נוכחיים וקודמים" icon={<CalendarClock className="h-4 w-4" />}>
+          <div className="mb-3 flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">סטטוס רישום</span>
+            <StatusBadge value={participant.status} />
+          </div>
+          {participantProjects.length ? (
+            <div className="space-y-3">
+              {participantProjects.map((project) => (
+                <div key={project.id} className="rounded-xl border border-border bg-muted/20 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <Link
+                      to="/project/$id"
+                      params={{ id: project.id }}
+                      className="font-medium text-brand hover:underline"
+                    >
+                      {project.name}
+                    </Link>
+                    <StatusBadge value={project.status} />
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                    <span>התחלה: {formatDate(project.startDate)}</span>
+                    <span>סיום: {formatDate(project.endDate)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
-            <EmptyState text="חסרים מסמכים" hint="יש להשלים אישור הורים / צילום ת.ז. לפני אישור הרישום." />
+            <EmptyState text="אין פרויקטים משויכים" hint="ניתן לשייך את הנרשם מתוך עמוד הפרויקט." />
+          )}
+        </SectionCard>
+
+        <SectionCard
+          title="מסמכים"
+          icon={<FileWarning className="h-4 w-4" />}
+          className="lg:col-span-2"
+        >
+          {participant.documentsComplete ? (
+            <div className="text-sm text-emerald-700 font-medium">
+              כל המסמכים הנדרשים הוגשו ואומתו.
+            </div>
+          ) : (
+            <EmptyState
+              text="חסרים מסמכים"
+              hint="יש להשלים אישור הורים / צילום ת.ז. לפני אישור הרישום."
+            />
           )}
         </SectionCard>
       </div>
@@ -154,7 +245,20 @@ function ParticipantProfile() {
   );
 }
 
-function Row({ label, value, icon }: { label: string; value: React.ReactNode; icon?: React.ReactNode }) {
+function formatDate(date?: string) {
+  if (!date) return "לא נקבע";
+  return new Intl.DateTimeFormat("he-IL").format(new Date(`${date}T12:00:00`));
+}
+
+function Row({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: React.ReactNode;
+  icon?: React.ReactNode;
+}) {
   return (
     <div className="flex items-center justify-between gap-4 py-2.5">
       <span className="inline-flex items-center gap-1.5 text-muted-foreground text-xs">
