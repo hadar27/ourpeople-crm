@@ -1,10 +1,10 @@
+alter table public.donations
+  drop constraint if exists donations_receipt_check;
+
 -- Keep receipt status identical wherever a donation is displayed.
 update public.donations
 set receipt = 'לא הופק'
 where receipt in ('ממתין', 'חסר');
-
-alter table public.donations
-  drop constraint if exists donations_receipt_check;
 
 alter table public.donations
   add constraint donations_receipt_check
