@@ -105,6 +105,24 @@ export function useCreateDonor() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (values: Partial<DonorRecord>) => {
+      if (values.idNumber) {
+        const { data: existingId } = await supabase
+          .from("donors")
+          .select("id")
+          .eq("id_number", values.idNumber)
+          .limit(1)
+          .maybeSingle();
+        if (existingId) throw new Error("כבר קיים תורם עם תעודת זהות / ח.פ. זו.");
+      }
+      if (values.phone) {
+        const { data: existingPhone } = await supabase
+          .from("donors")
+          .select("id")
+          .eq("phone", values.phone)
+          .limit(1)
+          .maybeSingle();
+        if (existingPhone) throw new Error("כבר קיים תורם עם מספר טלפון זה.");
+      }
       const { data, error } = await supabase.from("donors").insert(toRow(values)).select().single();
       if (error) throw error;
       return toDonorRecord(data as DonorRow);
@@ -133,6 +151,26 @@ export function useUpdateDonor() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<DonorRecord> }) => {
+      if (patch.idNumber) {
+        const { data: existingId } = await supabase
+          .from("donors")
+          .select("id")
+          .eq("id_number", patch.idNumber)
+          .neq("id", id)
+          .limit(1)
+          .maybeSingle();
+        if (existingId) throw new Error("תעודת הזהות / ח.פ. כבר משויכת לתורם אחר.");
+      }
+      if (patch.phone) {
+        const { data: existingPhone } = await supabase
+          .from("donors")
+          .select("id")
+          .eq("phone", patch.phone)
+          .neq("id", id)
+          .limit(1)
+          .maybeSingle();
+        if (existingPhone) throw new Error("מספר הטלפון כבר משויך לתורם אחר.");
+      }
       const { data, error } = await supabase
         .from("donors")
         .update(toRow(patch))

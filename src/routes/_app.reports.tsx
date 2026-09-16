@@ -54,7 +54,8 @@ type ReportKey =
   | "volunteer-gaps"
   | "family-assistance"
   | "project-summary"
-  | "participant-project-history";
+  | "participant-project-history"
+  | "calendar-year-donations";
 
 const newImmigrantColumns: Column<ParticipantRecord>[] = [
   { key: "name", header: "שם מלא", render: (r) => <span className="font-medium">{r.name}</span> },
@@ -105,6 +106,23 @@ const participantProjectHistoryColumns: Column<ReportRow>[] = [
     key: "projectDates",
     header: "תאריכי הפרויקטים",
     className: "min-w-[300px] whitespace-normal",
+  },
+];
+
+const calendarYearDonationColumns: Column<ReportRow>[] = [
+  { key: "date", header: "תאריך" },
+  {
+    key: "donor",
+    header: "תורם",
+    render: (r) => <span className="font-medium">{String(r.donor)}</span>,
+  },
+  { key: "project", header: "פרויקט / ייעוד" },
+  { key: "method", header: "אמצעי תשלום" },
+  { key: "receipt", header: "קבלה" },
+  {
+    key: "amount",
+    header: "סכום",
+    render: (r) => `₪${Number(r.amount).toLocaleString()}`,
   },
 ];
 
@@ -221,6 +239,16 @@ function ReportsPage() {
   const calendarYearDonationTotal = donationList
     .filter((donation) => new Date(`${donation.date}T12:00:00`).getFullYear() === currentYear)
     .reduce((sum, donation) => sum + donation.amount, 0);
+  const calendarYearDonationRows: ReportRow[] = donationList
+    .filter((donation) => new Date(`${donation.date}T12:00:00`).getFullYear() === currentYear)
+    .map((donation) => ({
+      date: donation.date,
+      donor: donation.donor,
+      project: donation.project || "כללי",
+      method: donation.method,
+      receipt: donation.receipt,
+      amount: donation.amount,
+    }));
   const donationCountByDonor = new Map<string, number>();
   donationList.forEach((d) => {
     if (!d.donorId) return;
@@ -433,6 +461,13 @@ function ReportsPage() {
       columns: participantProjectHistoryColumns,
       filename: "participant-project-history",
     },
+    "calendar-year-donations": {
+      title: `פירוט תרומות מתחילת ${currentYear}`,
+      description: `כל התרומות שהתקבלו מ־1 בינואר ${currentYear}.`,
+      rows: calendarYearDonationRows,
+      columns: calendarYearDonationColumns,
+      filename: `donations-${currentYear}`,
+    },
   };
   const selectedReport = activeReport ? reportConfig[activeReport] : null;
 
@@ -537,6 +572,15 @@ function ReportsPage() {
             icon={<Users className="h-5 w-5" />}
             onClick={() => setActiveReport("participant-project-history")}
           />
+          {canViewDonations && (
+            <ReportCard
+              title={`פירוט תרומות ${currentYear}`}
+              description="כל התרומות מתחילת השנה הקלנדרית"
+              count={calendarYearDonationRows.length}
+              icon={<BadgeDollarSign className="h-5 w-5" />}
+              onClick={() => setActiveReport("calendar-year-donations")}
+            />
+          )}
         </div>
       </div>
 

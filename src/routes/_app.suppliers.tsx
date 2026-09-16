@@ -92,7 +92,7 @@ function SuppliersPage() {
                   email: v.email || undefined,
                   taxId: v.taxId || undefined,
                   notes: v.notes || undefined,
-                  status: "לא שולם",
+                  status: "שולם",
                 });
                 return { ok: true };
               } catch (err) {

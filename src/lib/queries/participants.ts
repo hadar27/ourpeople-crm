@@ -209,6 +209,14 @@ export function useAssignParticipantToProject() {
       projectId: string;
       participantId: string;
     }) => {
+      const { data: existing, error: lookupError } = await supabase
+        .from("project_participants")
+        .select("participant_id")
+        .eq("project_id", projectId)
+        .eq("participant_id", participantId)
+        .maybeSingle();
+      if (lookupError) throw lookupError;
+      if (existing) throw new Error("הנרשם כבר משויך לפרויקט זה.");
       const { error } = await supabase
         .from("project_participants")
         .insert({ project_id: projectId, participant_id: participantId });
@@ -290,6 +298,17 @@ export function useCreateParticipant() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (values: Partial<ParticipantRecord>) => {
+      if (values.idNumber) {
+        const { data: existing, error: lookupError } = await supabase
+          .from("participants")
+          .select("id")
+          .eq("id_number", values.idNumber)
+          .limit(1)
+          .maybeSingle();
+        if (lookupError) throw lookupError;
+        if (existing)
+          throw new Error("כבר קיים נרשם עם תעודת זהות זו. יש לשייך אותו לפרויקט הקיים.");
+      }
       const { data, error } = await supabase
         .from("participants")
         .insert(toRow(values))
@@ -308,6 +327,17 @@ export function useUpdateParticipant() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<ParticipantRecord> }) => {
+      if (patch.idNumber) {
+        const { data: existing, error: lookupError } = await supabase
+          .from("participants")
+          .select("id")
+          .eq("id_number", patch.idNumber)
+          .neq("id", id)
+          .limit(1)
+          .maybeSingle();
+        if (lookupError) throw lookupError;
+        if (existing) throw new Error("תעודת הזהות כבר משויכת לנרשם אחר.");
+      }
       const { data, error } = await supabase
         .from("participants")
         .update(toRow(patch))

@@ -124,6 +124,16 @@ export function useCreateFamily() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (values: Partial<FamilyRecord>) => {
+      if (values.phone) {
+        const { data: existing, error: lookupError } = await supabase
+          .from("families")
+          .select("id")
+          .eq("phone", values.phone)
+          .limit(1)
+          .maybeSingle();
+        if (lookupError) throw lookupError;
+        if (existing) throw new Error("כבר קיימת משפחה עם מספר טלפון זה.");
+      }
       const { data, error } = await supabase
         .from("families")
         .insert(toRow(values))
@@ -142,6 +152,17 @@ export function useUpdateFamily() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<FamilyRecord> }) => {
+      if (patch.phone) {
+        const { data: existing, error: lookupError } = await supabase
+          .from("families")
+          .select("id")
+          .eq("phone", patch.phone)
+          .neq("id", id)
+          .limit(1)
+          .maybeSingle();
+        if (lookupError) throw lookupError;
+        if (existing) throw new Error("מספר הטלפון כבר משויך למשפחה אחרת.");
+      }
       const { data, error } = await supabase
         .from("families")
         .update(toRow(patch))
