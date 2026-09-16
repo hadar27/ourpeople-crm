@@ -68,6 +68,30 @@ function FinancePage() {
     (item) => item.projectId === historyProjectId,
   );
   const selectedProject = projectList.find((project) => project.id === historyProjectId);
+  const detailedIncome = [
+    ...donationList.map((donation) => ({
+      id: donation.id,
+      category: "תרומה",
+      source: donation.donor,
+      project: donation.project || "כללי",
+      method: donation.method,
+      reference: donation.reference ?? "—",
+      status: donation.receipt,
+      date: donation.date,
+      amount: donation.amount,
+    })),
+    ...otherIncome.map((item) => ({
+      id: item.id,
+      category: item.category,
+      source: item.source,
+      project: item.project || "כללי",
+      method: item.method ?? "—",
+      reference: item.reference ?? "—",
+      status: "התקבל",
+      date: item.date,
+      amount: item.amount,
+    })),
+  ].sort((first, second) => second.date.localeCompare(first.date));
 
   const formatCurrency = (value: number) => `₪${value.toLocaleString()}`;
 
@@ -456,6 +480,50 @@ function FinancePage() {
               <tr>
                 <td colSpan={7} className="py-8 text-center text-muted-foreground">
                   אין בקשות תקציב
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </section>
+
+      <section className="card-elevated p-5 mb-6 overflow-x-auto">
+        <h2 className="text-lg font-semibold mb-1">הכנסות</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          תרומות מסונכרנות אוטומטית מלשונית התרומות, לצד הכנסות אחרות שנרשמו בכספים.
+        </p>
+        <table className="w-full min-w-[900px] text-sm">
+          <thead className="text-muted-foreground">
+            <tr className="border-b text-right">
+              <th className="py-3">מקור</th>
+              <th>קטגוריה</th>
+              <th>פרויקט / ייעוד</th>
+              <th>תאריך</th>
+              <th>אמצעי</th>
+              <th>אסמכתא</th>
+              <th>סטטוס קבלה</th>
+              <th>סכום</th>
+            </tr>
+          </thead>
+          <tbody>
+            {detailedIncome.map((item) => (
+              <tr key={`${item.category}-${item.id}`} className="border-b last:border-0">
+                <td className="py-3 font-medium">{item.source}</td>
+                <td>{item.category}</td>
+                <td>{item.project}</td>
+                <td>{item.date}</td>
+                <td>{item.method}</td>
+                <td>{item.reference}</td>
+                <td>
+                  <StatusBadge value={item.status} />
+                </td>
+                <td className="font-semibold text-emerald-700">{formatCurrency(item.amount)}</td>
+              </tr>
+            ))}
+            {detailedIncome.length === 0 && (
+              <tr>
+                <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                  אין הכנסות להצגה
                 </td>
               </tr>
             )}

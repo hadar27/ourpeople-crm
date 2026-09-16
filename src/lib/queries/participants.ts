@@ -42,6 +42,10 @@ export type ParticipantProjectRecord = {
   joinedDate?: string;
 };
 
+export type ParticipantProjectAssignment = ParticipantProjectRecord & {
+  participantId: string;
+};
+
 type ParticipantRow = {
   id: string;
   name: string;
@@ -131,6 +135,7 @@ export const participantKeys = {
     [...participantKeys.all, "project", projectId] as const,
   projectsForParticipant: (participantId: string | undefined) =>
     [...participantKeys.all, "participantProjects", participantId] as const,
+  allProjectAssignments: () => [...participantKeys.all, "allProjectAssignments"] as const,
 };
 
 export function useParticipants() {
@@ -140,6 +145,41 @@ export function useParticipants() {
       const { data, error } = await supabase.from("participants").select(SELECT).order("name");
       if (error) throw error;
       return (data as unknown as ParticipantRow[]).map(toParticipantRecord);
+    },
+  });
+}
+
+export function useAllParticipantProjectAssignments() {
+  return useQuery({
+    queryKey: participantKeys.allProjectAssignments(),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_participants")
+        .select("participant_id, joined_date, projects(id, name, status, start_date, end_date)");
+      if (error) throw error;
+      return (
+        data as unknown as {
+          participant_id: string;
+          joined_date: string;
+          projects: {
+            id: string;
+            name: string;
+            status: ParticipantProjectRecord["status"];
+            start_date: string | null;
+            end_date: string | null;
+          } | null;
+        }[]
+      )
+        .filter((row) => row.projects)
+        .map((row) => ({
+          participantId: row.participant_id,
+          id: row.projects!.id,
+          name: row.projects!.name,
+          status: row.projects!.status,
+          startDate: row.projects!.start_date ?? undefined,
+          endDate: row.projects!.end_date ?? undefined,
+          joinedDate: row.joined_date,
+        }));
     },
   });
 }

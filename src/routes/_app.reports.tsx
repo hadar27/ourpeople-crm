@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader, StatCard } from "@/components/page-header";
 import {
-  Activity,
+  BadgeDollarSign,
   Users,
   HandCoins,
   UserRoundSearch,
@@ -33,7 +33,11 @@ import { useDonations } from "@/lib/queries/donations";
 import { useDonors } from "@/lib/queries/donors";
 import { useProjects, type ProjectRecord } from "@/lib/queries/projects";
 import { useVolunteers, useAllProjectVolunteerAssignments } from "@/lib/queries/volunteers";
-import { useParticipants, type ParticipantRecord } from "@/lib/queries/participants";
+import {
+  useAllParticipantProjectAssignments,
+  useParticipants,
+  type ParticipantRecord,
+} from "@/lib/queries/participants";
 import { useAllProjectExpenses } from "@/lib/queries/project-expenses";
 import { useFamilies } from "@/lib/queries/families";
 import { useAllAssistance } from "@/lib/queries/assistance";
@@ -46,7 +50,11 @@ const BUDGET_CAP_RATIO = 0.9;
 
 type ReportRow = Record<string, unknown>;
 type ReportKey =
-  "supplier-liabilities" | "volunteer-gaps" | "family-assistance" | "project-summary";
+  | "supplier-liabilities"
+  | "volunteer-gaps"
+  | "family-assistance"
+  | "project-summary"
+  | "participant-project-history";
 
 const newImmigrantColumns: Column<ParticipantRecord>[] = [
   { key: "name", header: "שם מלא", render: (r) => <span className="font-medium">{r.name}</span> },
@@ -74,13 +82,30 @@ const supplierLiabilityColumns: Column<ReportRow>[] = [
     render: (r) => <span className="font-medium">{String(r.supplier)}</span>,
   },
   {
-    key: "balance",
-    header: "יתרה לתשלום",
-    render: (r) => `₪${Number(r.balance).toLocaleString()}`,
+    key: "totalPayment",
+    header: "סך תשלום",
+    render: (r) => `₪${Number(r.totalPayment).toLocaleString()}`,
   },
   { key: "date", header: "תאריך" },
   { key: "category", header: "קטגוריה" },
   { key: "reference", header: "אסמכתא" },
+];
+
+const participantProjectHistoryColumns: Column<ReportRow>[] = [
+  {
+    key: "participant",
+    header: "נרשם/ת",
+    render: (r) => <span className="font-medium">{String(r.participant)}</span>,
+  },
+  { key: "idNumber", header: "ת.ז." },
+  { key: "phone", header: "טלפון" },
+  { key: "projectCount", header: "מספר פרויקטים" },
+  { key: "projects", header: "כל הפרויקטים", className: "min-w-[280px] whitespace-normal" },
+  {
+    key: "projectDates",
+    header: "תאריכי הפרויקטים",
+    className: "min-w-[300px] whitespace-normal",
+  },
 ];
 
 const volunteerGapColumns: Column<ReportRow>[] = [
@@ -163,6 +188,7 @@ function ReportsPage() {
   const { data: volunteers } = useVolunteers();
   const { data: volunteerAssignments } = useAllProjectVolunteerAssignments();
   const { data: participants } = useParticipants();
+  const { data: participantProjectAssignments } = useAllParticipantProjectAssignments();
   const { data: expenses } = useAllProjectExpenses();
   const { data: families } = useFamilies();
   const { data: assistance } = useAllAssistance();
@@ -182,6 +208,7 @@ function ReportsPage() {
   const assistanceList = assistance ?? [];
   const allocationList = allocations ?? [];
   const assignmentList = volunteerAssignments ?? [];
+  const participantAssignmentList = participantProjectAssignments ?? [];
 
   const currentYear = new Date().getFullYear();
   const newImmigrantsList = participantList.filter(
@@ -191,7 +218,9 @@ function ReportsPage() {
       currentYear - p.immigrationYear <= NEW_IMMIGRANTS_YEARS_BACK,
   );
 
-  const totalVolunteerHours = volunteerList.reduce((s, v) => s + v.hours, 0);
+  const calendarYearDonationTotal = donationList
+    .filter((donation) => new Date(`${donation.date}T12:00:00`).getFullYear() === currentYear)
+    .reduce((sum, donation) => sum + donation.amount, 0);
   const donationCountByDonor = new Map<string, number>();
   donationList.forEach((d) => {
     if (!d.donorId) return;
@@ -214,7 +243,7 @@ function ReportsPage() {
     .filter((expense) => expense.supplier && expense.status !== "שולם")
     .map((expense) => ({
       supplier: expense.supplier ?? "—",
-      balance: expense.amount,
+      totalPayment: expense.amount,
       date: expense.date,
       category: expense.category,
       reference: expense.reference ?? "—",
@@ -320,6 +349,45 @@ function ReportsPage() {
     };
   });
 
+  const projectById = new Map(projectList.map((project) => [project.id, project]));
+  const participantProjectHistoryRows: ReportRow[] = participantList.map((participant) => {
+    const projectsById = new Map<
+      string,
+      { name: string; startDate?: string; endDate?: string; status: string }
+    >();
+    const primaryProject = projectById.get(participant.projectId);
+    if (primaryProject) {
+      projectsById.set(primaryProject.id, {
+        name: primaryProject.name,
+        startDate: primaryProject.startDate,
+        endDate: primaryProject.endDate,
+        status: primaryProject.status,
+      });
+    }
+    participantAssignmentList
+      .filter((assignment) => assignment.participantId === participant.id)
+      .forEach((assignment) => projectsById.set(assignment.id, assignment));
+    const participantProjects = [...projectsById.values()].sort((first, second) =>
+      (second.startDate ?? "").localeCompare(first.startDate ?? ""),
+    );
+    return {
+      participant: participant.name,
+      idNumber: participant.idNumber,
+      phone: participant.phone,
+      projectCount: participantProjects.length,
+      projects:
+        participantProjects.map((project) => `${project.name} (${project.status})`).join("; ") ||
+        "—",
+      projectDates:
+        participantProjects
+          .map(
+            (project) =>
+              `${project.name}: ${project.startDate ?? "לא נקבע"} – ${project.endDate ?? "לא נקבע"}`,
+          )
+          .join("; ") || "—",
+    };
+  });
+
   const reportConfig: Record<
     ReportKey,
     {
@@ -332,7 +400,7 @@ function ReportsPage() {
   > = {
     "supplier-liabilities": {
       title: "דוח התחייבויות מול ספקים",
-      description: "הוצאות שטרם שולמו, לפי ספק, יתרה ותאריך.",
+      description: "הוצאות שטרם שולמו, לפי ספק, סך תשלום ותאריך.",
       rows: supplierLiabilityRows,
       columns: supplierLiabilityColumns,
       filename: "supplier-liabilities",
@@ -358,6 +426,13 @@ function ReportsPage() {
       columns: projectSummaryColumns,
       filename: "project-summary",
     },
+    "participant-project-history": {
+      title: "דוח נרשמים והיסטוריית פרויקטים",
+      description: "כל הנרשמים וכל הפרויקטים שאליהם נרשמו בעבר או בהווה, כולל תאריכים.",
+      rows: participantProjectHistoryRows,
+      columns: participantProjectHistoryColumns,
+      filename: "participant-project-history",
+    },
   };
   const selectedReport = activeReport ? reportConfig[activeReport] : null;
 
@@ -367,10 +442,10 @@ function ReportsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <StatCard
-          label="שעות התנדבות (סה״כ)"
-          value={`${totalVolunteerHours.toLocaleString()}h`}
-          delta="סה״כ שעות מדווחות"
-          icon={<Activity className="h-5 w-5" />}
+          label="תרומות מתחילת השנה הקלנדרית"
+          value={canViewDonations ? `₪${calendarYearDonationTotal.toLocaleString()}` : "אין הרשאה"}
+          delta={`מ־1 בינואר ${currentYear}`}
+          icon={<BadgeDollarSign className="h-5 w-5" />}
           tone="brand"
         />
         <StatCard
@@ -429,7 +504,7 @@ function ReportsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ReportCard
             title="התחייבויות מול ספקים"
-            description="ספק, יתרה לתשלום ותאריך"
+            description="ספק, סך תשלום ותאריך"
             count={supplierLiabilityRows.length}
             icon={<HandCoins className="h-5 w-5" />}
             onClick={() => setActiveReport("supplier-liabilities")}
@@ -454,6 +529,13 @@ function ReportsPage() {
             count={projectSummaryRows.length}
             icon={<FolderKanban className="h-5 w-5" />}
             onClick={() => setActiveReport("project-summary")}
+          />
+          <ReportCard
+            title="נרשמים והיסטוריית פרויקטים"
+            description="כל הפרויקטים בעבר ובהווה, כולל תאריכים"
+            count={participantProjectHistoryRows.length}
+            icon={<Users className="h-5 w-5" />}
+            onClick={() => setActiveReport("participant-project-history")}
           />
         </div>
       </div>
