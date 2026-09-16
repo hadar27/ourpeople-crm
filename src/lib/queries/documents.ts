@@ -82,8 +82,8 @@ export async function downloadEntityDocument(document: EntityDocument) {
   if (!document.storagePath) {
     if (document.kind === "הצעת מחיר") {
       const link = window.document.createElement("a");
-      link.href = "/documents/quotation-equipment-q2.html";
-      link.download = "quotation-equipment-q2.html";
+      link.href = "/documents/quotation-equipment-q2.pdf";
+      link.download = "quotation-equipment-q2.pdf";
       link.click();
       return;
     }
