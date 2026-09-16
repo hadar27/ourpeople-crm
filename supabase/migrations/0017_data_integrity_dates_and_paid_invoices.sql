@@ -1,3 +1,23 @@
+-- Complete legacy donor records before enforcing/updating required contact details.
+-- These deterministic placeholders can later be replaced through the donor edit form.
+with ranked_donors as (
+  select id, row_number() over (order by id) as row_number
+  from public.donors
+)
+update public.donors d
+set id_number = coalesce(nullif(btrim(d.id_number), ''),
+                         (900000000 + r.row_number)::text),
+    phone = coalesce(nullif(btrim(d.phone), ''),
+                     '0' || (590000000 + r.row_number)::text),
+    email = coalesce(nullif(btrim(d.email), ''),
+                     'legacy.' || replace(lower(d.id), '-', '.') || '@ourpeople.org'),
+    updated_at = now()
+from ranked_donors r
+where d.id = r.id
+  and (nullif(btrim(d.id_number), '') is null
+       or nullif(btrim(d.phone), '') is null
+       or nullif(btrim(d.email), '') is null);
+
 -- Data integrity: one identity record per person/entity.
 create unique index if not exists participants_id_number_unique
   on public.participants (id_number);
