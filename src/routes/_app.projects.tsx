@@ -146,6 +146,12 @@ function ProjectsPage() {
                 </div>
                 <Progress value={p.progress} className="h-2" />
               </div>
+              <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
+                <Calendar className="h-3.5 w-3.5" />
+                <span>{p.startDate || "לא נקבע"}</span>
+                <span>–</span>
+                <span>{p.endDate || "לא נקבע"}</span>
+              </div>
               <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
                 <div className="rounded-lg bg-surface-muted p-2">
                   <div className="text-muted-foreground">תקציב</div>
@@ -167,12 +173,12 @@ function ProjectsPage() {
         </div>
       )}
 
-      {/* Kanban */}
+      {/* Task board */}
       <div className="card-elevated p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
             <div className="text-lg font-semibold flex items-center gap-2">
-              <Calendar className="h-4 w-4" /> לוח משימות (Kanban)
+              <Calendar className="h-4 w-4" /> לוח משימות
             </div>
             <div className="text-xs text-muted-foreground">משימות פתוחות בין הפרויקטים הפעילים</div>
           </div>

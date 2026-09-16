@@ -6,7 +6,7 @@ export type ProjectExpenseRecord = {
   id: string;
   projectId: string;
   category: string;
-  supplierId?: string;
+  supplierId?: string | null;
   supplier?: string;
   amount: number;
   date: string;
@@ -127,6 +127,27 @@ export function useDeleteProjectExpense() {
       const { error } = await supabase.from("project_expenses").delete().eq("id", record.id);
       if (error) throw error;
       return record;
+    },
+    onSuccess: (record) => {
+      queryClient.invalidateQueries({ queryKey: projectExpenseKeys.all });
+      queryClient.invalidateQueries({ queryKey: projectKeys.list() });
+      queryClient.invalidateQueries({ queryKey: projectKeys.detail(record.projectId) });
+    },
+  });
+}
+
+export function useUpdateProjectExpense() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Partial<ProjectExpenseRecord> }) => {
+      const { data, error } = await supabase
+        .from("project_expenses")
+        .update(toRow(patch))
+        .eq("id", id)
+        .select(SELECT)
+        .single();
+      if (error) throw error;
+      return toProjectExpenseRecord(data as unknown as ProjectExpenseRow);
     },
     onSuccess: (record) => {
       queryClient.invalidateQueries({ queryKey: projectExpenseKeys.all });
