@@ -115,12 +115,12 @@ export function generateAlerts(data: AlertEngineData): Alert[] {
 
   // Donations without receipts
   donations
-    .filter((d) => d.receipt === "חסר" || d.receipt === "ממתין")
+    .filter((d) => d.receipt === "לא הופק")
     .forEach((d) => {
       out.push({
         id: id(),
         title: `תרומה ללא קבלה — ${d.donor}`,
-        severity: d.receipt === "חסר" ? "בינונית" : "נמוכה",
+        severity: "בינונית",
         module: "תרומות",
         rule: `סטטוס קבלה: ${d.receipt} · סכום ₪${d.amount.toLocaleString()}`,
         createdAt: d.date,
@@ -212,7 +212,7 @@ export function generateAlerts(data: AlertEngineData): Alert[] {
   }
 
   // Unallocated donations
-  allocations.length &&
+  if (allocations.length) {
     donations.forEach((d) => {
       const alloc = allocations
         .filter((a) => a.donationId === d.id)
@@ -228,6 +228,7 @@ export function generateAlerts(data: AlertEngineData): Alert[] {
         });
       }
     });
+  }
 
   return out;
 }

@@ -64,7 +64,7 @@ function DonationsPage() {
   const donationsThisMonth = (donations ?? []).filter((d) => d.date?.startsWith(thisMonthPrefix));
   const totalThisMonth = donationsThisMonth.reduce((sum, d) => sum + d.amount, 0);
   const receiptsIssued = donationsThisMonth.filter((d) => d.receipt === "הופק").length;
-  const receiptsMissing = donationsThisMonth.filter((d) => d.receipt === "חסר").length;
+  const receiptsMissing = donationsThisMonth.filter((d) => d.receipt === "לא הופק").length;
 
   return (
     <>
@@ -104,7 +104,7 @@ function DonationsPage() {
                 name: "receipt",
                 label: "סטטוס קבלה",
                 type: "select",
-                options: ["הופק", "ממתין", "חסר"],
+                options: ["הופק", "לא הופק"],
               },
               { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
             ]}
@@ -120,7 +120,7 @@ function DonationsPage() {
                   projectId: project?.id,
                   project: v.project || "",
                   method: v.method as DonationRecord["method"],
-                  receipt: (v.receipt || "ממתין") as DonationRecord["receipt"],
+                  receipt: (v.receipt || "לא הופק") as DonationRecord["receipt"],
                   date: v.date,
                   notes: v.notes || undefined,
                 });
@@ -146,7 +146,7 @@ function DonationsPage() {
           <div className="text-xl font-bold mt-1">{receiptsIssued}</div>
         </div>
         <div className="card-elevated p-4">
-          <div className="text-xs text-muted-foreground">קבלות חסרות</div>
+          <div className="text-xs text-muted-foreground">קבלות שלא הופקו</div>
           <div className="text-xl font-bold mt-1 text-rose-600">{receiptsMissing}</div>
         </div>
       </div>

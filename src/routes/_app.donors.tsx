@@ -5,13 +5,16 @@ import { DataTable, type Column, type FilterConfig } from "@/components/data-tab
 import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { useDonors, useCreateDonor, type DonorRecord } from "@/lib/queries/donors";
 import { useAllInteractions } from "@/lib/queries/interactions";
+import { useDonations } from "@/lib/queries/donations";
 import { DonorEditButton, DonorDeleteButton } from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/donors")({
   component: DonorsPage,
 });
 
-const columns: Column<DonorRecord>[] = [
+type DonorTableRecord = DonorRecord & { receiptStatus: string };
+
+const columns: Column<DonorTableRecord>[] = [
   { key: "name", header: "שם תורם", render: (r) => <span className="font-medium">{r.name}</span> },
   { key: "idNumber", header: "ת.ז. / ח.פ.", render: (r) => r.idNumber || "—" },
   { key: "phone", header: "טלפון", render: (r) => r.phone || "—" },
@@ -25,6 +28,11 @@ const columns: Column<DonorRecord>[] = [
     ),
   },
   { key: "lastDonation", header: "תרומה אחרונה" },
+  {
+    key: "receiptStatus",
+    header: "קבלות",
+    render: (r) => <StatusBadge value={r.receiptStatus} />,
+  },
   { key: "status", header: "סטטוס", render: (r) => <StatusBadge value={r.status} /> },
 ];
 
@@ -49,7 +57,21 @@ const filters: FilterConfig<DonorRecord>[] = [
 function DonorsPage() {
   const { data: donors, isLoading, isError, refetch } = useDonors();
   const { data: interactions } = useAllInteractions();
+  const { data: donations } = useDonations();
   const createDonor = useCreateDonor();
+  const tableRows: DonorTableRecord[] = (donors ?? []).map((donor) => {
+    const donorDonations = (donations ?? []).filter((donation) => donation.donorId === donor.id);
+    const notIssued = donorDonations.filter((donation) => donation.receipt !== "הופק").length;
+    return {
+      ...donor,
+      receiptStatus:
+        donorDonations.length === 0
+          ? "אין תרומות"
+          : notIssued > 0
+            ? `לא הופקו (${notIssued})`
+            : "הופקו",
+    };
+  });
 
   // Calculate real aggregations
   const totalDonors = donors?.length ?? 0;
@@ -88,12 +110,21 @@ function DonorsPage() {
               {
                 name: "idNumber",
                 label: "תעודת זהות / ח.פ.",
+                required: true,
                 maxLength: 9,
                 pattern: /^\d{9}$/,
                 patternMessage: "יש להזין 9 ספרות",
               },
-              { name: "phone", label: "טלפון", type: "tel", required: true },
-              { name: "email", label: "אימייל", type: "email" },
+              {
+                name: "phone",
+                label: "טלפון",
+                type: "tel",
+                required: true,
+                maxLength: 10,
+                pattern: /^\d{10}$/,
+                patternMessage: "יש להזין 10 ספרות",
+              },
+              { name: "email", label: "אימייל", type: "email", required: true },
               {
                 name: "type",
                 label: "סוג תורם",
@@ -156,7 +187,7 @@ function DonorsPage() {
         </div>
       ) : (
         <DataTable
-          rows={donors ?? []}
+          rows={tableRows}
           columns={columns}
           searchKeys={["name", "idNumber", "phone", "email", "type"]}
           filters={filters}

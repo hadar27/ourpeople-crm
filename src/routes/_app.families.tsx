@@ -108,7 +108,7 @@ function FamiliesPage() {
         email: v.email || undefined,
         city: v.city,
         countryOfOrigin: v.countryOfOrigin,
-        immigrationDate: v.immigrationDate || "—",
+        immigrationDate: v.immigrationDate || undefined,
         membersCount: Number(v.membersCount || 1),
         needs: (v.needs ? v.needs.split(",").map((n) => n.trim()) : []).filter((n) =>
           (NEEDS as string[]).includes(n),

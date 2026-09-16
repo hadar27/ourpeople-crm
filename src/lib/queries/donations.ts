@@ -13,7 +13,7 @@ export type DonationRecord = {
   projectId?: string;
   project: string;
   method: "העברה בנקאית" | "אשראי" | "מזומן" | "שיק";
-  receipt: "הופק" | "ממתין" | "חסר";
+  receipt: "הופק" | "לא הופק";
   date: string;
   reference?: string;
   notes?: string;

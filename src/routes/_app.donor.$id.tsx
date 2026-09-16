@@ -31,7 +31,11 @@ import {
 import { FormDialog } from "@/components/form-dialog";
 import { useDonor } from "@/lib/queries/donors";
 import { useDonations } from "@/lib/queries/donations";
-import { DonorEditButton, InteractionEditButton } from "@/components/module-edit-dialogs";
+import {
+  DonationEditButton,
+  DonorEditButton,
+  InteractionEditButton,
+} from "@/components/module-edit-dialogs";
 import { isOverdue, TODAY } from "@/lib/crm-seed";
 import {
   useInteractionsForDonor,
@@ -330,7 +334,6 @@ function DonorDetail() {
           {canViewDonations && (
             <TabsTrigger value="donations">תרומות ({history.length})</TabsTrigger>
           )}
-          <TabsTrigger value="tasks">משימות המשך ({openFollowUps.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="crm">
@@ -354,6 +357,7 @@ function DonorDetail() {
                       <th className="py-2">אמצעי</th>
                       <th className="py-2">קבלה</th>
                       <th className="py-2">תאריך</th>
+                      <th className="py-2">פעולות</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -375,6 +379,9 @@ function DonorDetail() {
                           <StatusBadge value={d.receipt} />
                         </td>
                         <td className="py-3 text-muted-foreground">{d.date}</td>
+                        <td className="py-3">
+                          <DonationEditButton record={d} triggerLabel="עדכון קבלה" />
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -383,48 +390,6 @@ function DonorDetail() {
             </SectionCard>
           </TabsContent>
         )}
-
-        <TabsContent value="tasks">
-          <SectionCard title="משימות המשך">
-            {openFollowUps.length === 0 ? (
-              <EmptyState text="אין משימות המשך פתוחות" hint="כל הפניות מול התורם טופלו" />
-            ) : (
-              <ul className="space-y-3">
-                {openFollowUps.map((i) => (
-                  <li
-                    key={i.id}
-                    className={`flex items-center justify-between gap-3 flex-wrap rounded-lg border p-4 ${
-                      isOverdue(i.followUpDate)
-                        ? "border-rose-200 bg-rose-50"
-                        : "border-border bg-surface-muted"
-                    }`}
-                  >
-                    <div>
-                      <div className="font-medium text-sm">{i.followUpAction}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        מקור: {i.subject} · אחראי: {i.staff} · יעד: {i.followUpDate}
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={async () => {
-                        try {
-                          await setInteractionStatus.mutateAsync({ id: i.id, status: "הושלם" });
-                          toast.success("המשימה הושלמה");
-                        } catch {
-                          toast.error("העדכון נכשל");
-                        }
-                      }}
-                    >
-                      <CheckCircle2 className="h-4 w-4 ml-1" /> סיום
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </SectionCard>
-        </TabsContent>
       </Tabs>
     </>
   );

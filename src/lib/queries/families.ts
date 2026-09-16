@@ -10,7 +10,7 @@ export type FamilyRecord = {
   email?: string;
   city: string;
   countryOfOrigin: string;
-  immigrationDate: string;
+  immigrationDate?: string;
   membersCount: number;
   needs: AssistanceNeed[];
   status: FamilyStatus;
@@ -27,7 +27,7 @@ type FamilyRow = {
   email: string | null;
   city: string;
   country_of_origin: string;
-  immigration_date: string;
+  immigration_date: string | null;
   members_count: number;
   needs: string[];
   status: string;
@@ -45,7 +45,7 @@ function toFamilyRecord(row: FamilyRow): FamilyRecord {
     email: row.email ?? undefined,
     city: row.city,
     countryOfOrigin: row.country_of_origin,
-    immigrationDate: row.immigration_date,
+    immigrationDate: row.immigration_date ?? undefined,
     membersCount: row.members_count,
     needs: (row.needs ?? []) as AssistanceNeed[],
     status: row.status as FamilyStatus,
@@ -63,7 +63,7 @@ function toRow(patch: Partial<FamilyRecord>): Record<string, unknown> {
   if (patch.email !== undefined) row.email = patch.email ?? null;
   if (patch.city !== undefined) row.city = patch.city;
   if (patch.countryOfOrigin !== undefined) row.country_of_origin = patch.countryOfOrigin;
-  if (patch.immigrationDate !== undefined) row.immigration_date = patch.immigrationDate;
+  if (patch.immigrationDate !== undefined) row.immigration_date = patch.immigrationDate || null;
   if (patch.membersCount !== undefined) row.members_count = patch.membersCount;
   if (patch.needs !== undefined) row.needs = patch.needs;
   if (patch.status !== undefined) row.status = patch.status;

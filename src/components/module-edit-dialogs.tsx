@@ -526,7 +526,7 @@ export function FamilyEditButton({ record, triggerLabel }: { record: FamilyRecor
         email: record.email ?? "",
         city: record.city,
         countryOfOrigin: record.countryOfOrigin,
-        immigrationDate: record.immigrationDate,
+        immigrationDate: record.immigrationDate ?? "",
         membersCount: String(record.membersCount),
         assignedStaff: record.assignedStaff,
         status: record.status,
