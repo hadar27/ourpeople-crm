@@ -229,6 +229,10 @@ function ReportsPage() {
   const participantAssignmentList = participantProjectAssignments ?? [];
 
   const currentYear = new Date().getFullYear();
+  const measurementMonth = new Intl.DateTimeFormat("he-IL", {
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
   const newImmigrantsList = participantList.filter(
     (p) =>
       p.isNewImmigrant &&
@@ -519,7 +523,10 @@ function ReportsPage() {
           </div>
         )}
         <div className="card-elevated p-5">
-          <div className="text-lg font-semibold mb-2">תקציב מול ביצוע</div>
+          <div className="text-lg font-semibold">תקציב מול ביצוע</div>
+          <div className="text-sm text-muted-foreground mb-2">
+            חודש מדידה: {measurementMonth}
+          </div>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={budgetVsActual}>
               <CartesianGrid stroke="#E2E8F0" strokeDasharray="3 3" />
