@@ -21,6 +21,7 @@ import {
 import { useProjects } from "@/lib/queries/projects";
 import { ParticipantEditButton } from "@/components/module-edit-dialogs";
 import { Loader2 } from "lucide-react";
+import { EntityDocumentsPanel } from "@/components/entity-documents-panel";
 
 export const Route = createFileRoute("/_app/participants_/$participantId")({
   component: ParticipantProfile,
@@ -218,22 +219,9 @@ function ParticipantProfile() {
           )}
         </SectionCard>
 
-        <SectionCard
-          title="מסמכים"
-          icon={<FileWarning className="h-4 w-4" />}
-          className="lg:col-span-2"
-        >
-          {participant.documentsComplete ? (
-            <div className="text-sm text-emerald-700 font-medium">
-              כל המסמכים הנדרשים הוגשו ואומתו.
-            </div>
-          ) : (
-            <EmptyState
-              text="חסרים מסמכים"
-              hint="יש להשלים אישור הורים / צילום ת.ז. לפני אישור הרישום."
-            />
-          )}
-        </SectionCard>
+        <div className="lg:col-span-2">
+          <EntityDocumentsPanel entityType="participant" entityId={participant.id} />
+        </div>
       </div>
 
       <div className="mt-6">

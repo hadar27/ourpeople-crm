@@ -6,6 +6,7 @@ import { useVolunteer } from "@/lib/queries/volunteers";
 import { useProjects } from "@/lib/queries/projects";
 import { VolunteerEditButton } from "@/components/module-edit-dialogs";
 import { toast } from "sonner";
+import { EntityDocumentsPanel } from "@/components/entity-documents-panel";
 
 export const Route = createFileRoute("/_app/volunteer/$id")({
   component: VolunteerDetail,
@@ -70,6 +71,10 @@ function VolunteerDetail() {
             <div className="text-base font-bold mt-1">{v.status}</div>
           </div>
         </div>
+      </div>
+
+      <div className="mb-6">
+        <EntityDocumentsPanel entityType="volunteer" entityId={v.id} />
       </div>
 
       <div className="card-elevated p-5">

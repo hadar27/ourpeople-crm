@@ -81,7 +81,7 @@ export type SupplierPayment = {
 
 export type EntityDocument = {
   id: string;
-  entityType: "supplier" | "family" | "donor";
+  entityType: "supplier" | "family" | "donor" | "participant" | "volunteer";
   entityId: string;
   name: string;
   kind: string;
