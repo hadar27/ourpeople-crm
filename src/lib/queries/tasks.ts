@@ -96,3 +96,36 @@ export function useCreateTask() {
     },
   });
 }
+
+export function useUpdateTask() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch: Partial<Omit<TaskRecord, "id" | "project" | "projectId">>;
+    }) => {
+      const values: Record<string, unknown> = {};
+      if (patch.title !== undefined) values.title = patch.title;
+      if (patch.assignee !== undefined) values.assignee = patch.assignee;
+      if (patch.column !== undefined) values.board_column = patch.column;
+      if (patch.startDate !== undefined) values.start_date = patch.startDate || null;
+      if (patch.endDate !== undefined) values.end_date = patch.endDate || null;
+
+      const { data, error } = await supabase
+        .from("tasks")
+        .update(values)
+        .eq("id", id)
+        .select(SELECT)
+        .single();
+      if (error) throw error;
+      return toTaskRecord(data as unknown as TaskRow);
+    },
+    onSuccess: (record) => {
+      queryClient.invalidateQueries({ queryKey: taskKeys.list() });
+      queryClient.invalidateQueries({ queryKey: taskKeys.forProject(record.projectId) });
+    },
+  });
+}

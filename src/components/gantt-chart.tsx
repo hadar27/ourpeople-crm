@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { Flag } from "lucide-react";
 import type { GanttPhase } from "@/lib/queries/project-phases";
 
@@ -10,7 +10,13 @@ function fmt(d: string) {
   return `${String(dt.getDate()).padStart(2, "0")}/${String(dt.getMonth() + 1).padStart(2, "0")}/${String(dt.getFullYear()).slice(2)}`;
 }
 
-export function GanttChart({ phases }: { phases: GanttPhase[] }) {
+export function GanttChart({
+  phases,
+  renderAction,
+}: {
+  phases: GanttPhase[];
+  renderAction?: (phase: GanttPhase) => ReactNode;
+}) {
   const { min, max, totalDays, monthMarks } = useMemo(() => {
     const starts = phases.map((p) => toDays(p.start));
     const ends = phases.map((p) => toDays(p.end));
@@ -66,9 +72,12 @@ export function GanttChart({ phases }: { phases: GanttPhase[] }) {
           return (
             <div key={p.id} className="grid grid-cols-[220px_1fr] gap-3 items-center">
               <div className="text-xs" dir="rtl">
-                <div className="font-semibold truncate flex items-center gap-1">
-                  {p.milestone && <Flag className="h-3 w-3 text-brand" />}
-                  {p.name}
+                <div className="font-semibold flex items-center justify-between gap-1">
+                  <span className="truncate flex items-center gap-1">
+                    {p.milestone && <Flag className="h-3 w-3 text-brand" />}
+                    {p.name}
+                  </span>
+                  {renderAction?.(p)}
                 </div>
                 <div className="text-[11px] text-muted-foreground truncate">
                   {p.owner} · {fmt(p.start)} → {fmt(p.end)}
