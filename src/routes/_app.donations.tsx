@@ -20,7 +20,6 @@ export const Route = createFileRoute("/_app/donations")({
 });
 
 const columns: Column<DonationRecord>[] = [
-  { key: "id", header: "מזהה" },
   { key: "donor", header: "תורם", render: (r) => <span className="font-medium">{r.donor}</span> },
   {
     key: "amount",
