@@ -4,6 +4,13 @@ import { Wallet, TrendingDown, TrendingUp, LockKeyhole, Clock3, History } from "
 import { toast } from "sonner";
 import { PageHeader, StatCard, StatusBadge } from "@/components/page-header";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
+import { RecordEditDialog } from "@/components/record-edit-dialog";
+import {
+  DonationDeleteButton,
+  DonationEditButton,
+  IncomeDeleteButton,
+  IncomeEditButton,
+} from "@/components/module-edit-dialogs";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,6 +27,7 @@ import {
   useAllProjectExpenses,
   useCreateProjectExpense,
   useDeleteProjectExpense,
+  useUpdateProjectExpense,
 } from "@/lib/queries/project-expenses";
 import {
   useBudgetRequests,
@@ -45,6 +53,7 @@ function FinancePage() {
   const createIncome = useCreateIncome();
   const createExpense = useCreateProjectExpense();
   const deleteExpense = useDeleteProjectExpense();
+  const updateExpense = useUpdateProjectExpense();
   const createRequest = useCreateBudgetRequest();
   const reviewRequest = useReviewBudgetRequest();
   const releaseBudget = useReleaseProjectBudget();
@@ -79,6 +88,8 @@ function FinancePage() {
       status: donation.receipt,
       date: donation.date,
       amount: donation.amount,
+      kind: "donation" as const,
+      record: donation,
     })),
     ...otherIncome.map((item) => ({
       id: item.id,
@@ -90,6 +101,8 @@ function FinancePage() {
       status: "התקבל",
       date: item.date,
       amount: item.amount,
+      kind: "income" as const,
+      record: item,
     })),
   ].sort((first, second) => second.date.localeCompare(first.date));
 
@@ -500,9 +513,9 @@ function FinancePage() {
               <th>פרויקט / ייעוד</th>
               <th>תאריך</th>
               <th>אמצעי</th>
-              <th>אסמכתא</th>
               <th>סטטוס קבלה</th>
               <th>סכום</th>
+              {canManageFinance && <th>פעולות</th>}
             </tr>
           </thead>
           <tbody>
@@ -513,16 +526,32 @@ function FinancePage() {
                 <td>{item.project}</td>
                 <td>{item.date}</td>
                 <td>{item.method}</td>
-                <td>{item.reference}</td>
                 <td>
                   <StatusBadge value={item.status} />
                 </td>
                 <td className="font-semibold text-emerald-700">{formatCurrency(item.amount)}</td>
+                {canManageFinance && (
+                  <td>
+                    <div className="flex items-center gap-2">
+                      {item.kind === "donation" ? (
+                        <>
+                          <DonationEditButton record={item.record} />
+                          <DonationDeleteButton record={item.record} />
+                        </>
+                      ) : (
+                        <>
+                          <IncomeEditButton record={item.record} />
+                          <IncomeDeleteButton record={item.record} />
+                        </>
+                      )}
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
             {detailedIncome.length === 0 && (
               <tr>
-                <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                <td colSpan={canManageFinance ? 8 : 7} className="py-8 text-center text-muted-foreground">
                   אין הכנסות להצגה
                 </td>
               </tr>
@@ -543,11 +572,9 @@ function FinancePage() {
               <th>קטגוריה</th>
               <th>ספק</th>
               <th>תאריך</th>
-              <th>תיאור</th>
-              <th>אסמכתא</th>
               <th>סטטוס</th>
               <th>סכום</th>
-              {canManageFinance && <th>פעולה</th>}
+              {canManageFinance && <th>פעולות</th>}
             </tr>
           </thead>
           <tbody>
@@ -560,30 +587,119 @@ function FinancePage() {
                   <td>{expense.category}</td>
                   <td>{supplier?.name ?? expense.supplier ?? "—"}</td>
                   <td>{expense.date}</td>
-                  <td>{expense.description ?? "—"}</td>
-                  <td>{expense.reference ?? "—"}</td>
                   <td>
                     <StatusBadge value={expense.status} />
                   </td>
                   <td className="font-semibold">{formatCurrency(expense.amount)}</td>
                   {canManageFinance && (
                     <td>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-rose-600"
-                        onClick={async () => {
-                          if (!window.confirm("למחוק את ההוצאה?")) return;
-                          try {
-                            await deleteExpense.mutateAsync(expense);
-                            toast.success("ההוצאה נמחקה");
-                          } catch {
-                            toast.error("מחיקת ההוצאה נכשלה");
-                          }
-                        }}
-                      >
-                        מחיקה
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <RecordEditDialog
+                          title={`עריכת הוצאה — ${expense.id}`}
+                          description="עדכון פרטי ההוצאה והשיוך שלה לפרויקט."
+                          fields={[
+                            {
+                              name: "project",
+                              label: "פרויקט",
+                              type: "select",
+                              required: true,
+                              options: projectList.map((item) => item.name),
+                            },
+                            { name: "amount", label: "סכום (₪)", type: "number", required: true },
+                            { name: "category", label: "קטגוריה", required: true },
+                            {
+                              name: "supplier",
+                              label: "ספק",
+                              type: "select",
+                              required: true,
+                              options: (suppliers ?? []).map((item) => item.name),
+                            },
+                            { name: "date", label: "תאריך", type: "date", required: true },
+                            {
+                              name: "status",
+                              label: "סטטוס תשלום",
+                              type: "select",
+                              required: true,
+                              options: ["שולם", "ממתין", "חלקי"],
+                            },
+                            { name: "description", label: "תיאור", type: "textarea", colSpan: 2 },
+                            { name: "reference", label: "אסמכתא", colSpan: 2 },
+                          ]}
+                          initialValues={{
+                            project: project?.name ?? "",
+                            amount: String(expense.amount),
+                            category: expense.category,
+                            supplier: supplier?.name ?? expense.supplier ?? "",
+                            date: expense.date,
+                            status: expense.status,
+                            description: expense.description ?? "",
+                            reference: expense.reference ?? "",
+                          }}
+                          sensitiveFields={["amount", "status"]}
+                          customValidate={(values) => {
+                            const selectedProject = projectList.find(
+                              (item) => item.name === values.project,
+                            );
+                            const amount = Number(values.amount);
+                            if (!(amount > 0)) return "יש להזין סכום חיובי.";
+                            const otherExpenses = expenseList
+                              .filter(
+                                (item) =>
+                                  item.projectId === selectedProject?.id && item.id !== expense.id,
+                              )
+                              .reduce((sum, item) => sum + item.amount, 0);
+                            if (selectedProject && otherExpenses + amount > selectedProject.budget)
+                              return "ההוצאה חורגת מיתרת תקציב הפרויקט.";
+                            return null;
+                          }}
+                          onSave={async (values) => {
+                            const selectedProject = projectList.find(
+                              (item) => item.name === values.project,
+                            );
+                            const selectedSupplier = (suppliers ?? []).find(
+                              (item) => item.name === values.supplier,
+                            );
+                            try {
+                              await updateExpense.mutateAsync({
+                                id: expense.id,
+                                patch: {
+                                  projectId: selectedProject?.id,
+                                  amount: Number(values.amount),
+                                  category: values.category,
+                                  supplierId: selectedSupplier?.id,
+                                  date: values.date,
+                                  status: values.status as "שולם" | "ממתין" | "חלקי",
+                                  description: values.description || undefined,
+                                  reference: values.reference || undefined,
+                                },
+                              });
+                              return { ok: true };
+                            } catch (error) {
+                              return {
+                                ok: false,
+                                error:
+                                  error instanceof Error ? error.message : "שמירת ההוצאה נכשלה",
+                              };
+                            }
+                          }}
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-rose-600"
+                          onClick={async () => {
+                            if (!window.confirm("למחוק את ההוצאה?")) return;
+                            try {
+                              await deleteExpense.mutateAsync(expense);
+                              toast.success("ההוצאה נמחקה");
+                            } catch {
+                              toast.error("מחיקת ההוצאה נכשלה");
+                            }
+                          }}
+                        >
+                          מחיקה
+                        </Button>
+                      </div>
                     </td>
                   )}
                 </tr>
