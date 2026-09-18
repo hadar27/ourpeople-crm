@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { isInCalendarMonth, useCalendarMonth } from "@/components/calendar-month-filter";
 
 export const Route = createFileRoute("/_app/projects")({
   component: ProjectsPage,
@@ -24,16 +25,18 @@ function ProjectsPage() {
   const tasks = tasksData ?? [];
   const createProject = useCreateProject();
   const [statusFilter, setStatusFilter] = useState("all");
+  const { month } = useCalendarMonth();
   const visibleProjects = useMemo(
     () =>
       (projects ?? [])
         .filter((project) => statusFilter === "all" || project.status === statusFilter)
+        .filter((project) => isInCalendarMonth(project.startDate, month))
         .sort(
           (a, b) =>
             Number(a.status === "הסתיים") - Number(b.status === "הסתיים") ||
             a.name.localeCompare(b.name, "he"),
         ),
-    [projects, statusFilter],
+    [projects, statusFilter, month],
   );
 
   return (
@@ -180,13 +183,14 @@ function ProjectsPage() {
             <div className="text-lg font-semibold flex items-center gap-2">
               <Calendar className="h-4 w-4" /> לוח משימות
             </div>
-            <div className="text-xs text-muted-foreground">משימות פתוחות בין הפרויקטים הפעילים</div>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {(["todo", "doing", "done"] as const).map((col) => {
             const labels = { todo: "לביצוע", doing: "בעבודה", done: "הושלם" };
-            const items = tasks.filter((t) => t.column === col);
+            const items = tasks.filter(
+              (t) => t.column === col && isInCalendarMonth(t.startDate, month),
+            );
             return (
               <div key={col} className="bg-surface-muted rounded-xl p-3 min-h-[280px]">
                 <div className="flex items-center justify-between px-1 pb-3">

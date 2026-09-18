@@ -4,6 +4,7 @@ import { useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { useAlerts, moduleRoute } from "@/lib/business-rules";
 import { toast } from "sonner";
+import { isInCalendarMonth, useCalendarMonth } from "@/components/calendar-month-filter";
 
 export const Route = createFileRoute("/_app/alerts")({
   component: AlertsPage,
@@ -12,7 +13,8 @@ export const Route = createFileRoute("/_app/alerts")({
 function AlertsPage() {
   const all = useAlerts();
   const [resolved, setResolved] = useState<Set<string>>(new Set());
-  const open = all.filter((a) => !resolved.has(a.id));
+  const { month } = useCalendarMonth();
+  const open = all.filter((a) => !resolved.has(a.id) && isInCalendarMonth(a.createdAt, month));
 
   return (
     <>

@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Download, Filter, ChevronLeft, X } from "lucide-react";
 import { toast } from "sonner";
+import { isInCalendarMonth, useCalendarMonth } from "@/components/calendar-month-filter";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -84,6 +85,7 @@ export function DataTable<T extends Record<string, unknown>>({
   exportFilename?: string;
 }) {
   const [q, setQ] = useState("");
+  const { month } = useCalendarMonth();
   const [filterState, setFilterState] = useState<Record<string, Set<string>>>({});
 
   const filterConfigMap = useMemo(() => {
@@ -96,6 +98,26 @@ export function DataTable<T extends Record<string, unknown>>({
 
   const filtered = useMemo(() => {
     let result = rows;
+
+    if (month && rows.length > 0) {
+      const candidateKeys = [
+        "date",
+        "registrationDate",
+        "createdAt",
+        "lastDonation",
+        "lastLogin",
+        "startDate",
+        "immigrationDate",
+        "uploadedAt",
+        "issueDate",
+      ];
+      const dateKey = candidateKeys.find((key) =>
+        rows.some((row) => typeof row[key as keyof T] === "string" && row[key as keyof T]),
+      );
+      if (dateKey) {
+        result = result.filter((row) => isInCalendarMonth(row[dateKey as keyof T], month));
+      }
+    }
 
     if (q.trim()) {
       const needle = q.toLowerCase();
@@ -121,7 +143,7 @@ export function DataTable<T extends Record<string, unknown>>({
     });
 
     return result;
-  }, [q, rows, searchKeys, filterState, filterConfigMap]);
+  }, [q, rows, searchKeys, filterState, filterConfigMap, month]);
 
   const toggleFilter = (filterKey: string, value: string) => {
     setFilterState((prev) => {

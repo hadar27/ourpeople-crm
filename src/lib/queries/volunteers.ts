@@ -14,6 +14,7 @@ export type VolunteerRecord = {
   phone?: string;
   email?: string;
   notes?: string;
+  createdAt?: string;
 };
 
 export type ProjectVolunteerAssignment = {
@@ -33,6 +34,7 @@ type VolunteerRow = {
   phone: string | null;
   email: string | null;
   notes: string | null;
+  created_at: string;
   projects: { id: string; name: string } | null;
 };
 
@@ -50,6 +52,7 @@ function toVolunteerRecord(row: VolunteerRow): VolunteerRecord {
     phone: row.phone ?? undefined,
     email: row.email ?? undefined,
     notes: row.notes ?? undefined,
+    createdAt: row.created_at,
   };
 }
 

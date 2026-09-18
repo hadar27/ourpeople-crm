@@ -29,6 +29,7 @@ import {
 import { useAlerts } from "@/lib/business-rules";
 import { useSession, signOut } from "@/lib/auth";
 import { useCanEdit, useCurrentUser, type EditableModule } from "@/lib/permissions";
+import { CalendarMonthProvider } from "@/components/calendar-month-filter";
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -86,6 +87,7 @@ export function AppShell() {
   }
 
   return (
+    <CalendarMonthProvider>
     <div dir="rtl" className="min-h-screen flex w-full bg-[color:var(--surface)]">
       {/* Sidebar */}
       <aside className="w-72 shrink-0 border-l border-border bg-sidebar flex flex-col">
@@ -175,5 +177,6 @@ export function AppShell() {
         </main>
       </div>
     </div>
+    </CalendarMonthProvider>
   );
 }

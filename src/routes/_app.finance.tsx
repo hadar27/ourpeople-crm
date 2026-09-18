@@ -37,6 +37,7 @@ import {
   useReleaseProjectBudget,
 } from "@/lib/queries/budgets";
 import { useCanEdit, useCurrentUser } from "@/lib/permissions";
+import { isInCalendarMonth, useCalendarMonth } from "@/components/calendar-month-filter";
 
 export const Route = createFileRoute("/_app/finance")({ component: FinancePage });
 
@@ -58,13 +59,14 @@ function FinancePage() {
   const reviewRequest = useReviewBudgetRequest();
   const releaseBudget = useReleaseProjectBudget();
   const [historyProjectId, setHistoryProjectId] = useState<string | null>(null);
+  const { month } = useCalendarMonth();
 
-  const incomeList = income ?? [];
-  const donationList = donations ?? [];
-  const expenseList = expenses ?? [];
+  const incomeList = (income ?? []).filter((item) => isInCalendarMonth(item.date, month));
+  const donationList = (donations ?? []).filter((item) => isInCalendarMonth(item.date, month));
+  const expenseList = (expenses ?? []).filter((item) => isInCalendarMonth(item.date, month));
   const projectList = projects ?? [];
-  const requestList = requests ?? [];
-  const transactionList = transactions ?? [];
+  const requestList = (requests ?? []).filter((item) => isInCalendarMonth(item.createdAt, month));
+  const transactionList = (transactions ?? []).filter((item) => isInCalendarMonth(item.date, month));
   const otherIncome = incomeList.filter((item) => item.category !== "תרומה" && !item.donationId);
   const donationIncome = donationList.reduce((sum, item) => sum + item.amount, 0);
   const otherIncomeTotal = otherIncome.reduce((sum, item) => sum + item.amount, 0);
@@ -324,9 +326,6 @@ function FinancePage() {
       <section className="card-elevated p-5 mb-6 overflow-x-auto">
         <div className="mb-4">
           <h2 className="text-lg font-semibold">ניהול תקציב לכל פרויקט</h2>
-          <p className="text-sm text-muted-foreground">
-            הקצאה היא שריון תקציבי בלבד; רק הוצאה רשומה נחשבת ביצוע בפועל.
-          </p>
         </div>
         <table className="w-full min-w-[1050px] text-sm">
           <thead className="text-muted-foreground">
@@ -502,9 +501,6 @@ function FinancePage() {
 
       <section className="card-elevated p-5 mb-6 overflow-x-auto">
         <h2 className="text-lg font-semibold mb-1">הכנסות</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          תרומות מסונכרנות אוטומטית מלשונית התרומות, לצד הכנסות אחרות שנרשמו בכספים.
-        </p>
         <table className="w-full min-w-[900px] text-sm">
           <thead className="text-muted-foreground">
             <tr className="border-b text-right">
@@ -562,9 +558,6 @@ function FinancePage() {
 
       <section className="card-elevated p-5 overflow-x-auto">
         <h2 className="text-lg font-semibold mb-1">הוצאות</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          מקור נתונים משותף ללשונית הכספים ולכרטיסי הפרויקטים.
-        </p>
         <table className="w-full min-w-[950px] text-sm">
           <thead className="text-muted-foreground">
             <tr className="border-b text-right">

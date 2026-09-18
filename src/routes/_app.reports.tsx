@@ -44,6 +44,7 @@ import { useAllAssistance } from "@/lib/queries/assistance";
 import { useAllAllocations } from "@/lib/queries/allocations";
 import { monthlyDonationTotals } from "@/lib/dashboard-metrics";
 import { useCanEdit } from "@/lib/permissions";
+import { isInCalendarMonth, useCalendarMonth } from "@/components/calendar-month-filter";
 
 const NEW_IMMIGRANTS_YEARS_BACK = 15;
 const BUDGET_CAP_RATIO = 0.9;
@@ -215,13 +216,14 @@ function ReportsPage() {
   const [newImmigrantsOpen, setNewImmigrantsOpen] = useState(false);
   const [budgetCapOpen, setBudgetCapOpen] = useState(false);
   const [activeReport, setActiveReport] = useState<ReportKey | null>(null);
+  const { month } = useCalendarMonth();
 
-  const donationList = donations ?? [];
+  const donationList = (donations ?? []).filter((item) => isInCalendarMonth(item.date, month));
   const donorList = donors ?? [];
   const projectList = projects ?? [];
   const volunteerList = volunteers ?? [];
   const participantList = participants ?? [];
-  const expenseList = expenses ?? [];
+  const expenseList = (expenses ?? []).filter((item) => isInCalendarMonth(item.date, month));
   const familyList = families ?? [];
   const assistanceList = assistance ?? [];
   const allocationList = allocations ?? [];

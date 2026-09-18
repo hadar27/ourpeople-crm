@@ -1,4 +1,8 @@
 import type { ReactNode } from "react";
+import { CalendarDays, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useCalendarMonth } from "@/components/calendar-month-filter";
 
 export function PageHeader({
   title,
@@ -8,12 +12,38 @@ export function PageHeader({
   description?: string;
   actions?: ReactNode;
 }) {
+  const { month, setMonth } = useCalendarMonth();
   return (
     <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{title}</h1>
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      <div className="flex flex-wrap items-center gap-2">
+        {actions}
+        <div className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2 py-1">
+          <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground whitespace-nowrap">חודש קלנדרי</span>
+          <Input
+            type="month"
+            value={month}
+            onChange={(event) => setMonth(event.target.value)}
+            className="h-8 w-[145px] border-0 bg-transparent p-1 shadow-none"
+            aria-label="סינון לפי חודש קלנדרי"
+          />
+          {month && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={() => setMonth("")}
+              aria-label="ניקוי סינון חודש"
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

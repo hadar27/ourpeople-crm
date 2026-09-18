@@ -281,9 +281,6 @@ function ProjectDetail() {
           <div className="flex items-center justify-between mb-3">
             <div>
               <div className="text-lg font-semibold">פירוט פיננסי</div>
-              <div className="text-xs text-muted-foreground">
-                הוצאות לפי ספק וקטגוריה · סה״כ ₪{totalExpenses.toLocaleString()}
-              </div>
             </div>
             {canEditProjects && (
               <div className="flex flex-wrap gap-2">
@@ -568,7 +565,6 @@ function ProjectDetail() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <div className="text-lg font-semibold">לוח זמני פרויקט (Gantt)</div>
-            <div className="text-xs text-muted-foreground">שלבים, אבני דרך, אחריות והתקדמות</div>
           </div>
           {/* <Button size="sm" variant="outline" onClick={() => toast.success("שלב חדש נוסף")}>
             + שלב
@@ -977,7 +973,6 @@ function ProjectInsights({ project, canEdit }: { project: ProjectRecord; canEdit
   return (
     <div className="card-elevated p-5">
       <div className="font-semibold mb-1">תובנות</div>
-      <div className="text-xs text-muted-foreground mb-3">מסקנות, דגשים והמלצות להמשך הפרויקט</div>
       <Textarea
         value={value}
         onChange={(event) => setValue(event.target.value)}

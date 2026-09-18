@@ -17,6 +17,7 @@ export type FamilyRecord = {
   assignedStaff: string;
   projectId?: string;
   notes?: string;
+  createdAt?: string;
 };
 
 type FamilyRow = {
@@ -34,6 +35,7 @@ type FamilyRow = {
   assigned_staff: string;
   project_id: string | null;
   notes: string | null;
+  created_at: string;
 };
 
 function toFamilyRecord(row: FamilyRow): FamilyRecord {
@@ -52,6 +54,7 @@ function toFamilyRecord(row: FamilyRow): FamilyRecord {
     assignedStaff: row.assigned_staff,
     projectId: row.project_id ?? undefined,
     notes: row.notes ?? undefined,
+    createdAt: row.created_at,
   };
 }
 

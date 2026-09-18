@@ -34,6 +34,7 @@ import { useVolunteers } from "@/lib/queries/volunteers";
 import { monthlyDonationTotals } from "@/lib/dashboard-metrics";
 import { toast } from "sonner";
 import { useCanEdit } from "@/lib/permissions";
+import { isInCalendarMonth, useCalendarMonth } from "@/components/calendar-month-filter";
 
 export const Route = createFileRoute("/_app/dashboard")({
   component: Dashboard,
@@ -71,19 +72,22 @@ function Dashboard() {
   const { data: volunteers } = useVolunteers();
   const canViewDonations = useCanEdit("donations");
   const canViewFinance = useCanEdit("finance");
+  const { month } = useCalendarMonth();
   const visibleQuickActions = quickActions.filter(
     (qa) =>
       (qa.module !== "donations" || canViewDonations) &&
       (qa.module !== "finance" || canViewFinance),
   );
 
-  const donationList = donations ?? [];
-  const projectList = projects ?? [];
-  const volunteerList = volunteers ?? [];
+  const donationList = (donations ?? []).filter((item) => isInCalendarMonth(item.date, month));
+  const projectList = (projects ?? []).filter((item) => isInCalendarMonth(item.startDate, month));
+  const volunteerList = (volunteers ?? []).filter((item) =>
+    isInCalendarMonth(item.createdAt, month),
+  );
 
   const now = new Date();
   const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-  const thisMonthKey = monthKey(now);
+  const thisMonthKey = month || monthKey(now);
   const lastMonthKey = monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1));
   const thisMonthTotal = donationList
     .filter((d) => d.date.slice(0, 7) === thisMonthKey)

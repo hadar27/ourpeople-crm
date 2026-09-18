@@ -15,6 +15,7 @@ export type SupplierRecord = {
   taxId?: string;
   paymentTerms?: string;
   notes?: string;
+  createdAt?: string;
 };
 
 type SupplierRow = {
@@ -31,6 +32,7 @@ type SupplierRow = {
   tax_id: string | null;
   payment_terms: string | null;
   notes: string | null;
+  created_at: string;
 };
 
 function toSupplierRecord(row: SupplierRow): SupplierRecord {
@@ -48,6 +50,7 @@ function toSupplierRecord(row: SupplierRow): SupplierRecord {
     taxId: row.tax_id ?? undefined,
     paymentTerms: row.payment_terms ?? undefined,
     notes: row.notes ?? undefined,
+    createdAt: row.created_at,
   };
 }
 
