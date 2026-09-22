@@ -163,3 +163,27 @@ export function useReleaseProjectBudget() {
     },
   });
 }
+
+export function useUpdateProjectBudget() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (values: {
+      projectId: string;
+      initialBudget: number;
+      approvedAdditions: number;
+      performer: string;
+    }) => {
+      const { error } = await supabase.rpc("update_project_budget", {
+        project_value: values.projectId,
+        initial_value: values.initialBudget,
+        additions_value: values.approvedAdditions,
+        performer_name: values.performer,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: budgetKeys.all });
+      queryClient.invalidateQueries({ queryKey: projectKeys.all });
+    },
+  });
+}
