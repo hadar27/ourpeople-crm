@@ -35,6 +35,7 @@ import {
   useCreateBudgetRequest,
   useReviewBudgetRequest,
   useReleaseProjectBudget,
+  useUpdateProjectBudget,
 } from "@/lib/queries/budgets";
 import { useCanEdit, useCurrentUser } from "@/lib/permissions";
 import { isInCalendarMonth, useCalendarMonth } from "@/components/calendar-month-filter";
@@ -58,6 +59,7 @@ function FinancePage() {
   const createRequest = useCreateBudgetRequest();
   const reviewRequest = useReviewBudgetRequest();
   const releaseBudget = useReleaseProjectBudget();
+  const updateProjectBudget = useUpdateProjectBudget();
   const [historyProjectId, setHistoryProjectId] = useState<string | null>(null);
   const { month } = useCalendarMonth();
 
@@ -364,6 +366,63 @@ function FinancePage() {
                   <td>{utilization}%</td>
                   <td>
                     <div className="flex gap-2">
+                      {canManageFinance && (
+                        <RecordEditDialog
+                          title={`עריכת תקציב — ${project.name}`}
+                          description="השינוי יעדכן את התקציב הזמין של הפרויקט ויתועד בהיסטוריית התנועות."
+                          fields={[
+                            {
+                              name: "initialBudget",
+                              label: "תקציב ראשוני (₪)",
+                              type: "number",
+                              required: true,
+                            },
+                            {
+                              name: "approvedAdditions",
+                              label: "תוספות שאושרו (₪)",
+                              type: "number",
+                              required: true,
+                            },
+                          ]}
+                          initialValues={{
+                            initialBudget: String(project.initialBudget),
+                            approvedAdditions: String(project.approvedAdditions),
+                          }}
+                          sensitiveFields={["initialBudget", "approvedAdditions"]}
+                          customValidate={(values) => {
+                            const initialBudget = Number(values.initialBudget);
+                            const approvedAdditions = Number(values.approvedAdditions);
+                            if (initialBudget < 0 || approvedAdditions < 0)
+                              return "סכומי התקציב אינם יכולים להיות שליליים.";
+                            const updatedBudget =
+                              initialBudget + approvedAdditions - project.releasedAmount;
+                            if (updatedBudget < spent)
+                              return "לא ניתן להגדיר תקציב נמוך מסך ההוצאות שכבר נרשמו.";
+                            return null;
+                          }}
+                          onSave={async (values) => {
+                            try {
+                              await updateProjectBudget.mutateAsync({
+                                projectId: project.id,
+                                initialBudget: Number(values.initialBudget),
+                                approvedAdditions: Number(values.approvedAdditions),
+                                performer:
+                                  currentUser?.name ?? currentUser?.email ?? "מנהלת כספים",
+                              });
+                              return { ok: true };
+                            } catch (error) {
+                              return {
+                                ok: false,
+                                error:
+                                  error instanceof Error
+                                    ? error.message
+                                    : "עדכון התקציב נכשל",
+                              };
+                            }
+                          }}
+                          successMessage="תקציב הפרויקט עודכן"
+                        />
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
