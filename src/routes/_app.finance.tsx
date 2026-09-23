@@ -69,13 +69,16 @@ function FinancePage() {
   const projectList = projects ?? [];
   const requestList = (requests ?? []).filter((item) => isInCalendarMonth(item.createdAt, month));
   const transactionList = (transactions ?? []).filter((item) => isInCalendarMonth(item.date, month));
+  const allOtherIncome = (income ?? []).filter(
+    (item) => item.category !== "תרומה" && !item.donationId,
+  );
   const otherIncome = incomeList.filter((item) => item.category !== "תרומה" && !item.donationId);
-  const donationIncome = donationList.reduce((sum, item) => sum + item.amount, 0);
-  const otherIncomeTotal = otherIncome.reduce((sum, item) => sum + item.amount, 0);
+  const donationIncome = (donations ?? []).reduce((sum, item) => sum + item.amount, 0);
+  const otherIncomeTotal = allOtherIncome.reduce((sum, item) => sum + item.amount, 0);
   const totalIncome = donationIncome + otherIncomeTotal;
   const reservedBudget = projectList.reduce((sum, project) => sum + project.budget, 0);
   const availablePool = totalIncome - reservedBudget;
-  const actualExpenses = expenseList.reduce((sum, item) => sum + item.amount, 0);
+  const actualExpenses = (expenses ?? []).reduce((sum, item) => sum + item.amount, 0);
   const pendingRequests = requestList.filter((request) => request.status === "ממתינה");
   const selectedTransactions = transactionList.filter(
     (item) => item.projectId === historyProjectId,
@@ -204,7 +207,7 @@ function FinancePage() {
                   ]}
                   customValidate={(values) => {
                     const project = projectList.find((item) => item.name === values.project);
-                    const projectSpent = expenseList
+                    const projectSpent = (expenses ?? [])
                       .filter((item) => item.projectId === project?.id)
                       .reduce((sum, item) => sum + item.amount, 0);
                     const amount = Number(values.amount);
@@ -345,7 +348,7 @@ function FinancePage() {
           </thead>
           <tbody>
             {projectList.map((project) => {
-              const spent = expenseList
+              const spent = (expenses ?? [])
                 .filter((item) => item.projectId === project.id)
                 .reduce((sum, item) => sum + item.amount, 0);
               const totalApproved = project.initialBudget + project.approvedAdditions;
@@ -694,7 +697,7 @@ function FinancePage() {
                             );
                             const amount = Number(values.amount);
                             if (!(amount > 0)) return "יש להזין סכום חיובי.";
-                            const otherExpenses = expenseList
+                            const otherExpenses = (expenses ?? [])
                               .filter(
                                 (item) =>
                                   item.projectId === selectedProject?.id && item.id !== expense.id,
