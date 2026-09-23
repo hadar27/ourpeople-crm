@@ -21,35 +21,19 @@ import {
   type TimelineItem,
 } from "@/components/detail-kit";
 import { FormDialog } from "@/components/form-dialog";
-import { isOverdue, TODAY } from "@/lib/crm-seed";
+import { isOverdue } from "@/lib/crm-seed";
 import { useFamily } from "@/lib/queries/families";
 import { useProjects } from "@/lib/queries/projects";
 import { useFamilyMembers, useCreateFamilyMember } from "@/lib/queries/family-members";
-import {
-  useAssistanceForFamily,
-  useCreateAssistance,
-  useSetAssistanceStatus,
-} from "@/lib/queries/assistance";
+import { useAssistanceForFamily } from "@/lib/queries/assistance";
 import { useFollowUpsForEntity, useCompleteFollowUp } from "@/lib/queries/follow-ups";
 import { useDocumentsForEntity } from "@/lib/queries/documents";
-import type { AssistanceNeed } from "@/lib/crm-types";
 import { FamilyEditButton } from "@/components/module-edit-dialogs";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/families_/$id")({
   component: FamilyProfile,
 });
-
-const NEEDS: AssistanceNeed[] = [
-  "מזון",
-  "דיור",
-  "תעסוקה",
-  "חינוך",
-  "בריאות",
-  "משפטי",
-  "ריהוט",
-  "עברית",
-];
 
 function FamilyProfile() {
   const { id } = useParams({ from: "/_app/families_/$id" });
@@ -60,8 +44,6 @@ function FamilyProfile() {
   const { data: documentsData } = useDocumentsForEntity("family", id);
   const { data: projectsData } = useProjects();
   const createFamilyMember = useCreateFamilyMember();
-  const createAssistance = useCreateAssistance();
-  const setAssistanceStatus = useSetAssistanceStatus();
   const completeFollowUp = useCompleteFollowUp();
 
   if (isLoading) {
@@ -100,7 +82,6 @@ function FamilyProfile() {
   const totalAid = sortedAid
     .filter((a) => a.status !== "נדחה")
     .reduce((s, a) => s + (a.amount ?? 0), 0);
-  const pending = sortedAid.filter((a) => a.status === "ממתין");
   const openTasks = followUpsList.filter((f) => f.status !== "הושלם");
   const minors = membersList.filter((m) => m.status === "קטין").length;
 
@@ -128,23 +109,6 @@ function FamilyProfile() {
             ? "danger"
             : "brand",
   }));
-
-  const addAid = async (v: Record<string, string>) => {
-    try {
-      await createAssistance.mutateAsync({
-        familyId: family.id,
-        type: v.type as AssistanceNeed,
-        description: v.description,
-        amount: v.amount ? Number(v.amount) : undefined,
-        date: v.date || TODAY,
-        projectId: v.projectId ? projects.find((p) => p.name === v.projectId)?.id : undefined,
-        staff: v.staff,
-        status: "ממתין",
-      });
-    } catch (err) {
-      return err instanceof Error ? err.message : "השמירה נכשלה";
-    }
-  };
 
   const addMember = async (v: Record<string, string>) => {
     try {
@@ -187,44 +151,10 @@ function FamilyProfile() {
           </div>
           <div className="flex gap-2 flex-wrap">
             <FamilyEditButton record={family} />
-            <FormDialog
-              trigger={
-                <Button className="bg-brand hover:bg-brand-deep gap-1">
-                  <Plus className="h-4 w-4" /> רישום סיוע
-                </Button>
-              }
-              title="רישום סיוע למשפחה"
-              description={`הוספת רשומת סיוע ל${family.familyName}. הבקשה תיפתח בסטטוס "ממתין" לאישור ועדת סיוע.`}
-              successMessage="רשומת הסיוע נוספה וממתינה לאישור"
-              fields={[
-                { name: "type", label: "סוג סיוע", type: "select", required: true, options: NEEDS },
-                {
-                  name: "amount",
-                  label: "סכום (₪)",
-                  type: "number",
-                  helper: "אם הסיוע אינו כספי — השאירו ריק",
-                },
-                { name: "description", label: "תיאור", required: true, colSpan: 2 },
-                { name: "date", label: "תאריך", type: "date", required: true },
-                {
-                  name: "staff",
-                  label: "איש צוות",
-                  required: true,
-                  placeholder: family.assignedStaff,
-                },
-                {
-                  name: "projectId",
-                  label: "שיוך לפרויקט",
-                  type: "select",
-                  options: projects.map((p) => p.name),
-                },
-              ]}
-              onSubmit={addAid}
-            />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-6">
           <MiniStat
             label="נפשות"
             value={`${family.membersCount} (${minors} קטינים)`}
@@ -234,11 +164,6 @@ function FamilyProfile() {
             label="סך סיוע"
             value={`₪${totalAid.toLocaleString()}`}
             icon={<HandHeart className="h-4 w-4" />}
-          />
-          <MiniStat
-            label="בקשות ממתינות"
-            value={String(pending.length)}
-            tone={pending.length ? "warn" : "good"}
           />
           <MiniStat label="רכז/ת מלווה" value={family.assignedStaff} />
           <MiniStat label="תאריך עלייה" value={family.immigrationDate} />
@@ -264,36 +189,6 @@ function FamilyProfile() {
         <TabsContent value="aid">
           <SectionCard title="ציר זמן סיוע">
             <Timeline items={timeline} />
-            {pending.length > 0 && (
-              <div className="mt-6 border-t border-border pt-4 space-y-2">
-                <div className="text-sm font-semibold">בקשות הממתינות לאישור</div>
-                {pending.map((a) => (
-                  <div
-                    key={a.id}
-                    className="flex items-center justify-between gap-3 flex-wrap rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm"
-                  >
-                    <span>
-                      {a.type} · {a.description}
-                      {a.amount ? ` · ₪${a.amount.toLocaleString()}` : ""}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={async () => {
-                        try {
-                          await setAssistanceStatus.mutateAsync({ id: a.id, status: "אושר" });
-                          toast.success("הבקשה אושרה");
-                        } catch {
-                          toast.error("העדכון נכשל");
-                        }
-                      }}
-                    >
-                      <CheckCircle2 className="h-4 w-4 ml-1" /> אישור
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
           </SectionCard>
         </TabsContent>
 
