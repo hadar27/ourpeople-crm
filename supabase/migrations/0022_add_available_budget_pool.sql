@@ -1,4 +1,4 @@
--- Add realistic small and medium donations until at least NIS 30,000
+-- Add realistic small and medium donations until at least NIS 290,000
 -- remains available after all currently reserved project budgets.
 DO $$
 DECLARE
@@ -25,7 +25,7 @@ BEGIN
   INTO total_reserved
   FROM public.projects;
 
-  amount_needed := GREATEST(total_reserved + 30000 - total_income, 0);
+  amount_needed := GREATEST(total_reserved + 290000 - total_income, 0);
 
   WHILE amount_needed > 0 LOOP
     donation_id := 'DN-POOL-' || LPAD(donation_index::text, 4, '0');
