@@ -22,7 +22,13 @@ import {
 import { useIncomes, useCreateIncome } from "@/lib/queries/incomes";
 import { useProjects } from "@/lib/queries/projects";
 import { useSuppliers } from "@/lib/queries/suppliers";
-import { useDonations } from "@/lib/queries/donations";
+import {
+  ANONYMOUS_DONOR,
+  useCreateDonation,
+  useDonations,
+  type DonationRecord,
+} from "@/lib/queries/donations";
+import { useDonors } from "@/lib/queries/donors";
 import {
   useAllProjectExpenses,
   useCreateProjectExpense,
@@ -45,6 +51,7 @@ export const Route = createFileRoute("/_app/finance")({ component: FinancePage }
 function FinancePage() {
   const { data: income } = useIncomes();
   const { data: donations } = useDonations();
+  const { data: donors } = useDonors();
   const { data: expenses } = useAllProjectExpenses();
   const { data: projects } = useProjects();
   const { data: suppliers } = useSuppliers();
@@ -53,6 +60,7 @@ function FinancePage() {
   const currentUser = useCurrentUser();
   const canManageFinance = useCanEdit("finance");
   const createIncome = useCreateIncome();
+  const createDonation = useCreateDonation();
   const createExpense = useCreateProjectExpense();
   const deleteExpense = useDeleteProjectExpense();
   const updateExpense = useUpdateProjectExpense();
@@ -125,8 +133,74 @@ function FinancePage() {
             {canManageFinance && (
               <>
                 <EntityFormDialog
-                  triggerLabel="הכנסה אחרת"
-                  title="רישום הכנסה אחרת"
+                  triggerLabel="הכנסה מתרומה"
+                  title="קליטת הכנסה מתרומה"
+                  description="התרומה תסתנכרן אוטומטית עם לשוניות תרומות ותורמים."
+                  successMessage="התרומה נקלטה ועודכנה בכל המערכת"
+                  fields={[
+                    {
+                      name: "donor",
+                      label: "תורם",
+                      type: "select",
+                      required: true,
+                      options: [ANONYMOUS_DONOR, ...(donors ?? []).map((donor) => donor.name)],
+                    },
+                    { name: "amount", label: "סכום (₪)", type: "number", required: true },
+                    {
+                      name: "project",
+                      label: "פרויקט / ייעוד",
+                      type: "select",
+                      options: projectList.map((project) => project.name),
+                    },
+                    {
+                      name: "method",
+                      label: "אופן תשלום",
+                      type: "select",
+                      required: true,
+                      options: ["העברה בנקאית", "אשראי", "מזומן", "שיק"],
+                    },
+                    { name: "date", label: "תאריך", type: "date", required: true },
+                    {
+                      name: "receipt",
+                      label: "סטטוס קבלה",
+                      type: "select",
+                      required: true,
+                      options: ["הופק", "לא הופק"],
+                    },
+                    { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
+                  ]}
+                  customValidate={(values) =>
+                    Number(values.amount) > 0 ? null : "יש להזין סכום חיובי."
+                  }
+                  onCreate={async (values) => {
+                    const isAnonymous = values.donor === ANONYMOUS_DONOR;
+                    const donor = (donors ?? []).find((item) => item.name === values.donor);
+                    const project = projectList.find((item) => item.name === values.project);
+                    try {
+                      await createDonation.mutateAsync({
+                        donorId: donor?.id,
+                        isAnonymous,
+                        amount: Number(values.amount),
+                        projectId: project?.id,
+                        project: values.project || "תרומה כללית",
+                        method: values.method as DonationRecord["method"],
+                        receipt: values.receipt as DonationRecord["receipt"],
+                        date: values.date,
+                        notes: values.notes || undefined,
+                      });
+                      return { ok: true };
+                    } catch (error) {
+                      return {
+                        ok: false,
+                        error:
+                          error instanceof Error ? error.message : "קליטת התרומה נכשלה",
+                      };
+                    }
+                  }}
+                />
+                <EntityFormDialog
+                  triggerLabel="הכנסה שאינה תרומה"
+                  title="רישום הכנסה שאינה תרומה"
                   description="תרומות נקלטות אוטומטית מלשונית תרומות ואין להזין אותן כאן שוב."
                   successMessage="ההכנסה נוספה לקופה"
                   fields={[
