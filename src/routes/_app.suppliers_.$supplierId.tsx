@@ -95,8 +95,12 @@ function SupplierProfile() {
     .filter((order) => order.status === "מאושרת")
     .reduce((sum, order) => sum + order.amount, 0);
   const invoiced = invoices.reduce((s, i) => s + i.amount, 0);
-  const paid = payments.reduce((s, p) => s + p.amount, 0);
-  const balance = invoiced - paid;
+  // By the organization's policy, receiving an invoice means the commitment was paid.
+  // Payment rows are kept as an audit trail, but must not create a false open balance.
+  const paid = invoices.reduce((sum, invoice) => {
+    return sum + (invoice.status === "שולם" ? invoice.amount : 0);
+  }, 0);
+  const balance = Math.max(invoiced - paid, 0);
   const overdueInvoices = invoices.filter((i) => i.status !== "שולם" && isOverdue(i.dueDate));
 
   const handleDocumentUpload = async (file?: File) => {
