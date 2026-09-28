@@ -14,6 +14,16 @@ export type EditableModule =
   | "users";
 
 const ROLE_EDIT_MATRIX: Record<UserRecord["role"], EditableModule[]> = {
+  "מנהלת העמותה": [
+    "participants",
+    "volunteers",
+    "donors",
+    "donations",
+    "projects",
+    "suppliers",
+    "families",
+    "users",
+  ],
   "מנהל מערכת": [
     "participants",
     "volunteers",
@@ -38,6 +48,25 @@ const ROLE_EDIT_MATRIX: Record<UserRecord["role"], EditableModule[]> = {
   ],
 };
 
+const ALL_MODULES: EditableModule[] = [
+  "participants",
+  "volunteers",
+  "donors",
+  "donations",
+  "projects",
+  "suppliers",
+  "families",
+  "finance",
+  "users",
+];
+
+const ROLE_VIEW_MATRIX: Record<UserRecord["role"], EditableModule[]> = {
+  "מנהלת העמותה": ALL_MODULES,
+  "מנהל מערכת": ALL_MODULES,
+  "מנהל כספים": ALL_MODULES,
+  "מנהל פרויקטים": ALL_MODULES,
+};
+
 export function canEditModule(role: UserRecord["role"], module: EditableModule): boolean {
   return (ROLE_EDIT_MATRIX[role] ?? []).includes(module);
 }
@@ -54,4 +83,10 @@ export function useCurrentUser(): UserRecord | undefined {
 export function useCanEdit(module: EditableModule): boolean {
   const user = useCurrentUser();
   return user ? canEditModule(user.role, module) : false;
+}
+
+/** True when the signed-in user may view the given module, even without edit rights. */
+export function useCanView(module: EditableModule): boolean {
+  const user = useCurrentUser();
+  return user ? (ROLE_VIEW_MATRIX[user.role] ?? []).includes(module) : false;
 }
