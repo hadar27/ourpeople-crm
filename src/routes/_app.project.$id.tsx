@@ -11,6 +11,7 @@ import {
   PiggyBank,
   Loader2,
   Link as LinkIcon,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RecordEditDialog } from "@/components/record-edit-dialog";
@@ -18,7 +19,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/page-header";
 import { GanttChart } from "@/components/gantt-chart";
-import { useProject, useUpdateProject, type ProjectRecord } from "@/lib/queries/projects";
+import {
+  useDeleteProject,
+  useProject,
+  useUpdateProject,
+  type ProjectRecord,
+} from "@/lib/queries/projects";
 import { useDonations } from "@/lib/queries/donations";
 import { useAllAllocations } from "@/lib/queries/allocations";
 import {
@@ -82,6 +88,7 @@ function ProjectDetail() {
   const canEditProjects = useCanEdit("projects");
   const currentUser = useCurrentUser();
   const createProjectExpense = useCreateProjectExpense();
+  const deleteProject = useDeleteProject();
   const updateProjectExpense = useUpdateProjectExpense();
   const deleteProjectExpense = useDeleteProjectExpense();
   const createTask = useCreateTask();
@@ -177,6 +184,8 @@ function ProjectDetail() {
   const budgetRatio = project.budget > 0 ? Math.round((project.spent / project.budget) * 100) : 0;
   const projectIsApproved = project.approvalStatus === "מאושר";
   const canOperateProject = canEditProjects && projectIsApproved;
+  const canDeleteProject =
+    currentUser?.role === "מנהלת העמותה" || currentUser?.role === "מנהל מערכת";
   const ganttItems = [
     ...phases,
     ...projectTasks
@@ -230,6 +239,36 @@ function ProjectDetail() {
           </div>
           <div className="flex gap-2">
             <ProjectEditButton record={project} />
+            {canDeleteProject && (
+              <Button
+                variant="outline"
+                className="text-rose-600 hover:text-rose-700"
+                disabled={deleteProject.isPending}
+                onClick={async () => {
+                  if (
+                    !window.confirm(
+                      `למחוק את הפרויקט "${project.name}"? ניתן למחוק רק פרויקט שאין לו נתונים משויכים.`,
+                    )
+                  ) {
+                    return;
+                  }
+                  try {
+                    await deleteProject.mutateAsync(project.id);
+                    toast.success("הפרויקט נמחק");
+                    navigate({ to: "/projects" });
+                  } catch (error) {
+                    toast.error(
+                      error instanceof Error
+                        ? error.message
+                        : "לא ניתן למחוק פרויקט הכולל נתונים משויכים",
+                    );
+                  }
+                }}
+              >
+                <Trash2 className="h-4 w-4 ml-1" />
+                {deleteProject.isPending ? "מוחק..." : "מחיקת פרויקט"}
+              </Button>
+            )}
           </div>
         </div>
 
