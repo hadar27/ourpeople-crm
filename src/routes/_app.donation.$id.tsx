@@ -15,7 +15,7 @@ import {
   useDeleteAllocation,
 } from "@/lib/queries/allocations";
 import { toast } from "sonner";
-import { useCanEdit } from "@/lib/permissions";
+import { useCanEdit, useCanView } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_app/donation/$id")({
   component: DonationDetail,
@@ -30,7 +30,7 @@ function DonationDetail() {
   const allocations = allocationsData ?? [];
   const createAllocation = useCreateAllocation();
   const deleteAllocation = useDeleteAllocation();
-  const canAccess = useCanEdit("donations");
+  const canAccess = useCanView("donations");
 
   if (!canAccess) {
     return (
