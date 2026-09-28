@@ -91,7 +91,7 @@ export function useProjectExpenses(projectId: string | undefined) {
         .from("project_expenses")
         .select(SELECT)
         .eq("project_id", projectId)
-        .order("date");
+        .order("date", { ascending: false });
       if (error) throw error;
       return (data as unknown as ProjectExpenseRow[]).map(toProjectExpenseRecord);
     },
