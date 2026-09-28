@@ -146,6 +146,24 @@ export function useReviewBudgetRequest() {
   });
 }
 
+export function useReviewInitialProjectBudget() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (values: { projectId: string; approved: boolean; reviewer: string }) => {
+      const { error } = await supabase.rpc("review_initial_project_budget", {
+        project_value: values.projectId,
+        approve_value: values.approved,
+        reviewer_name: values.reviewer,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: budgetKeys.all });
+      queryClient.invalidateQueries({ queryKey: projectKeys.all });
+    },
+  });
+}
+
 export function useReleaseProjectBudget() {
   const queryClient = useQueryClient();
   return useMutation({
