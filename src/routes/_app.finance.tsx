@@ -39,6 +39,7 @@ import {
   useBudgetRequests,
   useBudgetTransactions,
   useCreateBudgetRequest,
+  useReviewInitialProjectBudget,
   useReviewBudgetRequest,
   useReleaseProjectBudget,
   useUpdateProjectBudget,
@@ -66,6 +67,7 @@ function FinancePage() {
   const updateExpense = useUpdateProjectExpense();
   const createRequest = useCreateBudgetRequest();
   const reviewRequest = useReviewBudgetRequest();
+  const reviewInitialProject = useReviewInitialProjectBudget();
   const releaseBudget = useReleaseProjectBudget();
   const updateProjectBudget = useUpdateProjectBudget();
   const [historyProjectId, setHistoryProjectId] = useState<string | null>(null);
@@ -75,6 +77,11 @@ function FinancePage() {
   const donationList = (donations ?? []).filter((item) => isInCalendarMonth(item.date, month));
   const expenseList = (expenses ?? []).filter((item) => isInCalendarMonth(item.date, month));
   const projectList = projects ?? [];
+  const approvedProjectList = projectList.filter((project) => project.approvalStatus === "מאושר");
+  const pendingInitialProjects = projectList.filter(
+    (project) => project.approvalStatus === "ממתין לאישור",
+  );
+  const canApproveProjects = currentUser?.role === "מנהל כספים";
   const requestList = (requests ?? []).filter((item) => isInCalendarMonth(item.createdAt, month));
   const transactionList = (transactions ?? []).filter((item) => isInCalendarMonth(item.date, month));
   const allOtherIncome = (income ?? []).filter(
@@ -84,7 +91,7 @@ function FinancePage() {
   const donationIncome = (donations ?? []).reduce((sum, item) => sum + item.amount, 0);
   const otherIncomeTotal = allOtherIncome.reduce((sum, item) => sum + item.amount, 0);
   const totalIncome = donationIncome + otherIncomeTotal;
-  const reservedBudget = projectList.reduce((sum, project) => sum + project.budget, 0);
+  const reservedBudget = approvedProjectList.reduce((sum, project) => sum + project.budget, 0);
   const availablePool = totalIncome - reservedBudget;
   const actualExpenses = (expenses ?? []).reduce((sum, item) => sum + item.amount, 0);
   const pendingRequests = requestList.filter((request) => request.status === "ממתינה");
@@ -403,6 +410,83 @@ function FinancePage() {
       </div>
 
       <section className="card-elevated p-5 mb-6 overflow-x-auto">
+        <h2 className="text-lg font-semibold mb-4">פרויקטים הממתינים לאישור תקציב ראשוני</h2>
+        <table className="w-full min-w-[760px] text-sm">
+          <thead className="text-muted-foreground">
+            <tr className="border-b text-right">
+              <th className="py-3">פרויקט</th>
+              <th>תקציב מבוקש</th>
+              <th>מנהל/ת פרויקט</th>
+              <th>סטטוס</th>
+              <th>החלטה</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pendingInitialProjects.map((project) => (
+              <tr key={project.id} className="border-b last:border-0">
+                <td className="py-3 font-medium">{project.name}</td>
+                <td>{formatCurrency(project.requestedInitialBudget)}</td>
+                <td>{project.manager || "—"}</td>
+                <td><StatusBadge value="ממתין לאישור" /></td>
+                <td>
+                  {canApproveProjects ? (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        disabled={reviewInitialProject.isPending}
+                        onClick={async () => {
+                          try {
+                            await reviewInitialProject.mutateAsync({
+                              projectId: project.id,
+                              approved: true,
+                              reviewer: currentUser?.name ?? "מנהל כספים",
+                            });
+                            toast.success("התקציב אושר והפרויקט הועבר לרשימת הפרויקטים");
+                          } catch (error) {
+                            toast.error(error instanceof Error ? error.message : "אישור הפרויקט נכשל");
+                          }
+                        }}
+                      >
+                        אישור
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={reviewInitialProject.isPending}
+                        onClick={async () => {
+                          try {
+                            await reviewInitialProject.mutateAsync({
+                              projectId: project.id,
+                              approved: false,
+                              reviewer: currentUser?.name ?? "מנהל כספים",
+                            });
+                            toast.success("הפרויקט נדחה");
+                          } catch (error) {
+                            toast.error(error instanceof Error ? error.message : "דחיית הפרויקט נכשלה");
+                          }
+                        }}
+                      >
+                        דחייה
+                      </Button>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">אישור זמין למנהל הכספים בלבד</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {pendingInitialProjects.length === 0 && (
+              <tr>
+                <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                  אין פרויקטים הממתינים לאישור
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </section>
+
+      <section className="card-elevated p-5 mb-6 overflow-x-auto">
         <div className="mb-4">
           <h2 className="text-lg font-semibold">ניהול תקציב לכל פרויקט</h2>
         </div>
@@ -421,7 +505,7 @@ function FinancePage() {
             </tr>
           </thead>
           <tbody>
-            {projectList.map((project) => {
+            {approvedProjectList.map((project) => {
               const spent = (expenses ?? [])
                 .filter((item) => item.projectId === project.id)
                 .reduce((sum, item) => sum + item.amount, 0);
