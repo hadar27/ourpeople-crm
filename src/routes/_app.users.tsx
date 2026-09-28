@@ -5,7 +5,7 @@ import { DataTable, type Column } from "@/components/data-table";
 import { EmptyState } from "@/components/detail-kit";
 import { useUsers, type UserRecord } from "@/lib/queries/users";
 import { UserEditButton, UserDeleteButton } from "@/components/module-edit-dialogs";
-import { useCanEdit } from "@/lib/permissions";
+import { useCanEdit, useCanView } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_app/users")({
   component: UsersPage,
@@ -25,7 +25,8 @@ const columns: Column<UserRecord>[] = [
 
 function UsersPage() {
   const { data: users, isLoading, isError, refetch } = useUsers();
-  const canAccess = useCanEdit("users");
+  const canAccess = useCanView("users");
+  const canEdit = useCanEdit("users");
 
   if (!canAccess) {
     return (
@@ -61,12 +62,12 @@ function UsersPage() {
             rows={users ?? []}
             columns={columns}
             searchKeys={["name", "email", "role"]}
-            rowActions={(r) => (
+            rowActions={canEdit ? (r) => (
               <div className="flex items-center justify-end gap-2">
                 <UserEditButton record={r} />
                 <UserDeleteButton record={r} />
               </div>
-            )}
+            ) : undefined}
           />
         )}
       </div>
