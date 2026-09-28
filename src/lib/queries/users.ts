@@ -5,7 +5,7 @@ export type UserRecord = {
   id: string;
   name: string;
   email: string;
-  role: "מנהל מערכת" | "מנהל כספים" | "מנהל פרויקטים";
+  role: "מנהלת העמותה" | "מנהל מערכת" | "מנהל כספים" | "מנהל פרויקטים";
   status: "פעיל" | "מושעה";
   lastLogin: string;
   permissions?: string;
