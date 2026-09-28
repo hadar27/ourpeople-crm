@@ -57,6 +57,7 @@ export function AppShell() {
   const navigate = useNavigate();
   const { session, loading } = useSession();
   const user = useCurrentUser();
+  const displayedRole = user?.name === "שרה כהן" ? "מנהלת העמותה" : user?.role;
   const moduleAccess: Partial<Record<EditableModule, boolean>> = {
     donations: useCanView("donations"),
     finance: useCanView("finance"),
@@ -158,7 +159,7 @@ export function AppShell() {
                 </Avatar>
                 <div className="text-sm leading-tight text-right">
                   <div className="font-semibold">{user?.name ?? ""}</div>
-                  <div className="text-xs text-muted-foreground">{user?.role ?? ""}</div>
+                  <div className="text-xs text-muted-foreground">{displayedRole ?? ""}</div>
                 </div>
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </button>
