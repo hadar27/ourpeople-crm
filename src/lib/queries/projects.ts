@@ -8,6 +8,10 @@ export type ProjectRecord = {
   type: "חינמית" | "בתשלום";
   price: number;
   budget: number;
+  requestedInitialBudget: number;
+  approvalStatus: "ממתין לאישור" | "מאושר" | "נדחה";
+  approvedBy?: string;
+  approvedAt?: string;
   initialBudget: number;
   approvedAdditions: number;
   releasedAmount: number;
@@ -31,6 +35,10 @@ type ProjectRow = {
   type: string;
   price: number;
   budget: number;
+  requested_initial_budget: number;
+  approval_status: string;
+  approved_by: string | null;
+  approved_at: string | null;
   initial_budget: number;
   approved_additions: number;
   released_amount: number;
@@ -55,6 +63,10 @@ function toProjectRecord(row: ProjectRow): ProjectRecord {
     type: row.type as ProjectRecord["type"],
     price: row.price,
     budget: row.budget,
+    requestedInitialBudget: row.requested_initial_budget ?? row.initial_budget ?? row.budget,
+    approvalStatus: (row.approval_status ?? "מאושר") as ProjectRecord["approvalStatus"],
+    approvedBy: row.approved_by ?? undefined,
+    approvedAt: row.approved_at ?? undefined,
     initialBudget: row.initial_budget ?? row.budget,
     approvedAdditions: row.approved_additions ?? 0,
     releasedAmount: row.released_amount ?? 0,
@@ -79,6 +91,9 @@ function toRow(patch: Partial<ProjectRecord>): Record<string, unknown> {
   if (patch.type !== undefined) row.type = patch.type;
   if (patch.price !== undefined) row.price = patch.price;
   if (patch.budget !== undefined) row.budget = patch.budget;
+  if (patch.requestedInitialBudget !== undefined)
+    row.requested_initial_budget = patch.requestedInitialBudget;
+  if (patch.approvalStatus !== undefined) row.approval_status = patch.approvalStatus;
   if (patch.spent !== undefined) row.spent = patch.spent;
   if (patch.progress !== undefined) row.progress = patch.progress;
   if (patch.volunteers !== undefined) row.volunteers = patch.volunteers;
