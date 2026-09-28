@@ -218,7 +218,8 @@ function ReportsPage() {
   const [activeReport, setActiveReport] = useState<ReportKey | null>(null);
   const { month } = useCalendarMonth();
 
-  const donationList = (donations ?? []).filter((item) => isInCalendarMonth(item.date, month));
+  const allDonations = donations ?? [];
+  const donationList = allDonations.filter((item) => isInCalendarMonth(item.date, month));
   const donorList = donors ?? [];
   const projectList = projects ?? [];
   const volunteerList = volunteers ?? [];
@@ -242,10 +243,12 @@ function ReportsPage() {
       currentYear - p.immigrationYear <= NEW_IMMIGRANTS_YEARS_BACK,
   );
 
-  const calendarYearDonationTotal = donationList
+  // The annual KPI/report must always cover the full calendar year. The global
+  // month filter still applies to the other charts and reports on this page.
+  const calendarYearDonationTotal = allDonations
     .filter((donation) => new Date(`${donation.date}T12:00:00`).getFullYear() === currentYear)
     .reduce((sum, donation) => sum + donation.amount, 0);
-  const calendarYearDonationRows: ReportRow[] = donationList
+  const calendarYearDonationRows: ReportRow[] = allDonations
     .filter((donation) => new Date(`${donation.date}T12:00:00`).getFullYear() === currentYear)
     .map((donation) => ({
       date: donation.date,
