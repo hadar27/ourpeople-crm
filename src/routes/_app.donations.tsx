@@ -13,7 +13,7 @@ import {
 import { useDonors } from "@/lib/queries/donors";
 import { useProjects } from "@/lib/queries/projects";
 import { DonationEditButton, DonationDeleteButton } from "@/components/module-edit-dialogs";
-import { useCanEdit } from "@/lib/permissions";
+import { useCanEdit, useCanView } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_app/donations")({
   component: DonationsPage,
@@ -37,7 +37,7 @@ function DonationsPage() {
   const { data: donors } = useDonors();
   const { data: projects } = useProjects();
   const createDonation = useCreateDonation();
-  const canAccess = useCanEdit("donations");
+  const canAccess = useCanView("donations");
 
   if (!canAccess) {
     return (
