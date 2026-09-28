@@ -31,6 +31,7 @@ function DonationDetail() {
   const createAllocation = useCreateAllocation();
   const deleteAllocation = useDeleteAllocation();
   const canAccess = useCanView("donations");
+  const canEditDonations = useCanEdit("donations");
 
   if (!canAccess) {
     return (
@@ -114,8 +115,8 @@ function DonationDetail() {
               </div>
             </div>
             <div className="flex gap-2">
-              <DonationEditButton record={d} />
-              {d.receipt !== "הופק" && (
+              {canEditDonations && <DonationEditButton record={d} />}
+              {canEditDonations && d.receipt !== "הופק" && (
                 <Button variant="outline" onClick={() => toast.success("הקבלה הופקה ונשלחה לתורם")}>
                   <FileCheck2 className="h-4 w-4 ml-1" /> הפק קבלה
                 </Button>
@@ -180,7 +181,7 @@ function DonationDetail() {
       <div className="mt-6">
         <SectionCard
           title="ייעוד התרומה לפרויקטים"
-          actions={
+          actions={canEditDonations ? (
             <FormDialog
               trigger={
                 <Button
@@ -208,7 +209,7 @@ function DonationDetail() {
               ]}
               onSubmit={handleAllocate}
             />
-          }
+          ) : undefined}
         >
           <div className="mb-5">
             <div className="flex items-center justify-between text-sm mb-2">
@@ -267,7 +268,7 @@ function DonationDetail() {
                       <td className="py-3 text-muted-foreground">{a.date}</td>
                       <td className="py-3 text-muted-foreground">{a.notes ?? "—"}</td>
                       <td className="py-3">
-                        <button
+                        {canEditDonations && <button
                           className="text-muted-foreground hover:text-destructive"
                           aria-label="בטל ייעוד"
                           onClick={async () => {
@@ -280,7 +281,7 @@ function DonationDetail() {
                           }}
                         >
                           <Trash2 className="h-4 w-4" />
-                        </button>
+                        </button>}
                       </td>
                     </tr>
                   );
