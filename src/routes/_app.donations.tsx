@@ -38,6 +38,7 @@ function DonationsPage() {
   const { data: projects } = useProjects();
   const createDonation = useCreateDonation();
   const canAccess = useCanView("donations");
+  const canEditDonations = useCanEdit("donations");
 
   if (!canAccess) {
     return (
@@ -70,7 +71,7 @@ function DonationsPage() {
       <PageHeader
         title="ניהול תרומות"
         description="כל הכניסות הכספיות מתורמים, קמפיינים ואירועים."
-        actions={
+        actions={canEditDonations ? (
           <EntityFormDialog
             triggerLabel="קליטת תרומה"
             title="קליטת תרומה חדשה"
@@ -129,7 +130,7 @@ function DonationsPage() {
               }
             }}
           />
-        }
+        ) : undefined}
       />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="card-elevated p-4 bg-brand-gradient text-white">
