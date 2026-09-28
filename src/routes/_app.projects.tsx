@@ -29,14 +29,23 @@ function ProjectsPage() {
   const visibleProjects = useMemo(
     () =>
       (projects ?? [])
-        .filter((project) => statusFilter === "all" || project.status === statusFilter)
+        .filter((project) => project.approvalStatus === "מאושר")
+        .filter((project) =>
+          statusFilter === "archive"
+            ? project.status === "הסתיים"
+            : project.status !== "הסתיים" &&
+              (statusFilter === "all" || project.status === statusFilter),
+        )
         .filter((project) => isInCalendarMonth(project.startDate, month))
-        .sort(
-          (a, b) =>
-            Number(a.status === "הסתיים") - Number(b.status === "הסתיים") ||
-            a.name.localeCompare(b.name, "he"),
-        ),
+        .sort((a, b) => a.name.localeCompare(b.name, "he")),
     [projects, statusFilter, month],
+  );
+  const pendingProjects = useMemo(
+    () =>
+      (projects ?? [])
+        .filter((project) => project.approvalStatus === "ממתין לאישור")
+        .sort((a, b) => a.name.localeCompare(b.name, "he")),
+    [projects],
   );
 
   return (
@@ -49,7 +58,7 @@ function ProjectsPage() {
             triggerLabel="הוסף פרויקט"
             title="יצירת פרויקט חדש"
             description="הגדרת פרויקט חדש עם תקציב, יעדים ולוחות זמנים."
-            successMessage="פרויקט חדש נוצר בהצלחה"
+            successMessage="הפרויקט נשלח לאישור מנהל הכספים"
             fields={[
               { name: "name", label: "שם פרויקט", required: true, colSpan: 2 },
               {
@@ -57,13 +66,6 @@ function ProjectsPage() {
                 label: "הקצאת תקציב ראשוני מהקופה (₪)",
                 type: "number",
                 required: true,
-              },
-              {
-                name: "status",
-                label: "סטטוס",
-                type: "select",
-                required: true,
-                options: ["בתכנון", "פעיל", "הסתיים"],
               },
               { name: "startDate", label: "תאריך התחלה", type: "date", required: true },
               { name: "endDate", label: "תאריך סיום", type: "date", required: true },
@@ -79,12 +81,14 @@ function ProjectsPage() {
               try {
                 await createProject.mutateAsync({
                   name: v.name,
-                  budget: Number(v.budget) || 0,
+                  budget: 0,
+                  requestedInitialBudget: Number(v.budget) || 0,
+                  approvalStatus: "ממתין לאישור",
                   spent: 0,
                   progress: 0,
                   volunteers: 0,
                   manager: "",
-                  status: v.status as "פעיל" | "בתכנון" | "הסתיים",
+                  status: "בתכנון",
                   startDate: v.startDate || undefined,
                   endDate: v.endDate || undefined,
                   description: v.description || undefined,
@@ -98,6 +102,32 @@ function ProjectsPage() {
         }
       />
 
+      {pendingProjects.length > 0 && (
+        <section className="card-elevated border-amber-200 bg-amber-50/60 p-5 mb-6">
+          <h2 className="font-semibold mb-3">פרויקטים הממתינים לאישור תקציב</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {pendingProjects.map((project) => (
+              <Link
+                key={project.id}
+                to="/project/$id"
+                params={{ id: project.id }}
+                className="rounded-xl border border-amber-200 bg-white p-4 hover:shadow-soft transition-shadow"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="font-semibold">{project.name}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      תקציב מבוקש: ₪{project.requestedInitialBudget.toLocaleString()}
+                    </div>
+                  </div>
+                  <StatusBadge value="ממתין לאישור" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="mb-4 flex items-center gap-3">
         <span className="text-sm font-medium">סינון לפי סטטוס:</span>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -108,7 +138,7 @@ function ProjectsPage() {
             <SelectItem value="all">כל הפרויקטים</SelectItem>
             <SelectItem value="פעיל">פעיל</SelectItem>
             <SelectItem value="בתכנון">בתכנון</SelectItem>
-            <SelectItem value="הסתיים">הסתיים</SelectItem>
+            <SelectItem value="archive">ארכיון פרויקטים שהסתיימו</SelectItem>
           </SelectContent>
         </Select>
       </div>
