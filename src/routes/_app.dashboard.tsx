@@ -33,7 +33,7 @@ import { useProjects } from "@/lib/queries/projects";
 import { useVolunteers } from "@/lib/queries/volunteers";
 import { monthlyDonationTotals } from "@/lib/dashboard-metrics";
 import { toast } from "sonner";
-import { useCanEdit } from "@/lib/permissions";
+import { useCanView } from "@/lib/permissions";
 import { isInCalendarMonth, useCalendarMonth } from "@/components/calendar-month-filter";
 
 export const Route = createFileRoute("/_app/dashboard")({
@@ -70,8 +70,8 @@ function Dashboard() {
   const { data: donations } = useDonations();
   const { data: projects } = useProjects();
   const { data: volunteers } = useVolunteers();
-  const canViewDonations = useCanEdit("donations");
-  const canViewFinance = useCanEdit("finance");
+  const canViewDonations = useCanView("donations");
+  const canViewFinance = useCanView("finance");
   const { month } = useCalendarMonth();
   const visibleQuickActions = quickActions.filter(
     (qa) =>
