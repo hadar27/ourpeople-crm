@@ -43,7 +43,7 @@ import { useFamilies } from "@/lib/queries/families";
 import { useAllAssistance } from "@/lib/queries/assistance";
 import { useAllAllocations } from "@/lib/queries/allocations";
 import { monthlyDonationTotals } from "@/lib/dashboard-metrics";
-import { useCanEdit } from "@/lib/permissions";
+import { useCanView } from "@/lib/permissions";
 import { isInCalendarMonth, useCalendarMonth } from "@/components/calendar-month-filter";
 
 const NEW_IMMIGRANTS_YEARS_BACK = 15;
@@ -212,7 +212,7 @@ function ReportsPage() {
   const { data: families } = useFamilies();
   const { data: assistance } = useAllAssistance();
   const { data: allocations } = useAllAllocations();
-  const canViewDonations = useCanEdit("donations");
+  const canViewDonations = useCanView("donations");
   const [newImmigrantsOpen, setNewImmigrantsOpen] = useState(false);
   const [budgetCapOpen, setBudgetCapOpen] = useState(false);
   const [activeReport, setActiveReport] = useState<ReportKey | null>(null);
@@ -525,7 +525,7 @@ function ReportsPage() {
           </div>
         )}
         <div className="card-elevated p-5">
-          <div className="text-lg font-semibold">תקציב מול ביצוע</div>
+          <div className="text-lg font-semibold">תקציב מול ביצוע פר פרויקט</div>
           <div className="text-sm text-muted-foreground mb-2">
             חודש מדידה: {measurementMonth}
           </div>
