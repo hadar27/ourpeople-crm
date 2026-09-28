@@ -372,7 +372,7 @@ export const userFields: FormField[] = [
     label: "תפקיד",
     type: "select",
     required: true,
-    options: ["מנהל מערכת", "מנהל כספים", "מנהל פרויקטים"],
+    options: ["מנהלת העמותה", "מנהל מערכת", "מנהל כספים", "מנהל פרויקטים"],
   },
   { name: "status", label: "סטטוס", type: "select", required: true, options: ["פעיל", "מושעה"] },
   {
