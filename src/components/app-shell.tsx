@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAlerts } from "@/lib/business-rules";
 import { useSession, signOut } from "@/lib/auth";
-import { useCanEdit, useCurrentUser, type EditableModule } from "@/lib/permissions";
+import { useCanView, useCurrentUser, type EditableModule } from "@/lib/permissions";
 import { CalendarMonthProvider } from "@/components/calendar-month-filter";
 
 function initials(name: string): string {
@@ -58,9 +58,9 @@ export function AppShell() {
   const { session, loading } = useSession();
   const user = useCurrentUser();
   const moduleAccess: Partial<Record<EditableModule, boolean>> = {
-    donations: useCanEdit("donations"),
-    finance: useCanEdit("finance") || user?.role === "מנהל פרויקטים",
-    users: useCanEdit("users"),
+    donations: useCanView("donations"),
+    finance: useCanView("finance"),
+    users: useCanView("users"),
   };
   const visibleNav = nav.filter((item) => !item.module || moduleAccess[item.module]);
 
