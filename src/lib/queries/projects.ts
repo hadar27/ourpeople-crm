@@ -182,11 +182,34 @@ export function useCreateProject() {
         .insert(toRow(values))
         .select()
         .single();
-      if (error) throw error;
+      if (error) {
+        if (
+          error.message.includes("requested_initial_budget") ||
+          error.message.includes("approval_status") ||
+          error.code === "PGRST204"
+        ) {
+          throw new Error("יש להריץ תחילה את מיגרציה 0024 ב-Supabase ולאחר מכן לנסות שוב.");
+        }
+        throw error;
+      }
       return toProjectRecord(data as ProjectRow);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: projectKeys.list() });
+    },
+  });
+}
+
+export function useDeleteProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.rpc("delete_project_safely", { project_value: id });
+      if (error) throw error;
+    },
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.all });
+      queryClient.removeQueries({ queryKey: projectKeys.detail(id) });
     },
   });
 }
