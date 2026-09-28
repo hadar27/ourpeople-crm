@@ -45,7 +45,7 @@ import {
 import { useCreateFollowUp } from "@/lib/queries/follow-ups";
 import type { InteractionType } from "@/lib/crm-types";
 import { toast } from "sonner";
-import { useCanEdit } from "@/lib/permissions";
+import { useCanEdit, useCanView } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_app/donor/$id")({
   component: DonorDetail,
@@ -62,7 +62,7 @@ function DonorDetail() {
   const createInteraction = useCreateInteraction();
   const createFollowUp = useCreateFollowUp();
   const setInteractionStatus = useSetInteractionStatus();
-  const canViewDonations = useCanEdit("donations");
+  const canViewDonations = useCanView("donations");
 
   if (isLoading) {
     return <div className="card-elevated p-8 text-center text-muted-foreground">טוען...</div>;
