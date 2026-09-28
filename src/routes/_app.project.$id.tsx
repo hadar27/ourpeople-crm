@@ -54,8 +54,7 @@ import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { projectExpenseFields } from "@/lib/edit-forms";
 import { RegistrationLinksSection } from "@/components/registration-links-section";
 import { ApproveRegistrationsModal } from "@/components/approve-registrations-modal";
-import { useCanEdit } from "@/lib/permissions";
-import { useCurrentUser } from "@/lib/permissions";
+import { useCanEdit, useCanView, useCurrentUser } from "@/lib/permissions";
 import { useCreateBudgetRequest } from "@/lib/queries/budgets";
 
 export const Route = createFileRoute("/_app/project/$id")({
@@ -79,7 +78,7 @@ function ProjectDetail() {
   const { data: pendingVolunteers } = usePendingVolunteerRegistrations(id);
   const { data: pendingParticipants } = usePendingParticipantRegistrations(id);
   const { data: suppliersData } = useSuppliers();
-  const canViewDonations = useCanEdit("donations");
+  const canViewDonations = useCanView("donations");
   const canEditProjects = useCanEdit("projects");
   const currentUser = useCurrentUser();
   const createProjectExpense = useCreateProjectExpense();
@@ -175,7 +174,9 @@ function ProjectDetail() {
   );
   const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
   const remainingBudget = project.budget - project.spent;
-  const budgetRatio = Math.round((project.spent / project.budget) * 100);
+  const budgetRatio = project.budget > 0 ? Math.round((project.spent / project.budget) * 100) : 0;
+  const projectIsApproved = project.approvalStatus === "מאושר";
+  const canOperateProject = canEditProjects && projectIsApproved;
   const ganttItems = [
     ...phases,
     ...projectTasks
@@ -216,7 +217,9 @@ function ProjectDetail() {
             </div>
             <h1 className="text-2xl font-bold mt-1">{project.name}</h1>
             <div className="flex items-center gap-2 mt-3">
-              <StatusBadge value={project.status} />
+              <StatusBadge
+                value={projectIsApproved ? project.status : project.approvalStatus}
+              />
             </div>
             <div className="flex items-center gap-1.5 mt-2 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4" />
@@ -282,37 +285,39 @@ function ProjectDetail() {
             <div>
               <div className="text-lg font-semibold">פירוט פיננסי</div>
             </div>
-            {canEditProjects && (
+            {canOperateProject && (
               <div className="flex flex-wrap gap-2">
-                <EntityFormDialog
-                  triggerLabel="בקשת תקציב נוסף"
-                  title={`בקשת תקציב נוסף — ${project.name}`}
-                  description="הבקשה תועבר לאישור ותופיע בלשונית כספים ותקציבים."
-                  successMessage="בקשת התקציב הועברה לאישור"
-                  fields={[
-                    { name: "amount", label: "סכום מבוקש (₪)", type: "number", required: true },
-                    { name: "reason", label: "סיבת הבקשה", type: "textarea", required: true, colSpan: 2 },
-                  ]}
-                  customValidate={(values) =>
-                    Number(values.amount) > 0 ? null : "יש להזין סכום חיובי."
-                  }
-                  onCreate={async (values) => {
-                    try {
-                      await createBudgetRequest.mutateAsync({
-                        projectId: project.id,
-                        amount: Number(values.amount),
-                        reason: values.reason,
-                        requestedBy: currentUser?.name ?? currentUser?.email ?? "מנהלת פרויקט",
-                      });
-                      return { ok: true };
-                    } catch (error) {
-                      return {
-                        ok: false,
-                        error: error instanceof Error ? error.message : "שליחת הבקשה נכשלה",
-                      };
+                {budgetRatio >= 90 && (
+                  <EntityFormDialog
+                    triggerLabel="בקשת תקציב נוסף"
+                    title={`בקשת תקציב נוסף — ${project.name}`}
+                    description="הבקשה זמינה לאחר ניצול של 90% מהתקציב ותועבר לאישור בלשונית כספים ותקציבים."
+                    successMessage="בקשת התקציב הועברה לאישור"
+                    fields={[
+                      { name: "amount", label: "סכום מבוקש (₪)", type: "number", required: true },
+                      { name: "reason", label: "סיבת הבקשה", type: "textarea", required: true, colSpan: 2 },
+                    ]}
+                    customValidate={(values) =>
+                      Number(values.amount) > 0 ? null : "יש להזין סכום חיובי."
                     }
-                  }}
-                />
+                    onCreate={async (values) => {
+                      try {
+                        await createBudgetRequest.mutateAsync({
+                          projectId: project.id,
+                          amount: Number(values.amount),
+                          reason: values.reason,
+                          requestedBy: currentUser?.name ?? currentUser?.email ?? "מנהלת פרויקט",
+                        });
+                        return { ok: true };
+                      } catch (error) {
+                        return {
+                          ok: false,
+                          error: error instanceof Error ? error.message : "שליחת הבקשה נכשלה",
+                        };
+                      }
+                    }}
+                  />
+                )}
                 <EntityFormDialog
                   triggerLabel="הוצאה"
                   triggerNode={
@@ -323,7 +328,16 @@ function ProjectDetail() {
                   title="הוספת הוצאה לפרויקט"
                   description="רישום הוצאה חדשה על חשבון הפרויקט."
                   successMessage="ההוצאה נוספה לפרויקט"
-                  fields={projectExpenseFields}
+                  fields={projectExpenseFields.map((field) =>
+                    field.name === "supplier"
+                      ? {
+                          ...field,
+                          type: "select" as const,
+                          required: true,
+                          options: (suppliersData ?? []).map((supplier) => supplier.name),
+                        }
+                      : field,
+                  )}
                   customValidate={(v) => {
                     const amount = Number(v.amount);
                     if (!(amount > 0)) return "יש להזין סכום חיובי.";
@@ -366,14 +380,14 @@ function ProjectDetail() {
                   <th className="text-right py-2 font-medium">תאריך</th>
                   <th className="text-right py-2 font-medium">סטטוס</th>
                   <th className="text-left py-2 font-medium">סכום</th>
-                  {canEditProjects && <th className="text-left py-2 font-medium">פעולות</th>}
+                  {canOperateProject && <th className="text-left py-2 font-medium">פעולות</th>}
                 </tr>
               </thead>
               <tbody>
                 {expenses.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={canEditProjects ? 6 : 5}
+                      colSpan={canOperateProject ? 6 : 5}
                       className="text-center py-6 text-sm text-muted-foreground"
                     >
                       טרם נרשמו הוצאות
@@ -389,7 +403,7 @@ function ProjectDetail() {
                         <StatusBadge value={e.status} />
                       </td>
                       <td className="py-2 text-left font-semibold">₪{e.amount.toLocaleString()}</td>
-                      {canEditProjects && (
+                      {canOperateProject && (
                         <td className="py-2 text-left">
                           <div className="flex items-center justify-end gap-2">
                             <RecordEditDialog
@@ -560,32 +574,6 @@ function ProjectDetail() {
         </div> */}
       </div>
 
-      {/* Gantt */}
-      <div className="card-elevated p-5 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <div className="text-lg font-semibold">לוח זמני פרויקט (Gantt)</div>
-          </div>
-          {/* <Button size="sm" variant="outline" onClick={() => toast.success("שלב חדש נוסף")}>
-            + שלב
-          </Button> */}
-        </div>
-        {ganttItems.length === 0 ? (
-          <div className="text-center py-8 text-sm text-muted-foreground">
-            טרם הוגדרו שלבים או משימות עם תאריכים לפרויקט
-          </div>
-        ) : (
-          <GanttChart
-            phases={ganttItems}
-            renderAction={(item) => {
-              if (!canEditProjects || !item.id.startsWith("task-")) return null;
-              const task = projectTasks.find((candidate) => `task-${candidate.id}` === item.id);
-              return task ? <TaskEditButton task={task} compact /> : null;
-            }}
-          />
-        )}
-      </div>
-
       {/* Registration Links and Pending Approvals */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="card-elevated p-5">
@@ -624,7 +612,7 @@ function ProjectDetail() {
         <div className="card-elevated p-5">
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="font-semibold">נרשמים משויכים ({projectParticipants.length})</div>
-            {canEditProjects && availableParticipants.length > 0 && (
+            {canOperateProject && availableParticipants.length > 0 && (
               <EntityFormDialog
                 triggerLabel="שייך נרשם"
                 title="שיוך נרשם לפרויקט"
@@ -685,7 +673,7 @@ function ProjectDetail() {
         <div className="card-elevated p-5">
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="font-semibold">מתנדבים משויכים ({projectVolunteers.length})</div>
-            {canEditProjects && availableVolunteers.length > 0 && (
+            {canOperateProject && availableVolunteers.length > 0 && (
               <EntityFormDialog
                 triggerLabel="שייך מתנדב"
                 title="שיוך מתנדב לפרויקט"
@@ -773,7 +761,7 @@ function ProjectDetail() {
       <div className="card-elevated p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="text-lg font-semibold">לוח משימות</div>
-          {canEditProjects && (
+          {canOperateProject && (
             <EntityFormDialog
               triggerLabel="משימה"
               title="הוספת משימה לפרויקט"
@@ -842,7 +830,7 @@ function ProjectDetail() {
                       >
                         <div className="text-sm font-medium">{t.title}</div>
                         <div className="text-xs text-muted-foreground mt-1">{t.assignee}</div>
-                        {canEditProjects && (
+                        {canOperateProject && (
                           <div className="mt-2">
                             <TaskEditButton task={t} />
                           </div>
@@ -855,6 +843,27 @@ function ProjectDetail() {
             );
           })}
         </div>
+      </div>
+
+      {/* Gantt is intentionally the final section in the project page. */}
+      <div className="card-elevated p-5 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-lg font-semibold">לוח זמני פרויקט (Gantt)</div>
+        </div>
+        {ganttItems.length === 0 ? (
+          <div className="text-center py-8 text-sm text-muted-foreground">
+            טרם הוגדרו שלבים או משימות עם תאריכים לפרויקט
+          </div>
+        ) : (
+          <GanttChart
+            phases={ganttItems}
+            renderAction={(item) => {
+              if (!canOperateProject || !item.id.startsWith("task-")) return null;
+              const task = projectTasks.find((candidate) => `task-${candidate.id}` === item.id);
+              return task ? <TaskEditButton task={task} compact /> : null;
+            }}
+          />
+        )}
       </div>
 
       {/* Approvals Modal */}
