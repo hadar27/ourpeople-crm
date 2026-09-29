@@ -67,6 +67,19 @@ function ProjectsPage() {
                 type: "number",
                 required: true,
               },
+              {
+                name: "paymentType",
+                label: "האם הפרויקט בתשלום?",
+                type: "select",
+                required: true,
+                options: ["ללא תשלום", "בתשלום"],
+              },
+              {
+                name: "price",
+                label: "גובה התשלום לכל משתתף (₪)",
+                type: "number",
+                helper: "חובה למלא סכום בפרויקט בתשלום",
+              },
               { name: "startDate", label: "תאריך התחלה", type: "date", required: true },
               { name: "endDate", label: "תאריך סיום", type: "date", required: true },
               {
@@ -77,6 +90,13 @@ function ProjectsPage() {
                 placeholder: "מטרות הפרויקט וקהל היעד...",
               },
             ]}
+            customValidate={(v) => {
+              if (v.startDate && v.endDate && v.startDate > v.endDate)
+                return "תאריך הסיום חייב להיות אחרי תאריך ההתחלה.";
+              if (v.paymentType === "בתשלום" && Number(v.price) <= 0)
+                return "בפרויקט בתשלום יש להזין סכום חיובי לכל משתתף.";
+              return null;
+            }}
             onCreate={async (v) => {
               try {
                 await createProject.mutateAsync({
@@ -84,6 +104,8 @@ function ProjectsPage() {
                   budget: 0,
                   requestedInitialBudget: Number(v.budget) || 0,
                   approvalStatus: "ממתין לאישור",
+                  type: v.paymentType === "בתשלום" ? "בתשלום" : "חינמית",
+                  price: v.paymentType === "בתשלום" ? Number(v.price) : 0,
                   spent: 0,
                   progress: 0,
                   volunteers: 0,
