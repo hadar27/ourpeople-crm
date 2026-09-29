@@ -25,6 +25,8 @@ export const Route = createFileRoute("/register/participant/$token")({
 type ProjectInfo = {
   id: string;
   name: string;
+  type: "חינמית" | "בתשלום";
+  price: number;
 };
 
 type FormData = {
@@ -45,6 +47,7 @@ type FormData = {
   address: string;
   city: string;
   notes: string;
+  paymentAcknowledged: boolean;
 };
 
 function ParticipantRegistrationPage() {
@@ -72,6 +75,7 @@ function ParticipantRegistrationPage() {
     address: "",
     city: "",
     notes: "",
+    paymentAcknowledged: false,
   });
 
   useEffect(() => {
@@ -80,7 +84,7 @@ function ParticipantRegistrationPage() {
         // Find registration link by token
         const { data: links, error: linkError } = await supabase
           .from("project_registration_links")
-          .select("project_id, projects(id, name)")
+          .select("project_id, projects(id, name, type, price)")
           .eq("link_token", token)
           .eq("link_type", "participant")
           .single();
@@ -160,6 +164,11 @@ function ParticipantRegistrationPage() {
       return;
     }
 
+    if (project.type === "בתשלום" && !formData.paymentAcknowledged) {
+      toast.error(`יש לאשר שהפעילות כרוכה בתשלום בסך ₪${project.price.toLocaleString()}`);
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -179,7 +188,8 @@ function ParticipantRegistrationPage() {
           food_allergies: formData.hasAllergyWarning ? formData.foodAllergies || null : null,
           registration_date: formData.registrationDate,
           status: "ממתין לאישור",
-          payment_status: "לא שולם",
+          payment_status: project.type === "בתשלום" ? "לא שולם" : "לא נדרש תשלום",
+          payment_acknowledged: project.type === "בתשלום" && formData.paymentAcknowledged,
           documents_complete: formData.documentsComplete,
           is_new_immigrant: formData.isNewImmigrant,
           immigration_year: formData.immigrationYear ? parseInt(formData.immigrationYear) : null,
@@ -210,6 +220,7 @@ function ParticipantRegistrationPage() {
         address: "",
         city: "",
         notes: "",
+        paymentAcknowledged: false,
       });
 
       // Redirect after 2 seconds
@@ -217,7 +228,13 @@ function ParticipantRegistrationPage() {
         navigate({ to: "/" });
       }, 2000);
     } catch (err) {
-      toast.error("שגיאה בשליחת הטופס. אנא נסה שוב.");
+      const message =
+        err instanceof Error ? err.message : ((err as { message?: string } | null)?.message ?? "");
+      toast.error(
+        message.includes("payment_acknowledged") || message.includes("agreed_price")
+          ? "יש להריץ את מיגרציה 0026 ב-Supabase ולאחר מכן לנסות שוב."
+          : "שגיאה בשליחת הטופס. אנא נסה שוב.",
+      );
       console.error(err);
     } finally {
       setSubmitting(false);
@@ -262,8 +279,17 @@ function ParticipantRegistrationPage() {
           <h1 className="text-3xl font-bold mb-2">הרשמה כמשתתף/ת</h1>
           <p className="text-muted-foreground mb-2">פרויקט: {project.name}</p>
           <p className="text-sm text-muted-foreground mb-8">
-            תודה על עניינך! אנא מלא את הטופס הבא כדי להירשם.
+            אנא מלא את הטופס הבא בכדי להירשם לפרויקט.
           </p>
+
+          {project.type === "בתשלום" && (
+            <div className="mb-8 rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <div className="font-semibold text-amber-900">פרויקט בתשלום</div>
+              <div className="mt-1 text-sm text-amber-800">
+                עלות ההשתתפות בפרויקט היא ₪{project.price.toLocaleString()} לכל משתתף/ת.
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Basic Info */}
@@ -550,6 +576,28 @@ function ParticipantRegistrationPage() {
                 disabled={submitting}
               />
             </div>
+
+            {project.type === "בתשלום" && (
+              <div className="rounded-xl border border-brand/20 bg-brand-light/20 p-4">
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="paymentAcknowledged"
+                    checked={formData.paymentAcknowledged}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        paymentAcknowledged: checked === true,
+                      }))
+                    }
+                    disabled={submitting}
+                  />
+                  <Label htmlFor="paymentAcknowledged" className="cursor-pointer font-normal leading-6">
+                    אני מאשר/ת שידוע לי כי הפעילות כרוכה בתשלום בסך ₪
+                    {project.price.toLocaleString()} לכל משתתף/ת. <span className="text-destructive">*</span>
+                  </Label>
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-4 pt-4">
               <Button
