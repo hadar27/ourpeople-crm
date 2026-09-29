@@ -26,6 +26,8 @@ export type PendingParticipantRecord = {
   email?: string;
   status: "מאושר" | "ממתין לתשלום" | "ממתין לאישור" | "טיוטה";
   paymentStatus: "שולם" | "שולם חלקית" | "לא שולם" | "לא נדרש תשלום";
+  paymentAcknowledged: boolean;
+  agreedPrice: number;
   registrationDate: string;
   documentsComplete: boolean;
   isNewImmigrant: boolean;
@@ -60,6 +62,8 @@ type PendingParticipantRow = {
   email: string | null;
   status: string;
   payment_status: string;
+  payment_acknowledged: boolean;
+  agreed_price: number;
   registration_date: string;
   documents_complete: boolean;
   is_new_immigrant: boolean;
@@ -97,6 +101,8 @@ function toPendingParticipantRecord(row: PendingParticipantRow): PendingParticip
     email: row.email ?? undefined,
     status: row.status as PendingParticipantRecord["status"],
     paymentStatus: row.payment_status as PendingParticipantRecord["paymentStatus"],
+    paymentAcknowledged: row.payment_acknowledged ?? false,
+    agreedPrice: row.agreed_price ?? 0,
     registrationDate: row.registration_date,
     documentsComplete: row.documents_complete,
     isNewImmigrant: row.is_new_immigrant,
@@ -283,6 +289,8 @@ export function useApprovePendingParticipant() {
         .insert({
           project_id: projectId,
           participant_id: participant.id,
+          payment_acknowledged: pending.payment_acknowledged ?? false,
+          agreed_price: pending.agreed_price ?? 0,
         });
 
       if (linkError) throw linkError;
