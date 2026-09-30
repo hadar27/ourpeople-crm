@@ -908,6 +908,7 @@ function ProjectDetail() {
       {/* Approvals Modal */}
       <ApproveRegistrationsModal
         projectId={id}
+        projectName={project.name}
         open={approvalsOpen}
         onOpenChange={setApprovalsOpen}
       />
