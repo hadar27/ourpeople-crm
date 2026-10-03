@@ -132,6 +132,7 @@ function LoginPage() {
               <Input
                 id="email"
                 type="email"
+                autoComplete="email"
                 value={email}
                 aria-invalid={invalidFields.email}
                 aria-describedby={loginError ? "login-error" : undefined}
@@ -154,6 +155,7 @@ function LoginPage() {
               <Input
                 id="password"
                 type="password"
+                autoComplete="current-password"
                 value={password}
                 aria-invalid={invalidFields.password}
                 aria-describedby={loginError ? "login-error" : undefined}
