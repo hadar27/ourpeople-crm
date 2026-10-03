@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Mail, Lock, ShieldCheck, Loader2, CircleAlert } from "lucide-react";
+import { Mail, Lock, ShieldCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
 import { supabase } from "@/lib/supabase";
@@ -24,65 +24,23 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loginError, setLoginError] = useState("");
-  const [invalidFields, setInvalidFields] = useState<{
-    email: boolean;
-    password: boolean;
-  }>({ email: false, password: false });
 
   const prefillDebugCredentials = (cred: (typeof DEBUG_CREDENTIALS)[0]) => {
     setEmail(cred.email);
     setPassword(cred.password);
-    setLoginError("");
-    setInvalidFields({ email: false, password: false });
   };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const normalizedEmail = email.trim();
-    const missingEmail = normalizedEmail.length === 0;
-    const missingPassword = password.length === 0;
-
-    if (missingEmail || missingPassword) {
-      setInvalidFields({ email: missingEmail, password: missingPassword });
-      setLoginError(
-        missingEmail && missingPassword
-          ? "יש להזין כתובת דוא״ל וסיסמה."
-          : missingEmail
-            ? "יש להזין כתובת דוא״ל."
-            : "יש להזין סיסמה.",
-      );
+    if (!email || !password) {
+      toast.error("יש למלא דוא״ל וסיסמה");
       return;
     }
-
-    const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
-    if (!emailIsValid) {
-      setInvalidFields({ email: true, password: false });
-      setLoginError("כתובת הדוא״ל שהוזנה אינה תקינה.");
-      return;
-    }
-
-    setLoginError("");
-    setInvalidFields({ email: false, password: false });
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: normalizedEmail,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
-      const invalidCredentials =
-        error.code === "invalid_credentials" ||
-        error.message.toLowerCase().includes("invalid login credentials");
-      setInvalidFields({
-        email: invalidCredentials,
-        password: invalidCredentials,
-      });
-      setLoginError(
-        invalidCredentials
-          ? "כתובת הדוא״ל או הסיסמה שגויות. בדקו את הפרטים ונסו שוב."
-          : "לא ניתן להתחבר כעת. נסו שוב בעוד מספר רגעים.",
-      );
+      toast.error(error.message);
       return;
     }
     toast.success("התחברת בהצלחה — מעביר ללוח הבקרה");
@@ -99,7 +57,8 @@ function LoginPage() {
           <img src={logo} alt="Our People" className="h-20 w-auto bg-white rounded-2xl p-3" />
         </div>
         <div className="relative max-w-md">
-          <h1 className="text-4xl font-bold leading-tight">מערכת לניהול עמותת Our People.</h1>
+          <h1 className="text-4xl font-bold leading-tight">מערכת לניהול עמותת
+            Our People.</h1>
           <p className="mt-4 text-white/85 leading-relaxed">
             מערכת מידע פנימית לניהול תורמים, מתנדבים, פרויקטים, כספים ופעילות העמותה.
           </p>
@@ -116,7 +75,7 @@ function LoginPage() {
 
       {/* Form pane */}
       <div className="flex items-center justify-center p-6 md:p-12">
-        <form onSubmit={submit} noValidate className="w-full max-w-md space-y-6">
+        <form onSubmit={submit} className="w-full max-w-md space-y-6">
           <div className="lg:hidden flex items-center justify-center mb-6">
             <img src={logo} alt="Our People" className="h-16 w-auto" />
           </div>
@@ -129,22 +88,7 @@ function LoginPage() {
             <Label htmlFor="email">דוא״ל</Label>
             <div className="relative">
               <Mail className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                aria-invalid={invalidFields.email}
-                aria-describedby={loginError ? "login-error" : undefined}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (loginError) {
-                    setLoginError("");
-                    setInvalidFields((current) => ({ ...current, email: false }));
-                  }
-                }}
-                className={`pr-9 ${invalidFields.email ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-              />
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="pr-9" />
             </div>
           </div>
 
@@ -152,36 +96,9 @@ function LoginPage() {
             <Label htmlFor="password">סיסמה</Label>
             <div className="relative">
               <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                aria-invalid={invalidFields.password}
-                aria-describedby={loginError ? "login-error" : undefined}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (loginError) {
-                    setLoginError("");
-                    setInvalidFields((current) => ({ ...current, password: false }));
-                  }
-                }}
-                className={`pr-9 ${invalidFields.password ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-              />
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="pr-9" />
             </div>
           </div>
-
-          {loginError && (
-            <div
-              id="login-error"
-              role="alert"
-              aria-live="polite"
-              className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-medium text-red-700"
-            >
-              <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{loginError}</span>
-            </div>
-          )}
 
           {import.meta.env.DEV && (
             <div className="rounded-lg bg-blue-50 p-3 space-y-2">
