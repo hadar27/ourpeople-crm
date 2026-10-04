@@ -193,7 +193,7 @@ function VolunteerRegistrationPage() {
           <h1 className="text-3xl font-bold mb-2">הצטרפות כמתנדב/ת</h1>
           <p className="text-muted-foreground mb-2">פרויקט: {project.name}</p>
           <p className="text-sm text-muted-foreground mb-8">
-            תודה על עניינך להצטרף! אנא מלא את הטופס הבא כדי להתחיל.
+            אנא מלא את הטופס הבא בכדי להירשם לפרויקט.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
