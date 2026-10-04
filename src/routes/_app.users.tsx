@@ -4,7 +4,10 @@ import { PageHeader, StatusBadge } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
 import { EmptyState } from "@/components/detail-kit";
 import { useUsers, type UserRecord } from "@/lib/queries/users";
-import { UserEditButton, UserDeleteButton } from "@/components/module-edit-dialogs";
+import {
+  UserEditButton,
+  UserDeleteButton,
+} from "@/components/module-edit-dialogs";
 import { useCanEdit, useCanView } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_app/users")({
@@ -12,15 +15,40 @@ export const Route = createFileRoute("/_app/users")({
 });
 
 const columns: Column<UserRecord>[] = [
-  { key: "name", header: "שם", render: (r) => <span className="font-medium">{r.name}</span> },
+  {
+    key: "name",
+    header: "שם",
+    render: (r) => <span className="font-medium">{r.name}</span>,
+  },
   {
     key: "email",
     header: "דוא״ל",
     render: (r) => <span className="text-muted-foreground">{r.email}</span>,
   },
-  { key: "role", header: "תפקיד", render: (r) => <StatusBadge value={r.role} /> },
-  { key: "status", header: "סטטוס", render: (r) => <StatusBadge value={r.status} /> },
-  { key: "lastLogin", header: "כניסה אחרונה" },
+  {
+    key: "role",
+    header: "תפקיד",
+    render: (r) => <StatusBadge value={r.role} />,
+  },
+  {
+    key: "status",
+    header: "סטטוס",
+    render: (r) => <StatusBadge value={r.status} />,
+  },
+  {
+    key: "lastLogin",
+    header: "כניסה אחרונה",
+    render: (r) => {
+      if (!r.lastLogin) return "אין כניסה מתועדת";
+      const date = new Date(r.lastLogin);
+      if (Number.isNaN(date.getTime())) return "אין כניסה מתועדת";
+      return new Intl.DateTimeFormat("he-IL", {
+        dateStyle: "short",
+        timeStyle: "short",
+        timeZone: "Asia/Jerusalem",
+      }).format(date);
+    },
+  },
 ];
 
 function UsersPage() {
@@ -31,7 +59,10 @@ function UsersPage() {
   if (!canAccess) {
     return (
       <>
-        <PageHeader title="משתמשים והרשאות" description="ניהול משתמשי המערכת ותפקידיהם." />
+        <PageHeader
+          title="משתמשים והרשאות"
+          description="ניהול משתמשי המערכת ותפקידיהם."
+        />
         <div className="card-elevated p-16">
           <EmptyState
             text="אין לך הרשאה לצפייה בעמוד זה"
@@ -44,7 +75,10 @@ function UsersPage() {
 
   return (
     <>
-      <PageHeader title="משתמשים והרשאות" description="ניהול משתמשי המערכת ותפקידיהם." />
+      <PageHeader
+        title="משתמשים והרשאות"
+        description="ניהול משתמשי המערכת ותפקידיהם."
+      />
       <div className="mb-6">
         {isLoading ? (
           <div className="card-elevated flex items-center justify-center gap-2 p-16 text-muted-foreground">
@@ -52,8 +86,13 @@ function UsersPage() {
           </div>
         ) : isError ? (
           <div className="card-elevated flex flex-col items-center gap-3 p-16 text-center">
-            <div className="text-sm text-muted-foreground">אירעה שגיאה בטעינת המשתמשים.</div>
-            <button onClick={() => refetch()} className="text-sm text-brand hover:underline">
+            <div className="text-sm text-muted-foreground">
+              אירעה שגיאה בטעינת המשתמשים.
+            </div>
+            <button
+              onClick={() => refetch()}
+              className="text-sm text-brand hover:underline"
+            >
               נסה שוב
             </button>
           </div>
@@ -62,12 +101,16 @@ function UsersPage() {
             rows={users ?? []}
             columns={columns}
             searchKeys={["name", "email", "role"]}
-            rowActions={canEdit ? (r) => (
-              <div className="flex items-center justify-end gap-2">
-                <UserEditButton record={r} />
-                <UserDeleteButton record={r} />
-              </div>
-            ) : undefined}
+            rowActions={
+              canEdit
+                ? (r) => (
+                    <div className="flex items-center justify-end gap-2">
+                      <UserEditButton record={r} />
+                      <UserDeleteButton record={r} />
+                    </div>
+                  )
+                : undefined
+            }
           />
         )}
       </div>

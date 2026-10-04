@@ -40,7 +40,8 @@ function toRow(patch: Partial<UserRecord>): Record<string, unknown> {
   if (patch.role !== undefined) row.role = patch.role;
   if (patch.status !== undefined) row.status = patch.status;
   if (patch.lastLogin !== undefined) row.last_login = patch.lastLogin || null;
-  if (patch.permissions !== undefined) row.permissions = patch.permissions ?? null;
+  if (patch.permissions !== undefined)
+    row.permissions = patch.permissions ?? null;
   return row;
 }
 
@@ -52,10 +53,30 @@ export const userKeys = {
 export function useUsers() {
   return useQuery({
     queryKey: userKeys.list(),
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
-      const { data, error } = await supabase.from("users").select("*").order("name");
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .order("name");
       if (error) throw error;
-      return (data as UserRow[]).map(toUserRecord);
+      const { data: signIns, error: signInError } = await supabase.rpc(
+        "get_user_last_sign_ins",
+      );
+      // Keep role resolution available before the accompanying migration is run.
+      // Never fall back to the old, manually populated last_login values.
+      if (signInError && !["PGRST202", "42883"].includes(signInError.code))
+        throw signInError;
+      const lastSignIns = new Map(
+        (
+          (signIns ?? []) as { user_id: string; last_login: string | null }[]
+        ).map((row) => [row.user_id, row.last_login] as const),
+      );
+      return (data as UserRow[]).map((row) => ({
+        ...toUserRecord(row),
+        lastLogin: lastSignIns.get(row.id) ?? "",
+      }));
     },
   });
 }
@@ -76,7 +97,13 @@ export function useDeleteUser() {
 export function useUpdateUser() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Partial<UserRecord> }) => {
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch: Partial<UserRecord>;
+    }) => {
       const { data, error } = await supabase
         .from("users")
         .update(toRow(patch))
