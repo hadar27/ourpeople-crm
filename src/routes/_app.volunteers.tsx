@@ -1,11 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Award, Loader2 } from "lucide-react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
-import { DataTable, type Column, type FilterConfig } from "@/components/data-table";
+import {
+  DataTable,
+  type Column,
+  type FilterConfig,
+} from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { useProjects } from "@/lib/queries/projects";
-import { useVolunteers, useCreateVolunteer, type VolunteerRecord } from "@/lib/queries/volunteers";
-import { VolunteerEditButton, VolunteerDeleteButton } from "@/components/module-edit-dialogs";
+import {
+  useVolunteers,
+  useCreateVolunteer,
+  type VolunteerRecord,
+} from "@/lib/queries/volunteers";
+import {
+  VolunteerEditButton,
+  VolunteerDeleteButton,
+} from "@/components/module-edit-dialogs";
+
+import { volunteerFields } from "@/lib/edit-forms";
 
 const UNASSIGNED = "ללא שיוך";
 
@@ -14,7 +27,11 @@ export const Route = createFileRoute("/_app/volunteers")({
 });
 
 const columns: Column<VolunteerRecord>[] = [
-  { key: "name", header: "שם", render: (r) => <span className="font-medium">{r.name}</span> },
+  {
+    key: "name",
+    header: "שם",
+    render: (r) => <span className="font-medium">{r.name}</span>,
+  },
   { key: "availability", header: "זמינות" },
   { key: "project", header: "פרויקט משויך" },
   {
@@ -28,14 +45,21 @@ const columns: Column<VolunteerRecord>[] = [
     render: (r) => (
       <div className="flex flex-wrap gap-1">
         {r.skills.map((s) => (
-          <span key={s} className="text-xs bg-secondary text-brand-deep px-2 py-0.5 rounded-full">
+          <span
+            key={s}
+            className="text-xs bg-secondary text-brand-deep px-2 py-0.5 rounded-full"
+          >
             {s}
           </span>
         ))}
       </div>
     ),
   },
-  { key: "status", header: "סטטוס", render: (r) => <StatusBadge value={r.status} /> },
+  {
+    key: "status",
+    header: "סטטוס",
+    render: (r) => <StatusBadge value={r.status} />,
+  },
 ];
 
 const filters: FilterConfig<VolunteerRecord>[] = [
@@ -45,7 +69,12 @@ const filters: FilterConfig<VolunteerRecord>[] = [
     type: "multi-select",
     options: ["בוקר", "צהריים", "ערב", "סופי שבוע", "גמיש"],
   },
-  { key: "status", label: "סטטוס", type: "multi-select", options: ["פעיל", "לא פעיל"] },
+  {
+    key: "status",
+    label: "סטטוס",
+    type: "multi-select",
+    options: ["פעיל", "לא פעיל"],
+  },
 ];
 
 function VolunteersPage() {
@@ -55,10 +84,17 @@ function VolunteersPage() {
   const projectOptions = [...(projects ?? []).map((p) => p.name), UNASSIGNED];
 
   // Calculate real aggregations
-  const activeVolunteers = volunteers?.filter((v) => v.status === "פעיל").length ?? 0;
-  const totalHours = volunteers?.reduce((sum, v) => sum + (v.hours ?? 0), 0) ?? 0;
-  const activeProjects = new Set(volunteers?.filter((v) => v.project).map((v) => v.project)).size;
-  const topVolunteer = volunteers?.reduce((max, v) => (!max || v.hours > max.hours ? v : max), undefined);
+  const activeVolunteers =
+    volunteers?.filter((v) => v.status === "פעיל").length ?? 0;
+  const totalHours =
+    volunteers?.reduce((sum, v) => sum + (v.hours ?? 0), 0) ?? 0;
+  const activeProjects = new Set(
+    volunteers?.filter((v) => v.project).map((v) => v.project),
+  ).size;
+  const topVolunteer = volunteers?.reduce(
+    (max, v) => (!max || v.hours > max.hours ? v : max),
+    undefined,
+  );
 
   return (
     <>
@@ -73,6 +109,9 @@ function VolunteersPage() {
             successMessage="מתנדב חדש נוסף בהצלחה"
             fields={[
               { name: "fullName", label: "שם מלא", required: true },
+              ...volunteerFields.filter((field) =>
+                ["idNumber", "email"].includes(field.name),
+              ),
               { name: "phone", label: "טלפון", type: "tel", required: true },
               {
                 name: "availability",
@@ -81,7 +120,12 @@ function VolunteersPage() {
                 required: true,
                 options: ["בוקר", "צהריים", "ערב", "סופי שבוע", "גמיש"],
               },
-              { name: "project", label: "פרויקט משויך", type: "select", options: projectOptions },
+              {
+                name: "project",
+                label: "פרויקט משויך",
+                type: "select",
+                options: projectOptions,
+              },
               {
                 name: "skills",
                 label: "כישורים",
@@ -94,6 +138,8 @@ function VolunteersPage() {
               try {
                 await createVolunteer.mutateAsync({
                   name: v.fullName,
+                  idNumber: v.idNumber?.trim() || undefined,
+                  email: v.email?.trim() || undefined,
                   phone: v.phone || undefined,
                   availability: v.availability,
                   projectId: def?.id,
@@ -108,7 +154,10 @@ function VolunteersPage() {
                 });
                 return { ok: true };
               } catch (err) {
-                return { ok: false, error: err instanceof Error ? err.message : "השמירה נכשלה" };
+                return {
+                  ok: false,
+                  error: err instanceof Error ? err.message : "השמירה נכשלה",
+                };
               }
             }}
           />
@@ -121,7 +170,9 @@ function VolunteersPage() {
         </div>
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">סה״כ שעות</div>
-          <div className="text-xl font-bold mt-1">{totalHours.toLocaleString()}</div>
+          <div className="text-xl font-bold mt-1">
+            {totalHours.toLocaleString()}
+          </div>
         </div>
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">פרויקטים פעילים</div>
@@ -131,7 +182,9 @@ function VolunteersPage() {
           <div className="card-elevated p-4 bg-soft-gradient flex items-center gap-3">
             <Award className="h-8 w-8 text-brand-deep" />
             <div>
-              <div className="text-xs text-muted-foreground">מתנדב/ת מובילה</div>
+              <div className="text-xs text-muted-foreground">
+                מתנדב/ת מובילה
+              </div>
               <div className="text-sm font-bold">{topVolunteer.name}</div>
             </div>
           </div>
@@ -143,8 +196,13 @@ function VolunteersPage() {
         </div>
       ) : isError ? (
         <div className="card-elevated flex flex-col items-center gap-3 p-16 text-center">
-          <div className="text-sm text-muted-foreground">אירעה שגיאה בטעינת המתנדבים.</div>
-          <button onClick={() => refetch()} className="text-sm text-brand hover:underline">
+          <div className="text-sm text-muted-foreground">
+            אירעה שגיאה בטעינת המתנדבים.
+          </div>
+          <button
+            onClick={() => refetch()}
+            className="text-sm text-brand hover:underline"
+          >
             נסה שוב
           </button>
         </div>
