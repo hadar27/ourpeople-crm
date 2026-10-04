@@ -109,9 +109,9 @@ function VolunteersPage() {
             successMessage="מתנדב חדש נוסף בהצלחה"
             fields={[
               { name: "fullName", label: "שם מלא", required: true },
-              ...volunteerFields.filter((field) =>
-                ["idNumber", "email"].includes(field.name),
-              ),
+              ...volunteerFields
+                .filter((field) => ["idNumber", "email"].includes(field.name))
+                .map((field) => ({ ...field, required: true })),
               { name: "phone", label: "טלפון", type: "tel", required: true },
               {
                 name: "availability",
