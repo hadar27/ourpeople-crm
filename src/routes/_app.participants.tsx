@@ -18,10 +18,13 @@ import { useProjects } from "@/lib/queries/projects";
 import {
   useParticipants,
   useCreateParticipant,
+  useAllParticipantProjectAssignments,
   type ParticipantRecord,
   type RegistrationSource,
 } from "@/lib/queries/participants";
 import { participantFields } from "@/lib/edit-forms";
+import { getParticipantPayments } from "@/lib/participant-payments";
+import { ParticipantPaymentsButton } from "@/components/participant-payments-button";
 import {
   ParticipantEditButton,
   ParticipantDeleteButton,
@@ -82,7 +85,60 @@ const baseFilters: FilterConfig<ParticipantRecord>[] = [
 function ParticipantsPage() {
   const { data: participants, isLoading, isError, refetch } = useParticipants();
   const { data: projects } = useProjects();
+  const { data: assignments, isError: assignmentError } =
+    useAllParticipantProjectAssignments();
   const createParticipant = useCreateParticipant();
+  const paymentsFor = (participant: ParticipantRecord) =>
+    getParticipantPayments(participant, assignments ?? []);
+  const paymentColumns: Column<ParticipantRecord>[] = columns.map((column) =>
+    column.key === "paymentStatus"
+      ? {
+          ...column,
+          render: (participant) =>
+            assignmentError ? (
+              "שגיאה בטעינת תשלומים"
+            ) : (
+              <div className="space-y-2">
+                {paymentsFor(participant).map((entry) => (
+                  <div key={entry.projectId}>
+                    <div className="text-xs text-muted-foreground mb-1">
+                      {entry.projectName}
+                    </div>
+                    <StatusBadge value={entry.paymentStatus} />
+                  </div>
+                ))}
+              </div>
+            ),
+        }
+      : column,
+  );
+  paymentColumns.splice(
+    paymentColumns.findIndex((column) => column.key === "paymentStatus"),
+    0,
+    {
+      key: "participationCost",
+      header: "עלות לנרשם",
+      render: (participant) =>
+        assignmentError ? (
+          "—"
+        ) : (
+          <div className="space-y-2">
+            {paymentsFor(participant).map((entry) => (
+              <div key={entry.projectId}>
+                <div className="text-xs text-muted-foreground">
+                  {entry.projectName}
+                </div>
+                <span className="font-semibold">
+                  {entry.isPaidProject
+                    ? `₪${entry.amount.toLocaleString()}`
+                    : "ללא תשלום"}
+                </span>
+              </div>
+            ))}
+          </div>
+        ),
+    },
+  );
 
   // Operational KPIs derived from data
   const list = [...(participants ?? [])].sort(
@@ -105,7 +161,23 @@ function ParticipantsPage() {
       options: monthOptions,
       getValue: registrationMonth,
     },
-    ...baseFilters,
+    ...baseFilters.map((filter) =>
+      filter.key === "paymentStatus"
+        ? {
+            ...filter,
+            getValue: (participant: ParticipantRecord) => {
+              const entries = paymentsFor(participant);
+              if (entries.some((entry) => entry.paymentStatus === "לא שולם"))
+                return "לא שולם";
+              if (entries.some((entry) => entry.paymentStatus === "שולם חלקית"))
+                return "שולם חלקית";
+              return entries.some((entry) => entry.paymentStatus === "שולם")
+                ? "שולם"
+                : "לא נדרש תשלום";
+            },
+          }
+        : filter,
+    ),
   ];
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -113,8 +185,12 @@ function ParticipantsPage() {
   const thisWeek = list.filter(
     (p) => new Date(p.registrationDate) >= sevenDaysAgo,
   ).length;
-  const needPayment = list.filter(
-    (p) => p.paymentStatus === "לא שולם" || p.paymentStatus === "שולם חלקית",
+  const needPayment = list.filter((participant) =>
+    paymentsFor(participant).some(
+      (entry) =>
+        entry.paymentStatus === "לא שולם" ||
+        entry.paymentStatus === "שולם חלקית",
+    ),
   ).length;
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const recent = list.filter(
@@ -148,8 +224,8 @@ function ParticipantsPage() {
               const def = (projects ?? []).find((p) => p.name === project);
               if (def?.type === "בתשלום") {
                 const pay = v["paymentStatus"];
-                if (!pay || pay === "לא שולם" || pay === "שולם חלקית") {
-                  return "פעילות בתשלום — לא ניתן לאשר רישום ללא תשלום מלא";
+                if (!pay || pay === "לא נדרש תשלום") {
+                  return "בפרויקט בתשלום יש לבחור אם התשלום שולם, שולם חלקית או לא שולם";
                 }
               }
               return null;
@@ -178,7 +254,9 @@ function ParticipantsPage() {
                   projectId: def.id,
                   source: v.source as RegistrationSource,
                   paymentStatus:
-                    v.paymentStatus as ParticipantRecord["paymentStatus"],
+                    def.type === "חינמית"
+                      ? "לא נדרש תשלום"
+                      : (v.paymentStatus as ParticipantRecord["paymentStatus"]),
                   status: v.status as ParticipantRecord["status"],
                   registrationDate: new Date().toISOString().slice(0, 10),
                   documentsComplete: v.documentsComplete === "הושלמו",
@@ -252,12 +330,17 @@ function ParticipantsPage() {
 
           <DataTable
             rows={list}
-            columns={columns}
+            columns={paymentColumns}
             searchKeys={["name", "idNumber", "phone"]}
             filters={filters}
             getRowHref={(r) => `/participants/${r.id}`}
             rowActions={(r) => (
               <div className="flex items-center justify-end gap-2">
+                <ParticipantPaymentsButton
+                  participantId={r.id}
+                  name={r.name}
+                  entries={paymentsFor(r)}
+                />
                 <ParticipantEditButton record={r} />
                 <ParticipantDeleteButton record={r} />
               </div>

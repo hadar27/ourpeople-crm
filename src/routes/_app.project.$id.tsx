@@ -1,4 +1,9 @@
-import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+  useParams,
+} from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -34,6 +39,7 @@ import {
 } from "@/lib/queries/volunteers";
 import {
   useParticipants,
+  useAllParticipantProjectAssignments,
   useProjectParticipantIds,
   useAssignParticipantToProject,
 } from "@/lib/queries/participants";
@@ -56,6 +62,8 @@ import {
   usePendingParticipantRegistrations,
 } from "@/lib/queries/pending-registrations";
 import { ProjectEditButton } from "@/components/module-edit-dialogs";
+import { getParticipantPayments } from "@/lib/participant-payments";
+import { ParticipantPaymentsButton } from "@/components/participant-payments-button";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
 import { projectExpenseFields } from "@/lib/edit-forms";
 import { RegistrationLinksSection } from "@/components/registration-links-section";
@@ -80,6 +88,8 @@ function ProjectDetail() {
   const { data: volunteersData } = useVolunteers();
   const { data: projectVolunteerIdsData } = useProjectVolunteerIds(id);
   const { data: participantsData } = useParticipants();
+  const { data: participantAssignments } =
+    useAllParticipantProjectAssignments();
   const { data: projectParticipantIdsData } = useProjectParticipantIds(id);
   const { data: pendingVolunteers } = usePendingVolunteerRegistrations(id);
   const { data: pendingParticipants } = usePendingParticipantRegistrations(id);
@@ -111,8 +121,13 @@ function ProjectDetail() {
   if (isError) {
     return (
       <div className="card-elevated flex flex-col items-center gap-3 p-16 text-center">
-        <div className="text-sm text-muted-foreground">אירעה שגיאה בטעינת הפרויקט.</div>
-        <button onClick={() => refetch()} className="text-sm text-brand hover:underline">
+        <div className="text-sm text-muted-foreground">
+          אירעה שגיאה בטעינת הפרויקט.
+        </div>
+        <button
+          onClick={() => refetch()}
+          className="text-sm text-brand hover:underline"
+        >
           נסה שוב
         </button>
       </div>
@@ -139,7 +154,9 @@ function ProjectDetail() {
 
   const projectTasks = tasksData ?? [];
   const allocations = allocationsData ?? [];
-  const allocatedDonationIds = new Set(allocations.map((allocation) => allocation.donationId));
+  const allocatedDonationIds = new Set(
+    allocations.map((allocation) => allocation.donationId),
+  );
   const projectAllocationAmounts = allocations
     .filter((allocation) => allocation.projectId === project.id)
     .reduce((amounts, allocation) => {
@@ -152,36 +169,46 @@ function ProjectDetail() {
   const projectDonations = (donationsData ?? []).filter(
     (donation) =>
       projectAllocationAmounts.has(donation.id) ||
-      (donation.projectId === project.id && !allocatedDonationIds.has(donation.id)),
+      (donation.projectId === project.id &&
+        !allocatedDonationIds.has(donation.id)),
   );
   const projectVolunteerIds = new Set(projectVolunteerIdsData ?? []);
   const projectVolunteers = (volunteersData ?? []).filter(
     (v) => projectVolunteerIds.has(v.id) || v.projectId === project.id,
   );
   const availableVolunteers = (volunteersData ?? []).filter(
-    (v) => v.status === "פעיל" && !projectVolunteerIds.has(v.id) && v.projectId !== project.id,
+    (v) =>
+      v.status === "פעיל" &&
+      !projectVolunteerIds.has(v.id) &&
+      v.projectId !== project.id,
   );
   const expenses = expensesData ?? [];
   const phases = phasesData ?? [];
   const projectParticipantIds = new Set(projectParticipantIdsData ?? []);
   const projectParticipants = (participantsData ?? []).filter(
     (participant) =>
-      projectParticipantIds.has(participant.id) || participant.projectId === project.id,
+      projectParticipantIds.has(participant.id) ||
+      participant.projectId === project.id,
   );
   const availableParticipants = (participantsData ?? []).filter(
     (participant) =>
-      !projectParticipantIds.has(participant.id) && participant.projectId !== project.id,
+      !projectParticipantIds.has(participant.id) &&
+      participant.projectId !== project.id,
   );
   const participantsCount = projectParticipants.length;
-  const donationAmountForProject = (donationId: string, originalAmount: number) =>
-    projectAllocationAmounts.get(donationId) ?? originalAmount;
+  const donationAmountForProject = (
+    donationId: string,
+    originalAmount: number,
+  ) => projectAllocationAmounts.get(donationId) ?? originalAmount;
   const totalDonations = projectDonations.reduce(
-    (sum, donation) => sum + donationAmountForProject(donation.id, donation.amount),
+    (sum, donation) =>
+      sum + donationAmountForProject(donation.id, donation.amount),
     0,
   );
   const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
   const remainingBudget = project.budget - project.spent;
-  const budgetRatio = project.budget > 0 ? Math.round((project.spent / project.budget) * 100) : 0;
+  const budgetRatio =
+    project.budget > 0 ? Math.round((project.spent / project.budget) * 100) : 0;
   const projectIsApproved = project.approvalStatus === "מאושר";
   const canOperateProject = canEditProjects && projectIsApproved;
   const canDeleteProject =
@@ -196,7 +223,8 @@ function ProjectDetail() {
         owner: task.assignee,
         start: task.startDate!,
         end: task.endDate!,
-        progress: task.column === "done" ? 100 : task.column === "doing" ? 50 : 0,
+        progress:
+          task.column === "done" ? 100 : task.column === "doing" ? 50 : 0,
       })),
   ];
 
@@ -227,7 +255,9 @@ function ProjectDetail() {
             <h1 className="text-2xl font-bold mt-1">{project.name}</h1>
             <div className="flex items-center gap-2 mt-3">
               <StatusBadge
-                value={projectIsApproved ? project.status : project.approvalStatus}
+                value={
+                  projectIsApproved ? project.status : project.approvalStatus
+                }
               />
             </div>
             <div className="flex items-center gap-1.5 mt-2 text-sm text-muted-foreground">
@@ -235,6 +265,11 @@ function ProjectDetail() {
               <span>תאריך התחלה: {project.startDate || "לא נקבע"}</span>
               <span>·</span>
               <span>תאריך סיום: {project.endDate || "לא נקבע"}</span>
+            </div>
+            <div className="mt-2 text-sm font-medium">
+              {project.type === "בתשלום"
+                ? `עלות לכל נרשם: ₪${project.price.toLocaleString()}`
+                : "ההשתתפות בפרויקט ללא תשלום"}
             </div>
           </div>
           <div className="flex gap-2">
@@ -333,8 +368,19 @@ function ProjectDetail() {
                     description="הבקשה זמינה לאחר ניצול של 90% מהתקציב ותועבר לאישור בלשונית כספים ותקציבים."
                     successMessage="בקשת התקציב הועברה לאישור"
                     fields={[
-                      { name: "amount", label: "סכום מבוקש (₪)", type: "number", required: true },
-                      { name: "reason", label: "סיבת הבקשה", type: "textarea", required: true, colSpan: 2 },
+                      {
+                        name: "amount",
+                        label: "סכום מבוקש (₪)",
+                        type: "number",
+                        required: true,
+                      },
+                      {
+                        name: "reason",
+                        label: "סיבת הבקשה",
+                        type: "textarea",
+                        required: true,
+                        colSpan: 2,
+                      },
                     ]}
                     customValidate={(values) =>
                       Number(values.amount) > 0 ? null : "יש להזין סכום חיובי."
@@ -345,13 +391,19 @@ function ProjectDetail() {
                           projectId: project.id,
                           amount: Number(values.amount),
                           reason: values.reason,
-                          requestedBy: currentUser?.name ?? currentUser?.email ?? "מנהלת פרויקט",
+                          requestedBy:
+                            currentUser?.name ??
+                            currentUser?.email ??
+                            "מנהלת פרויקט",
                         });
                         return { ok: true };
                       } catch (error) {
                         return {
                           ok: false,
-                          error: error instanceof Error ? error.message : "שליחת הבקשה נכשלה",
+                          error:
+                            error instanceof Error
+                              ? error.message
+                              : "שליחת הבקשה נכשלה",
                         };
                       }
                     }}
@@ -373,7 +425,9 @@ function ProjectDetail() {
                           ...field,
                           type: "select" as const,
                           required: true,
-                          options: (suppliersData ?? []).map((supplier) => supplier.name),
+                          options: (suppliersData ?? []).map(
+                            (supplier) => supplier.name,
+                          ),
                         }
                       : field,
                   )}
@@ -386,7 +440,9 @@ function ProjectDetail() {
                     return null;
                   }}
                   onCreate={async (v) => {
-                    const supplier = (suppliersData ?? []).find((s) => s.name === v.supplier);
+                    const supplier = (suppliersData ?? []).find(
+                      (s) => s.name === v.supplier,
+                    );
                     try {
                       await createProjectExpense.mutateAsync({
                         projectId: project.id,
@@ -402,7 +458,10 @@ function ProjectDetail() {
                     } catch (err) {
                       return {
                         ok: false,
-                        error: err instanceof Error ? err.message : "שמירת ההוצאה נכשלה",
+                        error:
+                          err instanceof Error
+                            ? err.message
+                            : "שמירת ההוצאה נכשלה",
                       };
                     }
                   }}
@@ -419,7 +478,9 @@ function ProjectDetail() {
                   <th className="text-right py-2 font-medium">תאריך</th>
                   <th className="text-right py-2 font-medium">סטטוס</th>
                   <th className="text-left py-2 font-medium">סכום</th>
-                  {canOperateProject && <th className="text-left py-2 font-medium">פעולות</th>}
+                  {canOperateProject && (
+                    <th className="text-left py-2 font-medium">פעולות</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -434,14 +495,21 @@ function ProjectDetail() {
                   </tr>
                 ) : (
                   expenses.map((e, i) => (
-                    <tr key={i} className="border-b last:border-0 hover:bg-surface-muted/50">
+                    <tr
+                      key={i}
+                      className="border-b last:border-0 hover:bg-surface-muted/50"
+                    >
                       <td className="py-2 font-medium">{e.category}</td>
-                      <td className="py-2 text-muted-foreground">{e.supplier ?? "—"}</td>
+                      <td className="py-2 text-muted-foreground">
+                        {e.supplier ?? "—"}
+                      </td>
                       <td className="py-2 text-muted-foreground">{e.date}</td>
                       <td className="py-2">
                         <StatusBadge value={e.status} />
                       </td>
-                      <td className="py-2 text-left font-semibold">₪{e.amount.toLocaleString()}</td>
+                      <td className="py-2 text-left font-semibold">
+                        ₪{e.amount.toLocaleString()}
+                      </td>
                       {canOperateProject && (
                         <td className="py-2 text-left">
                           <div className="flex items-center justify-end gap-2">
@@ -471,8 +539,12 @@ function ProjectDetail() {
                               }}
                               customValidate={(values) => {
                                 const amount = Number(values.amount);
-                                if (!(amount > 0)) return "יש להזין סכום חיובי.";
-                                if (totalExpenses - e.amount + amount > project.budget) {
+                                if (!(amount > 0))
+                                  return "יש להזין סכום חיובי.";
+                                if (
+                                  totalExpenses - e.amount + amount >
+                                  project.budget
+                                ) {
                                   return "סכום ההוצאה חורג מתקציב הפרויקט.";
                                 }
                                 return null;
@@ -489,7 +561,8 @@ function ProjectDetail() {
                                       amount: Number(values.amount),
                                       date: values.date,
                                       supplierId: supplier?.id ?? null,
-                                      status: values.status as "שולם" | "ממתין" | "חלקי",
+                                      status: values.status as
+                                        "שולם" | "ממתין" | "חלקי",
                                       description: values.description,
                                       reference: values.reference,
                                     },
@@ -499,7 +572,9 @@ function ProjectDetail() {
                                   return {
                                     ok: false,
                                     error:
-                                      error instanceof Error ? error.message : "עדכון ההוצאה נכשל",
+                                      error instanceof Error
+                                        ? error.message
+                                        : "עדכון ההוצאה נכשל",
                                   };
                                 }
                               }}
@@ -510,7 +585,9 @@ function ProjectDetail() {
                               className="text-rose-600 hover:text-rose-700"
                               onClick={async () => {
                                 if (
-                                  !window.confirm("למחוק את ההוצאה? הפעולה תעדכן גם את התקציב.")
+                                  !window.confirm(
+                                    "למחוק את ההוצאה? הפעולה תעדכן גם את התקציב.",
+                                  )
                                 ) {
                                   return;
                                 }
@@ -519,7 +596,9 @@ function ProjectDetail() {
                                   toast.success("ההוצאה נמחקה והתקציב עודכן");
                                 } catch (error) {
                                   toast.error(
-                                    error instanceof Error ? error.message : "מחיקת ההוצאה נכשלה",
+                                    error instanceof Error
+                                      ? error.message
+                                      : "מחיקת ההוצאה נכשלה",
                                   );
                                 }
                               }}
@@ -550,7 +629,9 @@ function ProjectDetail() {
                         <span className="font-medium">{cat}</span>
                         <span className="text-muted-foreground">{pct}%</span>
                       </div>
-                      <div className="text-sm font-semibold mt-0.5">₪{amt.toLocaleString()}</div>
+                      <div className="text-sm font-semibold mt-0.5">
+                        ₪{amt.toLocaleString()}
+                      </div>
                     </div>
                   );
                 })}
@@ -629,10 +710,12 @@ function ProjectDetail() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-semibold flex items-center gap-1.5">
-                  <AlertTriangle className="h-4 w-4 text-amber-600" /> הרשמות ממתינות לאישור
+                  <AlertTriangle className="h-4 w-4 text-amber-600" /> הרשמות
+                  ממתינות לאישור
                 </div>
                 <div className="text-sm text-amber-700 mt-1">
-                  {pendingVolunteersCount} מתנדבים · {pendingParticipantsCount} משתתפים
+                  {pendingVolunteersCount} מתנדבים · {pendingParticipantsCount}{" "}
+                  משתתפים
                 </div>
               </div>
               <Button
@@ -650,7 +733,9 @@ function ProjectDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
         <div className="card-elevated p-5">
           <div className="flex items-center justify-between gap-2 mb-3">
-            <div className="font-semibold">נרשמים משויכים ({projectParticipants.length})</div>
+            <div className="font-semibold">
+              נרשמים משויכים ({projectParticipants.length})
+            </div>
             {canOperateProject && availableParticipants.length > 0 && (
               <EntityFormDialog
                 triggerLabel="שייך נרשם"
@@ -664,15 +749,18 @@ function ProjectDetail() {
                     type: "select",
                     required: true,
                     options: availableParticipants.map(
-                      (participant) => `${participant.name} (${participant.id})`,
+                      (participant) =>
+                        `${participant.name} (${participant.id})`,
                     ),
                   },
                 ]}
                 onCreate={async (values) => {
                   const participant = availableParticipants.find(
-                    (item) => `${item.name} (${item.id})` === values.participant,
+                    (item) =>
+                      `${item.name} (${item.id})` === values.participant,
                   );
-                  if (!participant) return { ok: false, error: "הנרשם לא נמצא" };
+                  if (!participant)
+                    return { ok: false, error: "הנרשם לא נמצא" };
                   try {
                     await assignParticipant.mutateAsync({
                       projectId: project.id,
@@ -682,7 +770,10 @@ function ProjectDetail() {
                   } catch (error) {
                     return {
                       ok: false,
-                      error: error instanceof Error ? error.message : "שיוך הנרשם נכשל",
+                      error:
+                        error instanceof Error
+                          ? error.message
+                          : "שיוך הנרשם נכשל",
                     };
                   }
                 }}
@@ -693,25 +784,55 @@ function ProjectDetail() {
             <EmptyState text="אין נרשמים משויכים" />
           ) : (
             <ul className="space-y-2">
-              {projectParticipants.map((participant) => (
-                <li key={participant.id}>
-                  <Link
-                    to="/participants/$participantId"
-                    params={{ participantId: participant.id }}
-                    className="flex items-center justify-between p-2 rounded-lg hover:bg-surface-muted transition-colors"
-                  >
-                    <span className="text-sm font-medium">{participant.name}</span>
-                    <span className="text-xs text-muted-foreground">{participant.status}</span>
-                  </Link>
-                </li>
-              ))}
+              {projectParticipants.map((participant) => {
+                const entries = getParticipantPayments(
+                  participant,
+                  participantAssignments ?? [],
+                ).filter((entry) => entry.projectId === project.id);
+                return (
+                  <li key={participant.id}>
+                    <Link
+                      to="/participants/$participantId"
+                      params={{ participantId: participant.id }}
+                      className="flex items-center justify-between p-2 rounded-lg hover:bg-surface-muted transition-colors"
+                    >
+                      <span className="text-sm font-medium">
+                        {participant.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {participant.status}
+                      </span>
+                    </Link>
+                    {entries.map((entry) => (
+                      <div
+                        key={entry.projectId}
+                        className="flex flex-wrap items-center gap-2 px-2 pb-2"
+                      >
+                        <span className="text-xs">
+                          {entry.isPaidProject
+                            ? `עלות: ₪${entry.amount.toLocaleString()}`
+                            : "ללא תשלום"}
+                        </span>
+                        <StatusBadge value={entry.paymentStatus} />
+                        <ParticipantPaymentsButton
+                          participantId={participant.id}
+                          name={participant.name}
+                          entries={[entry]}
+                        />
+                      </div>
+                    ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
 
         <div className="card-elevated p-5">
           <div className="flex items-center justify-between gap-2 mb-3">
-            <div className="font-semibold">מתנדבים משויכים ({projectVolunteers.length})</div>
+            <div className="font-semibold">
+              מתנדבים משויכים ({projectVolunteers.length})
+            </div>
             {canOperateProject && availableVolunteers.length > 0 && (
               <EntityFormDialog
                 triggerLabel="שייך מתנדב"
@@ -724,7 +845,9 @@ function ProjectDetail() {
                     label: "מתנדב",
                     type: "select",
                     required: true,
-                    options: availableVolunteers.map((v) => `${v.name} (${v.id})`),
+                    options: availableVolunteers.map(
+                      (v) => `${v.name} (${v.id})`,
+                    ),
                   },
                 ]}
                 onCreate={async (values) => {
@@ -741,7 +864,8 @@ function ProjectDetail() {
                   } catch (err) {
                     return {
                       ok: false,
-                      error: err instanceof Error ? err.message : "השמירה נכשלה",
+                      error:
+                        err instanceof Error ? err.message : "השמירה נכשלה",
                     };
                   }
                 }}
@@ -760,7 +884,9 @@ function ProjectDetail() {
                     className="flex items-center justify-between p-2 rounded-lg hover:bg-surface-muted transition-colors"
                   >
                     <span className="text-sm font-medium">{v.name}</span>
-                    <span className="text-xs text-muted-foreground">{v.hours} שעות</span>
+                    <span className="text-xs text-muted-foreground">
+                      {v.hours} שעות
+                    </span>
                   </Link>
                 </li>
               ))}
@@ -770,7 +896,9 @@ function ProjectDetail() {
 
         {canViewDonations && (
           <div className="card-elevated p-5">
-            <div className="font-semibold mb-3">תרומות קשורות ({projectDonations.length})</div>
+            <div className="font-semibold mb-3">
+              תרומות קשורות ({projectDonations.length})
+            </div>
             {projectDonations.length === 0 ? (
               <EmptyState text="טרם נרשמו תרומות" />
             ) : (
@@ -784,7 +912,11 @@ function ProjectDetail() {
                     >
                       <span className="text-sm">{d.donor}</span>
                       <span className="text-sm font-semibold">
-                        ₪{donationAmountForProject(d.id, d.amount).toLocaleString()}
+                        ₪
+                        {donationAmountForProject(
+                          d.id,
+                          d.amount,
+                        ).toLocaleString()}
                       </span>
                     </Link>
                   </li>
@@ -807,7 +939,12 @@ function ProjectDetail() {
               description="משימה עם תאריכי התחלה וסיום תוצג גם בגאנט."
               successMessage="המשימה נוספה בהצלחה"
               fields={[
-                { name: "title", label: "שם המשימה", required: true, colSpan: 2 },
+                {
+                  name: "title",
+                  label: "שם המשימה",
+                  required: true,
+                  colSpan: 2,
+                },
                 { name: "assignee", label: "אחראי/ת", required: true },
                 {
                   name: "status",
@@ -816,8 +953,18 @@ function ProjectDetail() {
                   required: true,
                   options: ["לביצוע", "בעבודה", "הושלם"],
                 },
-                { name: "startDate", label: "תאריך התחלה", type: "date", required: true },
-                { name: "endDate", label: "תאריך סיום", type: "date", required: true },
+                {
+                  name: "startDate",
+                  label: "תאריך התחלה",
+                  type: "date",
+                  required: true,
+                },
+                {
+                  name: "endDate",
+                  label: "תאריך סיום",
+                  type: "date",
+                  required: true,
+                },
               ]}
               customValidate={(values) =>
                 values.startDate > values.endDate
@@ -825,7 +972,11 @@ function ProjectDetail() {
                   : null
               }
               onCreate={async (values) => {
-                const columns = { לביצוע: "todo", בעבודה: "doing", הושלם: "done" } as const;
+                const columns = {
+                  לביצוע: "todo",
+                  בעבודה: "doing",
+                  הושלם: "done",
+                } as const;
                 try {
                   await createTask.mutateAsync({
                     title: values.title,
@@ -839,7 +990,8 @@ function ProjectDetail() {
                 } catch (err) {
                   return {
                     ok: false,
-                    error: err instanceof Error ? err.message : "שמירת המשימה נכשלה",
+                    error:
+                      err instanceof Error ? err.message : "שמירת המשימה נכשלה",
                   };
                 }
               }}
@@ -851,7 +1003,10 @@ function ProjectDetail() {
             const labels = { todo: "לביצוע", doing: "בעבודה", done: "הושלם" };
             const items = projectTasks.filter((t) => t.column === col);
             return (
-              <div key={col} className="bg-surface-muted rounded-xl p-3 min-h-[160px]">
+              <div
+                key={col}
+                className="bg-surface-muted rounded-xl p-3 min-h-[160px]"
+              >
                 <div className="flex items-center justify-between px-1 pb-3">
                   <div className="text-sm font-semibold">{labels[col]}</div>
                   <span className="text-xs bg-white rounded-full px-2 py-0.5 border border-border">
@@ -859,7 +1014,9 @@ function ProjectDetail() {
                   </span>
                 </div>
                 {items.length === 0 ? (
-                  <div className="text-xs text-muted-foreground text-center py-4">אין משימות</div>
+                  <div className="text-xs text-muted-foreground text-center py-4">
+                    אין משימות
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     {items.map((t) => (
@@ -868,7 +1025,9 @@ function ProjectDetail() {
                         className="bg-white rounded-lg p-3 border border-border shadow-soft"
                       >
                         <div className="text-sm font-medium">{t.title}</div>
-                        <div className="text-xs text-muted-foreground mt-1">{t.assignee}</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {t.assignee}
+                        </div>
                         {canOperateProject && (
                           <div className="mt-2">
                             <TaskEditButton task={t} />
@@ -897,8 +1056,11 @@ function ProjectDetail() {
           <GanttChart
             phases={ganttItems}
             renderAction={(item) => {
-              if (!canOperateProject || !item.id.startsWith("task-")) return null;
-              const task = projectTasks.find((candidate) => `task-${candidate.id}` === item.id);
+              if (!canOperateProject || !item.id.startsWith("task-"))
+                return null;
+              const task = projectTasks.find(
+                (candidate) => `task-${candidate.id}` === item.id,
+              );
               return task ? <TaskEditButton task={task} compact /> : null;
             }}
           />
@@ -948,17 +1110,35 @@ function Metric({
   );
 }
 
-function TaskEditButton({ task, compact = false }: { task: TaskRecord; compact?: boolean }) {
+function TaskEditButton({
+  task,
+  compact = false,
+}: {
+  task: TaskRecord;
+  compact?: boolean;
+}) {
   const updateTask = useUpdateTask();
-  const statusLabels = { todo: "לביצוע", doing: "בעבודה", done: "הושלם" } as const;
-  const statusColumns = { לביצוע: "todo", בעבודה: "doing", הושלם: "done" } as const;
+  const statusLabels = {
+    todo: "לביצוע",
+    doing: "בעבודה",
+    done: "הושלם",
+  } as const;
+  const statusColumns = {
+    לביצוע: "todo",
+    בעבודה: "doing",
+    הושלם: "done",
+  } as const;
 
   return (
     <RecordEditDialog
       triggerLabel="עריכה"
       triggerNode={
         compact ? (
-          <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px] shrink-0">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 px-2 text-[11px] shrink-0"
+          >
             עריכה
           </Button>
         ) : undefined
@@ -975,7 +1155,12 @@ function TaskEditButton({ task, compact = false }: { task: TaskRecord; compact?:
           required: true,
           options: ["לביצוע", "בעבודה", "הושלם"],
         },
-        { name: "startDate", label: "תאריך התחלה", type: "date", required: true },
+        {
+          name: "startDate",
+          label: "תאריך התחלה",
+          type: "date",
+          required: true,
+        },
         { name: "endDate", label: "תאריך סיום", type: "date", required: true },
       ]}
       initialValues={{
@@ -998,7 +1183,8 @@ function TaskEditButton({ task, compact = false }: { task: TaskRecord; compact?:
             patch: {
               title: values.title,
               assignee: values.assignee,
-              column: statusColumns[values.status as keyof typeof statusColumns],
+              column:
+                statusColumns[values.status as keyof typeof statusColumns],
               startDate: values.startDate,
               endDate: values.endDate,
             },
@@ -1015,7 +1201,13 @@ function TaskEditButton({ task, compact = false }: { task: TaskRecord; compact?:
   );
 }
 
-function ProjectInsights({ project, canEdit }: { project: ProjectRecord; canEdit: boolean }) {
+function ProjectInsights({
+  project,
+  canEdit,
+}: {
+  project: ProjectRecord;
+  canEdit: boolean;
+}) {
   const [value, setValue] = useState(project.insights ?? "");
   const updateProject = useUpdateProject();
 
@@ -1033,8 +1225,12 @@ function ProjectInsights({ project, canEdit }: { project: ProjectRecord; canEdit
         <Button
           size="sm"
           className="mt-3 bg-brand hover:bg-brand-deep"
-          disabled={updateProject.isPending || value === (project.insights ?? "")}
-          onClick={() => updateProject.mutate({ id: project.id, patch: { insights: value } })}
+          disabled={
+            updateProject.isPending || value === (project.insights ?? "")
+          }
+          onClick={() =>
+            updateProject.mutate({ id: project.id, patch: { insights: value } })
+          }
         >
           {updateProject.isPending ? "שומר..." : "שמור תובנות"}
         </Button>
@@ -1044,5 +1240,7 @@ function ProjectInsights({ project, canEdit }: { project: ProjectRecord; canEdit
 }
 
 function EmptyState({ text }: { text: string }) {
-  return <div className="text-center text-sm text-muted-foreground py-6">{text}</div>;
+  return (
+    <div className="text-center text-sm text-muted-foreground py-6">{text}</div>
+  );
 }

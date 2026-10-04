@@ -84,7 +84,7 @@ export const participantFields: FormField[] = [
     label: "סטטוס תשלום",
     type: "select",
     required: true,
-    options: ["שולם", "לא שולם", "לא נדרש תשלום"],
+    options: ["שולם", "שולם חלקית", "לא שולם", "לא נדרש תשלום"],
   },
   {
     name: "documentsComplete",
@@ -181,7 +181,13 @@ export const donorFields: FormField[] = [
     type: "select",
     options: ["טלפון", 'דוא"ל', "WhatsApp", "פגישה"],
   },
-  { name: "status", label: "סטטוס", type: "select", required: true, options: ["פעיל", "לא פעיל"] },
+  {
+    name: "status",
+    label: "סטטוס",
+    type: "select",
+    required: true,
+    options: ["פעיל", "לא פעיל"],
+  },
   { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
 ];
 
@@ -235,6 +241,19 @@ export const donationFields: FormField[] = [
 
 export const projectFields: FormField[] = [
   { name: "name", label: "שם פרויקט", required: true, colSpan: 2 },
+  {
+    name: "paymentType",
+    label: "האם הפרויקט בתשלום?",
+    type: "select",
+    required: true,
+    options: ["ללא תשלום", "בתשלום"],
+  },
+  {
+    name: "price",
+    label: "עלות לכל נרשם (₪)",
+    type: "number",
+    helper: "בפרויקט בתשלום יש להזין סכום חיובי",
+  },
   { name: "description", label: "תיאור", type: "textarea", colSpan: 2 },
   {
     name: "status",
@@ -248,7 +267,12 @@ export const projectFields: FormField[] = [
   { name: "endDate", label: "תאריך סיום", type: "date" },
   { name: "budget", label: "תקציב מתוכנן (₪)", type: "number", required: true },
   { name: "requiredVolunteers", label: "מתנדבים נדרשים", type: "number" },
-  { name: "suppliers", label: "ספקים קשורים", colSpan: 2, helper: "מופרדים בפסיק" },
+  {
+    name: "suppliers",
+    label: "ספקים קשורים",
+    colSpan: 2,
+    helper: "מופרדים בפסיק",
+  },
   { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
 ];
 
@@ -269,7 +293,16 @@ export const supplierFields: FormField[] = [
     label: "קטגוריה",
     type: "select",
     required: true,
-    options: ["הסעות", "מזון", "ציוד", "תוכן", "דפוס", "תקשורת", "שיווק", "אחר"],
+    options: [
+      "הסעות",
+      "מזון",
+      "ציוד",
+      "תוכן",
+      "דפוס",
+      "תקשורת",
+      "שיווק",
+      "אחר",
+    ],
   },
   { name: "address", label: "כתובת" },
   { name: "taxId", label: "ח.פ. / עוסק", maxLength: 9 },
@@ -279,7 +312,13 @@ export const supplierFields: FormField[] = [
     type: "select",
     options: ["מזומן", "שוטף +30", "שוטף +60", "שוטף +90"],
   },
-  { name: "status", label: "סטטוס", type: "select", required: true, options: ["שולם", "לא שולם"] },
+  {
+    name: "status",
+    label: "סטטוס",
+    type: "select",
+    required: true,
+    options: ["שולם", "לא שולם"],
+  },
   { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
 ];
 
@@ -312,7 +351,8 @@ export const familyFields: FormField[] = [
     name: "needs",
     label: "צרכי סיוע",
     colSpan: 2,
-    helper: "מופרדים בפסיק — מזון, דיור, תעסוקה, חינוך, בריאות, משפטי, ריהוט, עברית",
+    helper:
+      "מופרדים בפסיק — מזון, דיור, תעסוקה, חינוך, בריאות, משפטי, ריהוט, עברית",
   },
   { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
 ];
@@ -375,7 +415,13 @@ export const projectExpenseFields: FormField[] = [
     required: true,
     options: ["שולם", "ממתין", "חלקי"],
   },
-  { name: "description", label: "תיאור ההוצאה", type: "textarea", required: true, colSpan: 2 },
+  {
+    name: "description",
+    label: "תיאור ההוצאה",
+    type: "textarea",
+    required: true,
+    colSpan: 2,
+  },
   { name: "reference", label: "אסמכתא", required: true, colSpan: 2 },
 ];
 
@@ -389,7 +435,13 @@ export const userFields: FormField[] = [
     required: true,
     options: ["מנהלת העמותה", "מנהל מערכת", "מנהל כספים", "מנהל פרויקטים"],
   },
-  { name: "status", label: "סטטוס", type: "select", required: true, options: ["פעיל", "מושעה"] },
+  {
+    name: "status",
+    label: "סטטוס",
+    type: "select",
+    required: true,
+    options: ["פעיל", "מושעה"],
+  },
   {
     name: "permissions",
     label: "הרשאות מיוחדות",

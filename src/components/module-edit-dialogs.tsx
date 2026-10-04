@@ -134,10 +134,9 @@ export function ParticipantEditButton({
         );
         if (
           selectedProject?.type === "בתשלום" &&
-          v.status === "מאושר" &&
-          v.paymentStatus !== "שולם"
+          v.paymentStatus === "לא נדרש תשלום"
         ) {
-          return "פעילות בתשלום יכולה להיות מאושרת רק לאחר תשלום מלא.";
+          return "בפרויקט בתשלום יש לבחור אם התשלום שולם, שולם חלקית או לא שולם.";
         }
         return null;
       }}
@@ -168,7 +167,9 @@ export function ParticipantEditButton({
               source: v.source as ParticipantRecord["source"],
               status: v.status as ParticipantRecord["status"],
               paymentStatus:
-                v.paymentStatus as ParticipantRecord["paymentStatus"],
+                def.type === "חינמית"
+                  ? "לא נדרש תשלום"
+                  : (v.paymentStatus as ParticipantRecord["paymentStatus"]),
               documentsComplete: v.documentsComplete === "הושלמו",
               notes: v.notes || "",
             },
@@ -185,7 +186,11 @@ export function ParticipantEditButton({
   );
 }
 
-export function ParticipantDeleteButton({ record }: { record: ParticipantRecord }) {
+export function ParticipantDeleteButton({
+  record,
+}: {
+  record: ParticipantRecord;
+}) {
   const allowed = useCanEdit("participants");
   const deleteParticipant = useDeleteParticipant();
   if (!allowed) return null;
@@ -199,7 +204,10 @@ export function ParticipantDeleteButton({ record }: { record: ParticipantRecord 
 }
 
 // ---------- Volunteers ----------
-export function VolunteerEditButton({ record, triggerLabel }: { record: VolunteerRecord } & Btn) {
+export function VolunteerEditButton({
+  record,
+  triggerLabel,
+}: { record: VolunteerRecord } & Btn) {
   const allowed = useCanEdit("volunteers");
   const updateVolunteer = useUpdateVolunteer();
   const { data: projects } = useProjects();
@@ -242,7 +250,10 @@ export function VolunteerEditButton({ record, triggerLabel }: { record: Voluntee
           });
           return { ok: true };
         } catch (err) {
-          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+          return {
+            ok: false,
+            error: err instanceof Error ? err.message : "שמירת השינויים נכשלה",
+          };
         }
       }}
     />
@@ -263,7 +274,10 @@ export function VolunteerDeleteButton({ record }: { record: VolunteerRecord }) {
 }
 
 // ---------- Donors ----------
-export function DonorEditButton({ record, triggerLabel }: { record: DonorRecord } & Btn) {
+export function DonorEditButton({
+  record,
+  triggerLabel,
+}: { record: DonorRecord } & Btn) {
   const allowed = useCanEdit("donors");
   const updateDonor = useUpdateDonor();
   if (!allowed) return null;
@@ -304,7 +318,10 @@ export function DonorEditButton({ record, triggerLabel }: { record: DonorRecord 
           });
           return { ok: true };
         } catch (err) {
-          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+          return {
+            ok: false,
+            error: err instanceof Error ? err.message : "שמירת השינויים נכשלה",
+          };
         }
       }}
     />
@@ -369,7 +386,10 @@ export function InteractionEditButton({
           });
           return { ok: true };
         } catch (err) {
-          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+          return {
+            ok: false,
+            error: err instanceof Error ? err.message : "שמירת השינויים נכשלה",
+          };
         }
       }}
     />
@@ -377,7 +397,10 @@ export function InteractionEditButton({
 }
 
 // ---------- Donations ----------
-export function DonationEditButton({ record, triggerLabel }: { record: DonationRecord } & Btn) {
+export function DonationEditButton({
+  record,
+  triggerLabel,
+}: { record: DonationRecord } & Btn) {
   const allowed = useCanEdit("donations");
   const { data: allocationsData } = useAllocationsForDonation(record.id);
   const allocations = allocationsData ?? [];
@@ -436,7 +459,10 @@ export function DonationEditButton({ record, triggerLabel }: { record: DonationR
           });
           return { ok: true };
         } catch (err) {
-          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+          return {
+            ok: false,
+            error: err instanceof Error ? err.message : "שמירת השינויים נכשלה",
+          };
         }
       }}
     />
@@ -457,7 +483,10 @@ export function DonationDeleteButton({ record }: { record: DonationRecord }) {
 }
 
 // ---------- Projects ----------
-export function ProjectEditButton({ record, triggerLabel }: { record: ProjectRecord } & Btn) {
+export function ProjectEditButton({
+  record,
+  triggerLabel,
+}: { record: ProjectRecord } & Btn) {
   const allowed = useCanEdit("projects");
   const updateProject = useUpdateProject();
   if (!allowed) return null;
@@ -469,18 +498,27 @@ export function ProjectEditButton({ record, triggerLabel }: { record: ProjectRec
       fields={projectFields.filter((field) => field.name !== "budget")}
       initialValues={{
         name: record.name,
+        paymentType: record.type === "בתשלום" ? "בתשלום" : "ללא תשלום",
+        price: String(record.price ?? 0),
         description: record.description ?? "",
         status: record.status,
         manager: record.manager,
         startDate: record.startDate ?? "",
         endDate: record.endDate ?? "",
-        requiredVolunteers: String(record.requiredVolunteers ?? record.volunteers),
+        requiredVolunteers: String(
+          record.requiredVolunteers ?? record.volunteers,
+        ),
         suppliers: record.suppliers ?? "",
         notes: record.notes ?? "",
       }}
       customValidate={(v) => {
         if (v.startDate && v.endDate && v.startDate > v.endDate)
           return "תאריך הסיום חייב להיות אחרי תאריך ההתחלה.";
+        if (
+          v.paymentType === "בתשלום" &&
+          (!Number.isFinite(Number(v.price)) || Number(v.price) <= 0)
+        )
+          return "בפרויקט בתשלום יש להזין סכום חיובי לכל נרשם.";
         return null;
       }}
       onSave={async (v) => {
@@ -490,6 +528,8 @@ export function ProjectEditButton({ record, triggerLabel }: { record: ProjectRec
             patch: {
               name: v.name,
               description: v.description || undefined,
+              type: v.paymentType === "בתשלום" ? "בתשלום" : "חינמית",
+              price: v.paymentType === "בתשלום" ? Number(v.price) : 0,
               status: v.status as ProjectRecord["status"],
               manager: v.manager,
               startDate: v.startDate || undefined,
@@ -501,7 +541,10 @@ export function ProjectEditButton({ record, triggerLabel }: { record: ProjectRec
           });
           return { ok: true };
         } catch (err) {
-          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+          return {
+            ok: false,
+            error: err instanceof Error ? err.message : "שמירת השינויים נכשלה",
+          };
         }
       }}
     />
@@ -509,7 +552,10 @@ export function ProjectEditButton({ record, triggerLabel }: { record: ProjectRec
 }
 
 // ---------- Suppliers ----------
-export function SupplierEditButton({ record, triggerLabel }: { record: SupplierRecord } & Btn) {
+export function SupplierEditButton({
+  record,
+  triggerLabel,
+}: { record: SupplierRecord } & Btn) {
   const allowed = useCanEdit("suppliers");
   const updateSupplier = useUpdateSupplier();
   if (!allowed) return null;
@@ -549,7 +595,10 @@ export function SupplierEditButton({ record, triggerLabel }: { record: SupplierR
           await updateSupplier.mutateAsync({ id: record.id, patch });
           return { ok: true };
         } catch (err) {
-          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+          return {
+            ok: false,
+            error: err instanceof Error ? err.message : "שמירת השינויים נכשלה",
+          };
         }
       }}
     />
@@ -570,7 +619,10 @@ export function SupplierDeleteButton({ record }: { record: SupplierRecord }) {
 }
 
 // ---------- Families ----------
-export function FamilyEditButton({ record, triggerLabel }: { record: FamilyRecord } & Btn) {
+export function FamilyEditButton({
+  record,
+  triggerLabel,
+}: { record: FamilyRecord } & Btn) {
   const allowed = useCanEdit("families");
   const updateFamily = useUpdateFamily();
   if (!allowed) return null;
@@ -621,7 +673,10 @@ export function FamilyEditButton({ record, triggerLabel }: { record: FamilyRecor
           });
           return { ok: true };
         } catch (err) {
-          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+          return {
+            ok: false,
+            error: err instanceof Error ? err.message : "שמירת השינויים נכשלה",
+          };
         }
       }}
     />
@@ -642,7 +697,10 @@ export function FamilyDeleteButton({ record }: { record: FamilyRecord }) {
 }
 
 // ---------- Income ----------
-export function IncomeEditButton({ record, triggerLabel }: { record: IncomeRecord } & Btn) {
+export function IncomeEditButton({
+  record,
+  triggerLabel,
+}: { record: IncomeRecord } & Btn) {
   const allowed = useCanEdit("finance");
   const updateIncome = useUpdateIncome();
   const { data: projects } = useProjects();
@@ -665,7 +723,9 @@ export function IncomeEditButton({ record, triggerLabel }: { record: IncomeRecor
         reference: record.reference ?? "",
         notes: record.notes ?? "",
       }}
-      customValidate={(v) => (Number(v.amount) > 0 ? null : "יש להזין סכום חיובי.")}
+      customValidate={(v) =>
+        Number(v.amount) > 0 ? null : "יש להזין סכום חיובי."
+      }
       onSave={async (v) => {
         const project = (projects ?? []).find((p) => p.name === v.project);
         try {
@@ -686,7 +746,10 @@ export function IncomeEditButton({ record, triggerLabel }: { record: IncomeRecor
           });
           return { ok: true };
         } catch (err) {
-          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+          return {
+            ok: false,
+            error: err instanceof Error ? err.message : "שמירת השינויים נכשלה",
+          };
         }
       }}
     />
@@ -707,7 +770,10 @@ export function IncomeDeleteButton({ record }: { record: IncomeRecord }) {
 }
 
 // ---------- Expenses ----------
-export function ExpenseEditButton({ record, triggerLabel }: { record: ExpenseRecord } & Btn) {
+export function ExpenseEditButton({
+  record,
+  triggerLabel,
+}: { record: ExpenseRecord } & Btn) {
   const allowed = useCanEdit("finance");
   const updateExpense = useUpdateExpense();
   const { data: projects } = useProjects();
@@ -759,7 +825,10 @@ export function ExpenseEditButton({ record, triggerLabel }: { record: ExpenseRec
           });
           return { ok: true };
         } catch (err) {
-          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+          return {
+            ok: false,
+            error: err instanceof Error ? err.message : "שמירת השינויים נכשלה",
+          };
         }
       }}
     />
@@ -780,7 +849,10 @@ export function ExpenseDeleteButton({ record }: { record: ExpenseRecord }) {
 }
 
 // ---------- Users & permissions ----------
-export function UserEditButton({ record, triggerLabel }: { record: UserRecord } & Btn) {
+export function UserEditButton({
+  record,
+  triggerLabel,
+}: { record: UserRecord } & Btn) {
   const allowed = useCanEdit("users");
   const { data: allUsers } = useUsers();
   const updateUser = useUpdateUser();
@@ -789,7 +861,9 @@ export function UserEditButton({ record, triggerLabel }: { record: UserRecord } 
     (u) => u.role === "מנהל מערכת" && u.status === "פעיל",
   );
   const isOnlyActiveAdmin =
-    record.role === "מנהל מערכת" && record.status === "פעיל" && activeAdmins.length === 1;
+    record.role === "מנהל מערכת" &&
+    record.status === "פעיל" &&
+    activeAdmins.length === 1;
   return (
     <RecordEditDialog
       triggerLabel={triggerLabel}
@@ -805,7 +879,10 @@ export function UserEditButton({ record, triggerLabel }: { record: UserRecord } 
         permissions: record.permissions ?? "",
       }}
       customValidate={(v) => {
-        if (isOnlyActiveAdmin && (v.role !== "מנהל מערכת" || v.status !== "פעיל"))
+        if (
+          isOnlyActiveAdmin &&
+          (v.role !== "מנהל מערכת" || v.status !== "פעיל")
+        )
           return "לא ניתן להסיר את הרשאת מנהל המערכת האחרונה הפעילה במערכת.";
         return null;
       }}
@@ -823,7 +900,10 @@ export function UserEditButton({ record, triggerLabel }: { record: UserRecord } 
           });
           return { ok: true };
         } catch (err) {
-          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+          return {
+            ok: false,
+            error: err instanceof Error ? err.message : "שמירת השינויים נכשלה",
+          };
         }
       }}
     />
@@ -839,7 +919,9 @@ export function UserDeleteButton({ record }: { record: UserRecord }) {
     (u) => u.role === "מנהל מערכת" && u.status === "פעיל",
   );
   const isOnlyActiveAdmin =
-    record.role === "מנהל מערכת" && record.status === "פעיל" && activeAdmins.length === 1;
+    record.role === "מנהל מערכת" &&
+    record.status === "פעיל" &&
+    activeAdmins.length === 1;
   return (
     <DeleteRecordButton
       title={`מחיקת משתמש — ${record.name}`}

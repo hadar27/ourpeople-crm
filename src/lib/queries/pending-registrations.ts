@@ -317,7 +317,7 @@ export function useApprovePendingParticipant() {
             payment_acknowledged: pending.payment_acknowledged ?? false,
             agreed_price: pending.agreed_price ?? 0,
           },
-          { onConflict: "project_id,participant_id", ignoreDuplicates: true },
+          { onConflict: "project_id,participant_id" },
         );
 
       if (linkError) throw linkError;

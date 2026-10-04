@@ -46,6 +46,10 @@ export type ParticipantProjectRecord = {
 
 export type ParticipantProjectAssignment = ParticipantProjectRecord & {
   participantId: string;
+  projectType: "חינמית" | "בתשלום";
+  projectPrice: number;
+  agreedPrice?: number;
+  paymentStatus?: ParticipantPayment;
 };
 
 type ParticipantRow = {
@@ -173,19 +177,23 @@ export function useAllParticipantProjectAssignments() {
       const { data, error } = await supabase
         .from("project_participants")
         .select(
-          "participant_id, joined_date, projects(id, name, status, start_date, end_date)",
+          "*, projects(id, name, status, start_date, end_date, type, price)",
         );
       if (error) throw error;
       return (
         data as unknown as {
           participant_id: string;
           joined_date: string;
+          agreed_price?: number;
+          payment_status?: ParticipantPayment;
           projects: {
             id: string;
             name: string;
             status: ParticipantProjectRecord["status"];
             start_date: string | null;
             end_date: string | null;
+            type: "חינמית" | "בתשלום";
+            price: number;
           } | null;
         }[]
       )
@@ -198,6 +206,10 @@ export function useAllParticipantProjectAssignments() {
           startDate: row.projects!.start_date ?? undefined,
           endDate: row.projects!.end_date ?? undefined,
           joinedDate: row.joined_date,
+          projectType: row.projects!.type,
+          projectPrice: row.projects!.price,
+          agreedPrice: row.agreed_price,
+          paymentStatus: row.payment_status,
         }));
     },
   });
@@ -302,6 +314,41 @@ export function useParticipant(id: string | undefined) {
         : null;
     },
     enabled: !!id,
+  });
+}
+
+export function useUpdateParticipantProjectPayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (values: {
+      participantId: string;
+      projectId: string;
+      paymentStatus: ParticipantPayment;
+      agreedPrice: number;
+    }) => {
+      const { error } = await supabase.from("project_participants").upsert(
+        {
+          participant_id: values.participantId,
+          project_id: values.projectId,
+          payment_status: values.paymentStatus,
+          agreed_price: values.agreedPrice,
+        },
+        { onConflict: "project_id,participant_id" },
+      );
+      if (error) {
+        if (
+          error.code === "PGRST204" ||
+          error.message.includes("payment_status")
+        )
+          throw new Error(
+            "יש להריץ תחילה את קובץ ה-SQL לניהול תשלומי נרשמים לפי פרויקט.",
+          );
+        throw error;
+      }
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: participantKeys.all });
+    },
   });
 }
 

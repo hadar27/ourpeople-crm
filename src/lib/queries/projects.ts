@@ -63,8 +63,10 @@ function toProjectRecord(row: ProjectRow): ProjectRecord {
     type: row.type as ProjectRecord["type"],
     price: row.price,
     budget: row.budget,
-    requestedInitialBudget: row.requested_initial_budget ?? row.initial_budget ?? row.budget,
-    approvalStatus: (row.approval_status ?? "מאושר") as ProjectRecord["approvalStatus"],
+    requestedInitialBudget:
+      row.requested_initial_budget ?? row.initial_budget ?? row.budget,
+    approvalStatus: (row.approval_status ??
+      "מאושר") as ProjectRecord["approvalStatus"],
     approvedBy: row.approved_by ?? undefined,
     approvedAt: row.approved_at ?? undefined,
     initialBudget: row.initial_budget ?? row.budget,
@@ -93,12 +95,14 @@ function toRow(patch: Partial<ProjectRecord>): Record<string, unknown> {
   if (patch.budget !== undefined) row.budget = patch.budget;
   if (patch.requestedInitialBudget !== undefined)
     row.requested_initial_budget = patch.requestedInitialBudget;
-  if (patch.approvalStatus !== undefined) row.approval_status = patch.approvalStatus;
+  if (patch.approvalStatus !== undefined)
+    row.approval_status = patch.approvalStatus;
   if (patch.spent !== undefined) row.spent = patch.spent;
   if (patch.progress !== undefined) row.progress = patch.progress;
   if (patch.volunteers !== undefined) row.volunteers = patch.volunteers;
   if (patch.manager !== undefined) row.manager = patch.manager;
-  if (patch.description !== undefined) row.description = patch.description ?? null;
+  if (patch.description !== undefined)
+    row.description = patch.description ?? null;
   if (patch.startDate !== undefined) row.start_date = patch.startDate || null;
   if (patch.endDate !== undefined) row.end_date = patch.endDate || null;
   if (patch.requiredVolunteers !== undefined)
@@ -112,14 +116,18 @@ function toRow(patch: Partial<ProjectRecord>): Record<string, unknown> {
 export const projectKeys = {
   all: ["projects"] as const,
   list: () => [...projectKeys.all, "list"] as const,
-  detail: (id: string | undefined) => [...projectKeys.all, "detail", id] as const,
+  detail: (id: string | undefined) =>
+    [...projectKeys.all, "detail", id] as const,
 };
 
 export function useProjects() {
   return useQuery({
     queryKey: projectKeys.list(),
     queryFn: async () => {
-      const { data, error } = await supabase.from("projects").select("*").order("name");
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .order("name");
       if (error) throw error;
 
       const { data: expenseData, error: expenseError } = await supabase
@@ -127,7 +135,9 @@ export function useProjects() {
         .select("project_id, amount");
       if (expenseError) throw expenseError;
 
-      const spentByProject = (expenseData as { project_id: string; amount: number }[]).reduce(
+      const spentByProject = (
+        expenseData as { project_id: string; amount: number }[]
+      ).reduce(
         (acc, exp) => {
           acc[exp.project_id] = (acc[exp.project_id] ?? 0) + exp.amount;
           return acc;
@@ -163,7 +173,10 @@ export function useProject(id: string | undefined) {
         .eq("project_id", id);
       if (expenseError) throw expenseError;
 
-      const spent = (expenseData as { amount: number }[]).reduce((sum, exp) => sum + exp.amount, 0);
+      const spent = (expenseData as { amount: number }[]).reduce(
+        (sum, exp) => sum + exp.amount,
+        0,
+      );
 
       const record = toProjectRecord(data as ProjectRow);
       record.spent = spent;
@@ -188,7 +201,9 @@ export function useCreateProject() {
           error.message.includes("approval_status") ||
           error.code === "PGRST204"
         ) {
-          throw new Error("יש להריץ תחילה את מיגרציה 0024 ב-Supabase ולאחר מכן לנסות שוב.");
+          throw new Error(
+            "יש להריץ תחילה את מיגרציה 0024 ב-Supabase ולאחר מכן לנסות שוב.",
+          );
         }
         throw error;
       }
@@ -204,7 +219,9 @@ export function useDeleteProject() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.rpc("delete_project_safely", { project_value: id });
+      const { error } = await supabase.rpc("delete_project_safely", {
+        project_value: id,
+      });
       if (error) throw error;
     },
     onSuccess: (_data, id) => {
@@ -217,7 +234,13 @@ export function useDeleteProject() {
 export function useUpdateProject() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Partial<ProjectRecord> }) => {
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch: Partial<ProjectRecord>;
+    }) => {
       const { data, error } = await supabase
         .from("projects")
         .update(toRow(patch))
@@ -227,9 +250,14 @@ export function useUpdateProject() {
       if (error) throw error;
       return toProjectRecord(data as ProjectRow);
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: projectKeys.list() });
-      queryClient.invalidateQueries({ queryKey: projectKeys.detail(variables.id) });
+    onSuccess: async (_data, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: projectKeys.list() }),
+        queryClient.invalidateQueries({
+          queryKey: projectKeys.detail(variables.id),
+        }),
+        queryClient.invalidateQueries({ queryKey: ["participants"] }),
+      ]);
     },
   });
 }
