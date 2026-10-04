@@ -82,7 +82,9 @@ export function useDonors() {
   return useQuery({
     queryKey: donorKeys.list(),
     queryFn: async () => {
-      const { data, error } = await supabase.from("donors").select("*").order("name");
+      const { data, error } = await supabase.from("donors")
+        .select("*")
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return (data as DonorRow[]).map(toDonorRecord);
     },
