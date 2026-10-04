@@ -40,7 +40,12 @@ function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(
+        error.code === "invalid_credentials" ||
+          error.message.toLowerCase().includes("invalid login credentials")
+          ? "דוא״ל או סיסמה אינם תקינים"
+          : error.message,
+      );
       return;
     }
     toast.success("התחברת בהצלחה — מעביר ללוח הבקרה");
