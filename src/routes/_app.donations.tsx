@@ -12,27 +12,47 @@ import {
 } from "@/lib/queries/donations";
 import { useDonors } from "@/lib/queries/donors";
 import { useProjects } from "@/lib/queries/projects";
-import { DonationEditButton, DonationDeleteButton } from "@/components/module-edit-dialogs";
+import {
+  DonationEditButton,
+  DonationDeleteButton,
+} from "@/components/module-edit-dialogs";
 import { useCanEdit, useCanView } from "@/lib/permissions";
+import {
+  isInCalendarMonth,
+  useCalendarMonth,
+} from "@/components/calendar-month-filter";
 
 export const Route = createFileRoute("/_app/donations")({
   component: DonationsPage,
 });
 
 const columns: Column<DonationRecord>[] = [
-  { key: "donor", header: "תורם", render: (r) => <span className="font-medium">{r.donor}</span> },
+  {
+    key: "donor",
+    header: "תורם",
+    render: (r) => <span className="font-medium">{r.donor}</span>,
+  },
   {
     key: "amount",
     header: "סכום",
-    render: (r) => <span className="font-semibold tabular-nums">₪{r.amount.toLocaleString()}</span>,
+    render: (r) => (
+      <span className="font-semibold tabular-nums">
+        ₪{r.amount.toLocaleString()}
+      </span>
+    ),
   },
   { key: "project", header: "פרויקט" },
   { key: "method", header: "אופן תשלום" },
-  { key: "receipt", header: "קבלה", render: (r) => <StatusBadge value={r.receipt} /> },
+  {
+    key: "receipt",
+    header: "קבלה",
+    render: (r) => <StatusBadge value={r.receipt} />,
+  },
   { key: "date", header: "תאריך" },
 ];
 
 function DonationsPage() {
+  const { month } = useCalendarMonth();
   const { data: donations, isLoading, isError, refetch } = useDonations();
   const { data: donors } = useDonors();
   const { data: projects } = useProjects();
@@ -60,86 +80,112 @@ function DonationsPage() {
   const donorOptions = [...(donors ?? []).map((d) => d.name), ANONYMOUS_DONOR];
   const projectOptions = (projects ?? []).map((p) => p.name);
 
-  const thisMonthPrefix = new Date().toISOString().slice(0, 7);
-  const donationsThisMonth = (donations ?? []).filter((d) => d.date?.startsWith(thisMonthPrefix));
-  const totalThisMonth = donationsThisMonth.reduce((sum, d) => sum + d.amount, 0);
-  const receiptsIssued = donationsThisMonth.filter((d) => d.receipt === "הופק").length;
-  const receiptsMissing = donationsThisMonth.filter((d) => d.receipt === "לא הופק").length;
+  const visibleDonations = (donations ?? []).filter((d) =>
+    isInCalendarMonth(d.date, month),
+  );
+  const totalDonations = visibleDonations.reduce((sum, d) => sum + d.amount, 0);
+  const receiptsIssued = visibleDonations.filter(
+    (d) => d.receipt === "הופק",
+  ).length;
+  const receiptsMissing = visibleDonations.filter(
+    (d) => d.receipt === "לא הופק",
+  ).length;
 
   return (
     <>
       <PageHeader
         title="ניהול תרומות"
         description="כל הכניסות הכספיות מתורמים, קמפיינים ואירועים."
-        actions={canEditDonations ? (
-          <EntityFormDialog
-            triggerLabel="קליטת תרומה"
-            title="קליטת תרומה חדשה"
-            description="רישום תרומה למעקב כספי ולהנפקת קבלה."
-            successMessage="תרומה חדשה נקלטה בהצלחה"
-            fields={[
-              {
-                name: "donor",
-                label: "שם תורם",
-                type: "select",
-                required: true,
-                options: donorOptions,
-              },
-              { name: "amount", label: "סכום (₪)", type: "number", required: true },
-              {
-                name: "project",
-                label: "פרויקט / פעילות מיועדת",
-                type: "select",
-                options: projectOptions,
-              },
-              {
-                name: "method",
-                label: "אופן תשלום",
-                type: "select",
-                required: true,
-                options: ["העברה בנקאית", "אשראי", "מזומן", "שיק"],
-              },
-              { name: "date", label: "תאריך", type: "date", required: true },
-              {
-                name: "receipt",
-                label: "סטטוס קבלה",
-                type: "select",
-                options: ["הופק", "לא הופק"],
-              },
-              { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
-            ]}
-            onCreate={async (v) => {
-              const isAnonymous = v.donor === ANONYMOUS_DONOR;
-              const donor = (donors ?? []).find((d) => d.name === v.donor);
-              const project = (projects ?? []).find((p) => p.name === v.project);
-              try {
-                await createDonation.mutateAsync({
-                  donorId: donor?.id,
-                  isAnonymous,
-                  amount: Number(v.amount) || 0,
-                  projectId: project?.id,
-                  project: v.project || "",
-                  method: v.method as DonationRecord["method"],
-                  receipt: (v.receipt || "לא הופק") as DonationRecord["receipt"],
-                  date: v.date,
-                  notes: v.notes || undefined,
-                });
-                return { ok: true };
-              } catch (err) {
-                return { ok: false, error: err instanceof Error ? err.message : "השמירה נכשלה" };
-              }
-            }}
-          />
-        ) : undefined}
+        actions={
+          canEditDonations ? (
+            <EntityFormDialog
+              triggerLabel="קליטת תרומה"
+              title="קליטת תרומה חדשה"
+              description="רישום תרומה למעקב כספי ולהנפקת קבלה."
+              successMessage="תרומה חדשה נקלטה בהצלחה"
+              fields={[
+                {
+                  name: "donor",
+                  label: "שם תורם",
+                  type: "select",
+                  required: true,
+                  options: donorOptions,
+                },
+                {
+                  name: "amount",
+                  label: "סכום (₪)",
+                  type: "number",
+                  required: true,
+                },
+                {
+                  name: "project",
+                  label: "פרויקט / פעילות מיועדת",
+                  type: "select",
+                  options: projectOptions,
+                },
+                {
+                  name: "method",
+                  label: "אופן תשלום",
+                  type: "select",
+                  required: true,
+                  options: ["העברה בנקאית", "אשראי", "מזומן", "שיק"],
+                },
+                { name: "date", label: "תאריך", type: "date", required: true },
+                {
+                  name: "receipt",
+                  label: "סטטוס קבלה",
+                  type: "select",
+                  options: ["הופק", "לא הופק"],
+                },
+                { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
+              ]}
+              onCreate={async (v) => {
+                const isAnonymous = v.donor === ANONYMOUS_DONOR;
+                const donor = (donors ?? []).find((d) => d.name === v.donor);
+                const project = (projects ?? []).find(
+                  (p) => p.name === v.project,
+                );
+                try {
+                  await createDonation.mutateAsync({
+                    donorId: donor?.id,
+                    isAnonymous,
+                    amount: Number(v.amount) || 0,
+                    projectId: project?.id,
+                    project: v.project || "",
+                    method: v.method as DonationRecord["method"],
+                    receipt: (v.receipt ||
+                      "לא הופק") as DonationRecord["receipt"],
+                    date: v.date,
+                    notes: v.notes || undefined,
+                  });
+                  return { ok: true };
+                } catch (err) {
+                  return {
+                    ok: false,
+                    error: err instanceof Error ? err.message : "השמירה נכשלה",
+                  };
+                }
+              }}
+            />
+          ) : undefined
+        }
       />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="card-elevated p-4 bg-brand-gradient text-white">
-          <div className="text-xs opacity-80">סך תרומות החודש</div>
-          <div className="text-2xl font-bold mt-1">₪{totalThisMonth.toLocaleString()}</div>
+          <div className="text-xs opacity-80">
+            {month ? "סך תרומות בחודש הנבחר" : "סך כל התרומות"}
+          </div>
+          <div className="text-2xl font-bold mt-1">
+            ₪{totalDonations.toLocaleString()}
+          </div>
         </div>
         <div className="card-elevated p-4">
-          <div className="text-xs text-muted-foreground">תרומות החודש</div>
-          <div className="text-xl font-bold mt-1">{donationsThisMonth.length}</div>
+          <div className="text-xs text-muted-foreground">
+            {month ? "תרומות בחודש הנבחר" : "כמות תרומות"}
+          </div>
+          <div className="text-xl font-bold mt-1">
+            {visibleDonations.length}
+          </div>
         </div>
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">קבלות הופקו</div>
@@ -147,7 +193,9 @@ function DonationsPage() {
         </div>
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">קבלות שלא הופקו</div>
-          <div className="text-xl font-bold mt-1 text-rose-600">{receiptsMissing}</div>
+          <div className="text-xl font-bold mt-1 text-rose-600">
+            {receiptsMissing}
+          </div>
         </div>
       </div>
       {isLoading ? (
@@ -156,14 +204,19 @@ function DonationsPage() {
         </div>
       ) : isError ? (
         <div className="card-elevated flex flex-col items-center gap-3 p-16 text-center">
-          <div className="text-sm text-muted-foreground">אירעה שגיאה בטעינת התרומות.</div>
-          <button onClick={() => refetch()} className="text-sm text-brand hover:underline">
+          <div className="text-sm text-muted-foreground">
+            אירעה שגיאה בטעינת התרומות.
+          </div>
+          <button
+            onClick={() => refetch()}
+            className="text-sm text-brand hover:underline"
+          >
             נסה שוב
           </button>
         </div>
       ) : (
         <DataTable
-          rows={donations ?? []}
+          rows={visibleDonations}
           columns={columns}
           searchKeys={["donor", "project", "id"]}
           getRowHref={(r) => `/donation/${r.id}`}
