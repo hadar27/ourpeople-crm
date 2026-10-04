@@ -1,6 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader, StatusBadge } from "@/components/page-header";
-import { DataTable, type Column, type FilterConfig } from "@/components/data-table";
+import {
+  DataTable,
+  type Column,
+  type FilterConfig,
+} from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
 import {
   CalendarClock,
@@ -17,19 +21,35 @@ import {
   type ParticipantRecord,
   type RegistrationSource,
 } from "@/lib/queries/participants";
-import { ParticipantEditButton, ParticipantDeleteButton } from "@/components/module-edit-dialogs";
+import { participantFields } from "@/lib/edit-forms";
+import {
+  ParticipantEditButton,
+  ParticipantDeleteButton,
+} from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/participants")({
   component: ParticipantsPage,
 });
 
 const columns: Column<ParticipantRecord>[] = [
-  { key: "name", header: "שם מלא", render: (r) => <span className="font-medium">{r.name}</span> },
+  {
+    key: "name",
+    header: "שם מלא",
+    render: (r) => <span className="font-medium">{r.name}</span>,
+  },
   { key: "idNumber", header: "ת.ז." },
   { key: "phone", header: "טלפון" },
   { key: "registrationDate", header: "תאריך רישום" },
-  { key: "status", header: "סטטוס", render: (r) => <StatusBadge value={r.status} /> },
-  { key: "paymentStatus", header: "תשלום", render: (r) => <StatusBadge value={r.paymentStatus} /> },
+  {
+    key: "status",
+    header: "סטטוס",
+    render: (r) => <StatusBadge value={r.status} />,
+  },
+  {
+    key: "paymentStatus",
+    header: "תשלום",
+    render: (r) => <StatusBadge value={r.paymentStatus} />,
+  },
   {
     key: "documentsComplete",
     header: "מסמכים",
@@ -67,9 +87,13 @@ function ParticipantsPage() {
   // Operational KPIs derived from data
   const list = [...(participants ?? [])].sort(
     (first, second) =>
-      new Date(second.registrationDate).getTime() - new Date(first.registrationDate).getTime(),
+      new Date(second.registrationDate).getTime() -
+      new Date(first.registrationDate).getTime(),
   );
-  const monthFormatter = new Intl.DateTimeFormat("he-IL", { month: "long", year: "numeric" });
+  const monthFormatter = new Intl.DateTimeFormat("he-IL", {
+    month: "long",
+    year: "numeric",
+  });
   const registrationMonth = (participant: ParticipantRecord) =>
     monthFormatter.format(new Date(`${participant.registrationDate}T12:00:00`));
   const monthOptions = Array.from(new Set(list.map(registrationMonth)));
@@ -86,17 +110,24 @@ function ParticipantsPage() {
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  const thisWeek = list.filter((p) => new Date(p.registrationDate) >= sevenDaysAgo).length;
+  const thisWeek = list.filter(
+    (p) => new Date(p.registrationDate) >= sevenDaysAgo,
+  ).length;
   const needPayment = list.filter(
     (p) => p.paymentStatus === "לא שולם" || p.paymentStatus === "שולם חלקית",
   ).length;
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const recent = list.filter((p) => new Date(p.registrationDate) >= thirtyDaysAgo).length;
+  const recent = list.filter(
+    (p) => new Date(p.registrationDate) >= thirtyDaysAgo,
+  ).length;
   const missingDocs = list.filter((p) => !p.documentsComplete).length;
   const newImmigrants = list.filter((p) => {
     if (!p.isNewImmigrant) return false;
     const regDate = new Date(p.registrationDate);
-    return regDate.getMonth() === now.getMonth() && regDate.getFullYear() === now.getFullYear();
+    return (
+      regDate.getMonth() === now.getMonth() &&
+      regDate.getFullYear() === now.getFullYear()
+    );
   }).length;
 
   const projectNames = (projects ?? []).map((p) => p.name);
@@ -123,93 +154,47 @@ function ParticipantsPage() {
               }
               return null;
             }}
-            fields={[
-              { name: "fullName", label: "שם מלא", required: true, placeholder: "ישראל ישראלי" },
-              {
-                name: "idNumber",
-                label: "תעודת זהות",
-                required: true,
-                placeholder: "9 ספרות",
-                pattern: /^\d{9}$/,
-                patternMessage: "ת.ז. חייבת להכיל 9 ספרות בדיוק",
-                maxLength: 9,
-                helper: "9 ספרות, ללא מקפים",
-              },
-              {
-                name: "phone",
-                label: "טלפון נייד",
-                type: "tel",
-                required: true,
-                placeholder: "0500000000",
-                pattern: /^\d{10}$/,
-                patternMessage: "טלפון חייב להכיל 10 ספרות בדיוק",
-                maxLength: 10,
-              },
-              { name: "email", label: "אימייל", type: "email", placeholder: "name@example.com" },
-              {
-                name: "project",
-                label: "פרויקט",
-                type: "select",
-                required: true,
-                options: projectNames,
-                helper: "פרויקט בתשלום דורש תשלום מלא לפני אישור",
-              },
-              {
-                name: "source",
-                label: "מקור רישום",
-                type: "select",
-                required: true,
-                options: ["טופס דיגיטלי", "QR", "אתר", "צוות פנימי", "ייבוא Excel", "API"],
-              },
-              {
-                name: "paymentStatus",
-                label: "סטטוס תשלום",
-                type: "select",
-                required: true,
-                options: ["לא נדרש תשלום", "לא שולם", "שולם חלקית", "שולם"],
-              },
-              {
-                name: "documents",
-                label: "מסמכים שהוגשו",
-                type: "select",
-                options: ["הושלמו", "חסרים"],
-              },
-              {
-                name: "immigrationYear",
-                label: "שנת עלייה (אם רלוונטי)",
-                type: "number",
-                placeholder: "לדוגמה: 2022",
-              },
-              {
-                name: "notes",
-                label: "הערות",
-                type: "textarea",
-                colSpan: 2,
-                placeholder: "הערות נוספות...",
-              },
-            ]}
+            fields={participantFields.map((field) =>
+              field.name === "project"
+                ? { ...field, options: projectNames }
+                : field,
+            )}
             onCreate={async (v) => {
               const def = (projects ?? []).find((p) => p.name === v.project);
               if (!def) return { ok: false, error: "פרויקט לא תקין" };
               try {
                 await createParticipant.mutateAsync({
-                  name: v.fullName,
+                  name: v.name,
                   idNumber: v.idNumber,
                   phone: v.phone,
-                  email: v.email || undefined,
+                  email: v.email,
+                  dateOfBirth: v.dateOfBirth,
+                  sex: v.sex as ParticipantRecord["sex"],
+                  address: v.address,
+                  city: v.city,
+                  parentName: v.parentName,
+                  parentPhone: v.parentPhone,
+                  foodAllergies: v.foodAllergies || "",
                   projectId: def.id,
                   source: v.source as RegistrationSource,
-                  paymentStatus: v.paymentStatus as ParticipantRecord["paymentStatus"],
-                  status: "ממתין לאישור",
+                  paymentStatus:
+                    v.paymentStatus as ParticipantRecord["paymentStatus"],
+                  status: v.status as ParticipantRecord["status"],
                   registrationDate: new Date().toISOString().slice(0, 10),
-                  documentsComplete: v.documents === "הושלמו",
-                  immigrationYear: v.immigrationYear ? Number(v.immigrationYear) : undefined,
-                  isNewImmigrant: !!v.immigrationYear,
+                  documentsComplete: v.documentsComplete === "הושלמו",
+                  immigrationYear:
+                    v.immigrationYear === "לא רלוונטי"
+                      ? null
+                      : Number(v.immigrationYear),
+                  isNewImmigrant: v.immigrationYear !== "לא רלוונטי",
                   notes: v.notes || undefined,
                 });
                 return { ok: true };
               } catch (err) {
-                return { ok: false, error: err instanceof Error ? err.message : "השמירה נכשלה" };
+                return {
+                  ok: false,
+                  error: err instanceof Error ? err.message : "השמירה נכשלה",
+                };
               }
             }}
           />
@@ -222,8 +207,13 @@ function ParticipantsPage() {
         </div>
       ) : isError ? (
         <div className="card-elevated flex flex-col items-center gap-3 p-16 text-center mb-6">
-          <div className="text-sm text-muted-foreground">אירעה שגיאה בטעינת הנרשמים.</div>
-          <button onClick={() => refetch()} className="text-sm text-brand hover:underline">
+          <div className="text-sm text-muted-foreground">
+            אירעה שגיאה בטעינת הנרשמים.
+          </div>
+          <button
+            onClick={() => refetch()}
+            className="text-sm text-brand hover:underline"
+          >
             נסה שוב
           </button>
         </div>
@@ -297,9 +287,14 @@ function Op({
         ? "bg-amber-50 border-amber-200"
         : "bg-card";
   const labelCls = tone === "brand" ? "text-white/85" : "text-muted-foreground";
-  const iconWrap = tone === "brand" ? "bg-white/15 text-white" : "bg-secondary text-brand-deep";
+  const iconWrap =
+    tone === "brand"
+      ? "bg-white/15 text-white"
+      : "bg-secondary text-brand-deep";
   return (
-    <div className={`rounded-xl border border-border p-4 shadow-soft ${toneCls}`}>
+    <div
+      className={`rounded-xl border border-border p-4 shadow-soft ${toneCls}`}
+    >
       <div className="flex items-start justify-between">
         <div>
           <div className={`text-xs ${labelCls}`}>{label}</div>

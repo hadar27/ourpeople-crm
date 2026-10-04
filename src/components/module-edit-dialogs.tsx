@@ -3,8 +3,17 @@
 import { RecordEditDialog } from "@/components/record-edit-dialog";
 import { DeleteRecordButton } from "@/components/delete-record-dialog";
 import { useCanEdit } from "@/lib/permissions";
-import { useDonors, useUpdateDonor, useDeleteDonor, type DonorRecord } from "@/lib/queries/donors";
-import { useProjects, useUpdateProject, type ProjectRecord } from "@/lib/queries/projects";
+import {
+  useDonors,
+  useUpdateDonor,
+  useDeleteDonor,
+  type DonorRecord,
+} from "@/lib/queries/donors";
+import {
+  useProjects,
+  useUpdateProject,
+  type ProjectRecord,
+} from "@/lib/queries/projects";
 import {
   useUpdateParticipant,
   useDeleteParticipant,
@@ -15,7 +24,12 @@ import {
   useDeleteVolunteer,
   type VolunteerRecord,
 } from "@/lib/queries/volunteers";
-import { useUsers, useUpdateUser, useDeleteUser, type UserRecord } from "@/lib/queries/users";
+import {
+  useUsers,
+  useUpdateUser,
+  useDeleteUser,
+  type UserRecord,
+} from "@/lib/queries/users";
 import {
   ANONYMOUS_DONOR,
   useUpdateDonation,
@@ -28,9 +42,21 @@ import {
   useDeleteSupplier,
   type SupplierRecord,
 } from "@/lib/queries/suppliers";
-import { useUpdateIncome, useDeleteIncome, type IncomeRecord } from "@/lib/queries/incomes";
-import { useUpdateExpense, useDeleteExpense, type ExpenseRecord } from "@/lib/queries/expenses";
-import { useUpdateFamily, useDeleteFamily, type FamilyRecord } from "@/lib/queries/families";
+import {
+  useUpdateIncome,
+  useDeleteIncome,
+  type IncomeRecord,
+} from "@/lib/queries/incomes";
+import {
+  useUpdateExpense,
+  useDeleteExpense,
+  type ExpenseRecord,
+} from "@/lib/queries/expenses";
+import {
+  useUpdateFamily,
+  useDeleteFamily,
+  type FamilyRecord,
+} from "@/lib/queries/families";
 import { useUpdateInteraction } from "@/lib/queries/interactions";
 import {
   donationFields,
@@ -71,13 +97,28 @@ export function ParticipantEditButton({
       triggerLabel={triggerLabel}
       title={`עריכת נרשם — ${record.name}`}
       description={`עדכון פרטי הנרשם ${record.id}. המזהה נשמר ולא נוצרת רשומה חדשה.`}
-      fields={participantFields}
+      fields={participantFields.map((field) =>
+        field.name === "project"
+          ? {
+              ...field,
+              options: (projects ?? []).map((project) => project.name),
+            }
+          : field,
+      )}
       sensitiveFields={["paymentStatus"]}
       initialValues={{
         name: record.name,
         idNumber: record.idNumber,
         phone: record.phone,
         email: record.email ?? "",
+        dateOfBirth: record.dateOfBirth ?? "",
+        sex: record.sex ?? "",
+        parentName: record.parentName ?? "",
+        parentPhone: record.parentPhone ?? "",
+        foodAllergies: record.foodAllergies ?? "",
+        immigrationYear: record.immigrationYear
+          ? String(record.immigrationYear)
+          : "לא רלוונטי",
         address: record.address ?? "",
         city: record.city ?? "",
         project: record.project,
@@ -88,7 +129,14 @@ export function ParticipantEditButton({
         notes: record.notes ?? "",
       }}
       customValidate={(v) => {
-        if (record.projectType === "בתשלום" && v.status === "מאושר" && v.paymentStatus !== "שולם") {
+        const selectedProject = (projects ?? []).find(
+          (project) => project.name === v.project,
+        );
+        if (
+          selectedProject?.type === "בתשלום" &&
+          v.status === "מאושר" &&
+          v.paymentStatus !== "שולם"
+        ) {
           return "פעילות בתשלום יכולה להיות מאושרת רק לאחר תשלום מלא.";
         }
         return null;
@@ -103,20 +151,34 @@ export function ParticipantEditButton({
               name: v.name,
               idNumber: v.idNumber,
               phone: v.phone,
-              email: v.email || undefined,
+              email: v.email,
+              dateOfBirth: v.dateOfBirth,
+              sex: v.sex as ParticipantRecord["sex"],
+              parentName: v.parentName,
+              parentPhone: v.parentPhone,
+              foodAllergies: v.foodAllergies || "",
+              isNewImmigrant: v.immigrationYear !== "לא רלוונטי",
+              immigrationYear:
+                v.immigrationYear === "לא רלוונטי"
+                  ? null
+                  : Number(v.immigrationYear),
               address: v.address || undefined,
               city: v.city || undefined,
               projectId: def.id,
               source: v.source as ParticipantRecord["source"],
               status: v.status as ParticipantRecord["status"],
-              paymentStatus: v.paymentStatus as ParticipantRecord["paymentStatus"],
+              paymentStatus:
+                v.paymentStatus as ParticipantRecord["paymentStatus"],
               documentsComplete: v.documentsComplete === "הושלמו",
-              notes: v.notes || undefined,
+              notes: v.notes || "",
             },
           });
           return { ok: true };
         } catch (err) {
-          return { ok: false, error: err instanceof Error ? err.message : "שמירת השינויים נכשלה" };
+          return {
+            ok: false,
+            error: err instanceof Error ? err.message : "שמירת השינויים נכשלה",
+          };
         }
       }}
     />

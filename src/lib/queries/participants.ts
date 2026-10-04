@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
-export type RegistrationStatus = "מאושר" | "ממתין לתשלום" | "ממתין לאישור" | "טיוטה";
-export type ParticipantPayment = "שולם" | "שולם חלקית" | "לא שולם" | "לא נדרש תשלום";
+export type RegistrationStatus =
+  "מאושר" | "ממתין לתשלום" | "ממתין לאישור" | "טיוטה";
+export type ParticipantPayment =
+  "שולם" | "שולם חלקית" | "לא שולם" | "לא נדרש תשלום";
 export type RegistrationSource =
   "טופס דיגיטלי" | "QR" | "אתר" | "צוות פנימי" | "ייבוא Excel" | "API";
 
@@ -21,7 +23,7 @@ export type ParticipantRecord = {
   registrationDate: string;
   documentsComplete: boolean;
   isNewImmigrant?: boolean;
-  immigrationYear?: number;
+  immigrationYear?: number | null;
   email?: string;
   address?: string;
   city?: string;
@@ -79,7 +81,8 @@ function toParticipantRecord(row: ParticipantRow): ParticipantRecord {
     phone: row.phone,
     projectId: row.project_id,
     project: row.projects?.name ?? "",
-    projectType: (row.projects?.type ?? "חינמית") as ParticipantRecord["projectType"],
+    projectType: (row.projects?.type ??
+      "חינמית") as ParticipantRecord["projectType"],
     projectPrice: row.projects?.price ?? 0,
     status: row.status as RegistrationStatus,
     paymentStatus: row.payment_status as ParticipantPayment,
@@ -107,21 +110,30 @@ function toRow(patch: Partial<ParticipantRecord>): Record<string, unknown> {
   if (patch.phone !== undefined) row.phone = patch.phone;
   if (patch.projectId !== undefined) row.project_id = patch.projectId;
   if (patch.status !== undefined) row.status = patch.status;
-  if (patch.paymentStatus !== undefined) row.payment_status = patch.paymentStatus;
+  if (patch.paymentStatus !== undefined)
+    row.payment_status = patch.paymentStatus;
   if (patch.source !== undefined) row.source = patch.source;
-  if (patch.registrationDate !== undefined) row.registration_date = patch.registrationDate;
-  if (patch.documentsComplete !== undefined) row.documents_complete = patch.documentsComplete;
-  if (patch.isNewImmigrant !== undefined) row.is_new_immigrant = patch.isNewImmigrant;
-  if (patch.immigrationYear !== undefined) row.immigration_year = patch.immigrationYear ?? null;
+  if (patch.registrationDate !== undefined)
+    row.registration_date = patch.registrationDate;
+  if (patch.documentsComplete !== undefined)
+    row.documents_complete = patch.documentsComplete;
+  if (patch.isNewImmigrant !== undefined)
+    row.is_new_immigrant = patch.isNewImmigrant;
+  if (patch.immigrationYear !== undefined)
+    row.immigration_year = patch.immigrationYear ?? null;
   if (patch.email !== undefined) row.email = patch.email ?? null;
   if (patch.address !== undefined) row.address = patch.address ?? null;
   if (patch.city !== undefined) row.city = patch.city ?? null;
   if (patch.notes !== undefined) row.notes = patch.notes ?? null;
-  if (patch.dateOfBirth !== undefined) row.date_of_birth = patch.dateOfBirth ?? null;
+  if (patch.dateOfBirth !== undefined)
+    row.date_of_birth = patch.dateOfBirth ?? null;
   if (patch.sex !== undefined) row.sex = patch.sex ?? null;
-  if (patch.parentName !== undefined) row.parent_name = patch.parentName ?? null;
-  if (patch.parentPhone !== undefined) row.parent_phone = patch.parentPhone ?? null;
-  if (patch.foodAllergies !== undefined) row.food_allergies = patch.foodAllergies ?? null;
+  if (patch.parentName !== undefined)
+    row.parent_name = patch.parentName ?? null;
+  if (patch.parentPhone !== undefined)
+    row.parent_phone = patch.parentPhone ?? null;
+  if (patch.foodAllergies !== undefined)
+    row.food_allergies = patch.foodAllergies ?? null;
   return row;
 }
 
@@ -130,19 +142,24 @@ const SELECT = "*, projects(id, name, type, price)";
 export const participantKeys = {
   all: ["participants"] as const,
   list: () => [...participantKeys.all, "list"] as const,
-  detail: (id: string | undefined) => [...participantKeys.all, "detail", id] as const,
+  detail: (id: string | undefined) =>
+    [...participantKeys.all, "detail", id] as const,
   forProject: (projectId: string | undefined) =>
     [...participantKeys.all, "project", projectId] as const,
   projectsForParticipant: (participantId: string | undefined) =>
     [...participantKeys.all, "participantProjects", participantId] as const,
-  allProjectAssignments: () => [...participantKeys.all, "allProjectAssignments"] as const,
+  allProjectAssignments: () =>
+    [...participantKeys.all, "allProjectAssignments"] as const,
 };
 
 export function useParticipants() {
   return useQuery({
     queryKey: participantKeys.list(),
     queryFn: async () => {
-      const { data, error } = await supabase.from("participants").select(SELECT).order("name");
+      const { data, error } = await supabase
+        .from("participants")
+        .select(SELECT)
+        .order("name");
       if (error) throw error;
       return (data as unknown as ParticipantRow[]).map(toParticipantRecord);
     },
@@ -155,7 +172,9 @@ export function useAllParticipantProjectAssignments() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("project_participants")
-        .select("participant_id, joined_date, projects(id, name, status, start_date, end_date)");
+        .select(
+          "participant_id, joined_date, projects(id, name, status, start_date, end_date)",
+        );
       if (error) throw error;
       return (
         data as unknown as {
@@ -193,7 +212,9 @@ export function useProjectParticipantIds(projectId: string | undefined) {
         .select("participant_id")
         .eq("project_id", projectId);
       if (error) throw error;
-      return (data as { participant_id: string }[]).map((row) => row.participant_id);
+      return (data as { participant_id: string }[]).map(
+        (row) => row.participant_id,
+      );
     },
     enabled: !!projectId,
   });
@@ -223,7 +244,9 @@ export function useAssignParticipantToProject() {
       if (error) throw error;
     },
     onSuccess: (_data, values) => {
-      queryClient.invalidateQueries({ queryKey: participantKeys.forProject(values.projectId) });
+      queryClient.invalidateQueries({
+        queryKey: participantKeys.forProject(values.projectId),
+      });
       queryClient.invalidateQueries({ queryKey: participantKeys.list() });
     },
   });
@@ -274,7 +297,9 @@ export function useParticipant(id: string | undefined) {
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
-      return data ? toParticipantRecord(data as unknown as ParticipantRow) : null;
+      return data
+        ? toParticipantRecord(data as unknown as ParticipantRow)
+        : null;
     },
     enabled: !!id,
   });
@@ -284,7 +309,10 @@ export function useDeleteParticipant() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("participants").delete().eq("id", id);
+      const { error } = await supabase
+        .from("participants")
+        .delete()
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_data, id) => {
@@ -307,7 +335,9 @@ export function useCreateParticipant() {
           .maybeSingle();
         if (lookupError) throw lookupError;
         if (existing)
-          throw new Error("כבר קיים נרשם עם תעודת זהות זו. יש לשייך אותו לפרויקט הקיים.");
+          throw new Error(
+            "כבר קיים נרשם עם תעודת זהות זו. יש לשייך אותו לפרויקט הקיים.",
+          );
       }
       const { data, error } = await supabase
         .from("participants")
@@ -326,7 +356,13 @@ export function useCreateParticipant() {
 export function useUpdateParticipant() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Partial<ParticipantRecord> }) => {
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch: Partial<ParticipantRecord>;
+    }) => {
       if (patch.idNumber) {
         const { data: existing, error: lookupError } = await supabase
           .from("participants")
@@ -347,9 +383,17 @@ export function useUpdateParticipant() {
       if (error) throw error;
       return toParticipantRecord(data as unknown as ParticipantRow);
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: participantKeys.list() });
-      queryClient.invalidateQueries({ queryKey: participantKeys.detail(variables.id) });
+    onSuccess: async (updated, variables) => {
+      await queryClient.cancelQueries({ queryKey: participantKeys.all });
+      queryClient.setQueryData(participantKeys.detail(variables.id), updated);
+      queryClient.setQueryData<ParticipantRecord[]>(
+        participantKeys.list(),
+        (current) =>
+          current?.map((participant) =>
+            participant.id === updated.id ? updated : participant,
+          ),
+      );
+      await queryClient.invalidateQueries({ queryKey: participantKeys.all });
     },
   });
 }

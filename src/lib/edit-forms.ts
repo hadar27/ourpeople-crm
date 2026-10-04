@@ -7,7 +7,8 @@ import { validateIsraeliId } from "@/lib/validation";
 export const ID_PATTERN = /^\d{9}$/;
 export const PHONE_PATTERN = /^\d{10}$/;
 
-const validateIdNumber = (id: string) => validateIsraeliId(id) || "ת.ז. לא תקינה";
+const validateIdNumber = (id: string) =>
+  validateIsraeliId(id) || "ת.ז. לא תקינה";
 
 export const participantFields: FormField[] = [
   { name: "name", label: "שם מלא", required: true },
@@ -28,19 +29,21 @@ export const participantFields: FormField[] = [
     pattern: PHONE_PATTERN,
     patternMessage: "טלפון חייב להכיל 10 ספרות",
   },
-  { name: "dateOfBirth", label: "תאריך לידה", type: "date" },
+  { name: "dateOfBirth", required: true, label: "תאריך לידה", type: "date" },
   {
     name: "sex",
+    required: true,
     label: "מין",
     type: "select",
     options: ["זכר", "נקבה"],
   },
-  { name: "email", label: "אימייל", type: "email" },
-  { name: "address", label: "כתובת" },
-  { name: "city", label: "עיר" },
-  { name: "parentName", label: "שם הורה/אפוטרופוס" },
+  { name: "email", required: true, label: "אימייל", type: "email" },
+  { name: "address", required: true, label: "כתובת" },
+  { name: "city", required: true, label: "עיר" },
+  { name: "parentName", required: true, label: "שם הורה/אפוטרופוס" },
   {
     name: "parentPhone",
+    required: true,
     label: "טלפון הורה",
     type: "tel",
     maxLength: 10,
@@ -89,6 +92,18 @@ export const participantFields: FormField[] = [
     type: "select",
     required: true,
     options: ["הושלמו", "חסרים"],
+  },
+  {
+    name: "immigrationYear",
+    label: "שנת עלייה",
+    type: "select",
+    required: true,
+    options: [
+      "לא רלוונטי",
+      ...Array.from({ length: new Date().getFullYear() - 1899 }, (_, index) =>
+        String(new Date().getFullYear() - index),
+      ),
+    ],
   },
   { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
 ];

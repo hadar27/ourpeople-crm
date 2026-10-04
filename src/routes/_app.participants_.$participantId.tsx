@@ -12,7 +12,12 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/page-header";
-import { MiniStat, SectionCard, EmptyState, RecordNotFound } from "@/components/detail-kit";
+import {
+  MiniStat,
+  SectionCard,
+  EmptyState,
+  RecordNotFound,
+} from "@/components/detail-kit";
 import {
   type ParticipantProjectRecord,
   useParticipant,
@@ -42,8 +47,15 @@ export const Route = createFileRoute("/_app/participants_/$participantId")({
 });
 
 function ParticipantProfile() {
-  const { participantId } = useParams({ from: "/_app/participants_/$participantId" });
-  const { data: participant, isLoading, isError, refetch } = useParticipant(participantId);
+  const { participantId } = useParams({
+    from: "/_app/participants_/$participantId",
+  });
+  const {
+    data: participant,
+    isLoading,
+    isError,
+    refetch,
+  } = useParticipant(participantId);
   const { data: assignedProjects } = useProjectsForParticipant(participantId);
   const { data: projects } = useProjects();
 
@@ -58,8 +70,13 @@ function ParticipantProfile() {
   if (isError) {
     return (
       <div className="card-elevated flex flex-col items-center gap-3 p-16 text-center">
-        <div className="text-sm text-muted-foreground">אירעה שגיאה בטעינת הנרשם.</div>
-        <button onClick={() => refetch()} className="text-sm text-brand hover:underline">
+        <div className="text-sm text-muted-foreground">
+          אירעה שגיאה בטעינת הנרשם.
+        </div>
+        <button
+          onClick={() => refetch()}
+          className="text-sm text-brand hover:underline"
+        >
           נסה שוב
         </button>
       </div>
@@ -78,7 +95,9 @@ function ParticipantProfile() {
   }
 
   const price = participant.projectPrice;
-  const relatedProject = (projects ?? []).find((p) => p.id === participant.projectId);
+  const relatedProject = (projects ?? []).find(
+    (p) => p.id === participant.projectId,
+  );
   const projectsById = new Map<string, ParticipantProjectRecord>();
 
   if (relatedProject) {
@@ -95,12 +114,14 @@ function ParticipantProfile() {
     projectsById.set(project.id, project);
   }
 
-  const participantProjects = Array.from(projectsById.values()).sort((first, second) =>
-    (second.startDate ?? "").localeCompare(first.startDate ?? ""),
+  const participantProjects = Array.from(projectsById.values()).sort(
+    (first, second) =>
+      (second.startDate ?? "").localeCompare(first.startDate ?? ""),
   );
 
   const paidFully =
-    participant.paymentStatus === "שולם" || participant.paymentStatus === "לא נדרש תשלום";
+    participant.paymentStatus === "שולם" ||
+    participant.paymentStatus === "לא נדרש תשלום";
   const balance = paidFully
     ? 0
     : participant.paymentStatus === "שולם חלקית"
@@ -122,7 +143,9 @@ function ParticipantProfile() {
               <User className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-brand-deep">{participant.name}</h1>
+              <h1 className="text-2xl font-bold text-brand-deep">
+                {participant.name}
+              </h1>
               <div className="text-sm text-muted-foreground">
                 {participant.id} · ת.ז. {participant.idNumber}
               </div>
@@ -170,8 +193,20 @@ function ParticipantProfile() {
       <div className="grid lg:grid-cols-2 gap-6">
         <SectionCard title="פרטי קשר" icon={<Phone className="h-4 w-4" />}>
           <div className="divide-y divide-border text-sm">
+            <Row label="תאריך לידה" value={participant.dateOfBirth} />
+            <Row label="מין" value={participant.sex} />
+            <Row label="כתובת" value={participant.address} />
+            <Row label="עיר" value={participant.city} />
+            <Row label="שם הורה/אפוטרופוס" value={participant.parentName} />
+            <Row label="טלפון הורה" value={participant.parentPhone} />
+            <Row label="אלרגיות אוכל" value={participant.foodAllergies} />
+            <Row label="הערות" value={participant.notes} />
             <Row label="טלפון" value={participant.phone} />
-            <Row label="אימייל" value="—" icon={<Mail className="h-3.5 w-3.5" />} />
+            <Row
+              label="אימייל"
+              value={participant.email}
+              icon={<Mail className="h-3.5 w-3.5" />}
+            />
             <Row
               label="מקור רישום"
               value={participant.source}
@@ -188,7 +223,10 @@ function ParticipantProfile() {
           </div>
         </SectionCard>
 
-        <SectionCard title="פרויקטים נוכחיים וקודמים" icon={<CalendarClock className="h-4 w-4" />}>
+        <SectionCard
+          title="פרויקטים נוכחיים וקודמים"
+          icon={<CalendarClock className="h-4 w-4" />}
+        >
           <div className="mb-3 flex items-center justify-between text-sm">
             <span className="text-muted-foreground">סטטוס רישום</span>
             <StatusBadge value={participant.status} />
@@ -196,7 +234,10 @@ function ParticipantProfile() {
           {participantProjects.length ? (
             <div className="space-y-3">
               {participantProjects.map((project) => (
-                <div key={project.id} className="rounded-xl border border-border bg-muted/20 p-3">
+                <div
+                  key={project.id}
+                  className="rounded-xl border border-border bg-muted/20 p-3"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <Link
                       to="/project/$id"
@@ -215,12 +256,18 @@ function ParticipantProfile() {
               ))}
             </div>
           ) : (
-            <EmptyState text="אין פרויקטים משויכים" hint="ניתן לשייך את הנרשם מתוך עמוד הפרויקט." />
+            <EmptyState
+              text="אין פרויקטים משויכים"
+              hint="ניתן לשייך את הנרשם מתוך עמוד הפרויקט."
+            />
           )}
         </SectionCard>
 
         <div className="lg:col-span-2">
-          <EntityDocumentsPanel entityType="participant" entityId={participant.id} />
+          <EntityDocumentsPanel
+            entityType="participant"
+            entityId={participant.id}
+          />
         </div>
       </div>
 
