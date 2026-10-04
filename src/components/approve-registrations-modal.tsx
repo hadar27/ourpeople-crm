@@ -53,14 +53,18 @@ export function ApproveRegistrationsModal({
   open,
   onOpenChange,
 }: ApproveRegistrationsModalProps) {
-  const { data: pendingVolunteers } = usePendingVolunteerRegistrations(projectId);
-  const { data: pendingParticipants } = usePendingParticipantRegistrations(projectId);
+  const { data: pendingVolunteers } =
+    usePendingVolunteerRegistrations(projectId);
+  const { data: pendingParticipants } =
+    usePendingParticipantRegistrations(projectId);
   const approvePendingVolunteer = useApprovePendingVolunteer();
   const approvePendingParticipant = useApprovePendingParticipant();
   const rejectPending = useRejectPendingRegistration();
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
-  const [notification, setNotification] = useState<NotificationPreview | null>(null);
+  const [notification, setNotification] = useState<NotificationPreview | null>(
+    null,
+  );
 
   const notificationMessage = notification
     ? notification.decision === "approved"
@@ -103,7 +107,9 @@ export function ApproveRegistrationsModal({
     }
   };
 
-  const handleApproveParticipant = async (participant: PendingParticipantRecord) => {
+  const handleApproveParticipant = async (
+    participant: PendingParticipantRecord,
+  ) => {
     setApprovingId(participant.id);
     try {
       await approvePendingParticipant.mutateAsync({
@@ -119,7 +125,11 @@ export function ApproveRegistrationsModal({
         kind: "participant",
       });
     } catch (err) {
-      toast.error("שגיאה באישור המשתתף");
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? String(err.message)
+          : "שגיאה באישור המשתתף";
+      toast.error(message);
       console.error(err);
     } finally {
       setApprovingId(null);
@@ -170,8 +180,12 @@ export function ApproveRegistrationsModal({
 
           <Tabs defaultValue="volunteers" className="w-full">
             <TabsList>
-              <TabsTrigger value="volunteers">מתנדבים ({volunteersCount})</TabsTrigger>
-              <TabsTrigger value="participants">משתתפים ({participantsCount})</TabsTrigger>
+              <TabsTrigger value="volunteers">
+                מתנדבים ({volunteersCount})
+              </TabsTrigger>
+              <TabsTrigger value="participants">
+                משתתפים ({participantsCount})
+              </TabsTrigger>
             </TabsList>
 
             {/* Volunteers Tab */}
@@ -183,7 +197,10 @@ export function ApproveRegistrationsModal({
               ) : (
                 <div className="space-y-4">
                   {pendingVolunteers.map((volunteer) => (
-                    <div key={volunteer.id} className="border rounded-lg p-4 space-y-3">
+                    <div
+                      key={volunteer.id}
+                      className="border rounded-lg p-4 space-y-3"
+                    >
                       <div className="flex justify-between items-start">
                         <div>
                           <h4 className="font-semibold">{volunteer.name}</h4>
@@ -193,7 +210,9 @@ export function ApproveRegistrationsModal({
                           </p>
                         </div>
                         <span className="text-xs bg-slate-100 px-2 py-1 rounded">
-                          {new Date(volunteer.createdAt).toLocaleDateString("he-IL")}
+                          {new Date(volunteer.createdAt).toLocaleDateString(
+                            "he-IL",
+                          )}
                         </span>
                       </div>
 
@@ -203,17 +222,23 @@ export function ApproveRegistrationsModal({
                           {volunteer.availability}
                         </div>
                         <div>
-                          <span className="text-muted-foreground">שעות:</span> {volunteer.hours}
+                          <span className="text-muted-foreground">שעות:</span>{" "}
+                          {volunteer.hours}
                         </div>
                         {volunteer.skills.length > 0 && (
                           <div className="col-span-2">
-                            <span className="text-muted-foreground">כישורים:</span>{" "}
+                            <span className="text-muted-foreground">
+                              כישורים:
+                            </span>{" "}
                             {volunteer.skills.join(", ")}
                           </div>
                         )}
                         {volunteer.notes && (
                           <div className="col-span-2">
-                            <span className="text-muted-foreground">הערות:</span> {volunteer.notes}
+                            <span className="text-muted-foreground">
+                              הערות:
+                            </span>{" "}
+                            {volunteer.notes}
                           </div>
                         )}
                       </div>
@@ -262,7 +287,10 @@ export function ApproveRegistrationsModal({
               ) : (
                 <div className="space-y-4">
                   {pendingParticipants.map((participant) => (
-                    <div key={participant.id} className="border rounded-lg p-4 space-y-3">
+                    <div
+                      key={participant.id}
+                      className="border rounded-lg p-4 space-y-3"
+                    >
                       <div className="flex justify-between items-start">
                         <div>
                           <h4 className="font-semibold">{participant.name}</h4>
@@ -271,13 +299,16 @@ export function ApproveRegistrationsModal({
                           </p>
                         </div>
                         <span className="text-xs bg-slate-100 px-2 py-1 rounded">
-                          {new Date(participant.createdAt).toLocaleDateString("he-IL")}
+                          {new Date(participant.createdAt).toLocaleDateString(
+                            "he-IL",
+                          )}
                         </span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div>
-                          <span className="text-muted-foreground">סטטוס:</span> {participant.status}
+                          <span className="text-muted-foreground">סטטוס:</span>{" "}
+                          {participant.status}
                         </div>
                         <div>
                           <span className="text-muted-foreground">תשלום:</span>{" "}
@@ -285,24 +316,31 @@ export function ApproveRegistrationsModal({
                         </div>
                         {participant.email && (
                           <div>
-                            <span className="text-muted-foreground">דוא״ל:</span>{" "}
+                            <span className="text-muted-foreground">
+                              דוא״ל:
+                            </span>{" "}
                             {participant.email}
                           </div>
                         )}
                         {participant.city && (
                           <div>
-                            <span className="text-muted-foreground">עיר:</span> {participant.city}
+                            <span className="text-muted-foreground">עיר:</span>{" "}
+                            {participant.city}
                           </div>
                         )}
                         {participant.isNewImmigrant && (
                           <div className="col-span-2">
-                            <span className="text-muted-foreground">עולה חדש/ה, שנת הגעה:</span>{" "}
+                            <span className="text-muted-foreground">
+                              עולה חדש/ה, שנת הגעה:
+                            </span>{" "}
                             {participant.immigrationYear}
                           </div>
                         )}
                         {participant.notes && (
                           <div className="col-span-2">
-                            <span className="text-muted-foreground">הערות:</span>{" "}
+                            <span className="text-muted-foreground">
+                              הערות:
+                            </span>{" "}
                             {participant.notes}
                           </div>
                         )}
@@ -326,7 +364,9 @@ export function ApproveRegistrationsModal({
                           size="sm"
                           variant="destructive"
                           className="flex-1"
-                          onClick={() => handleReject("participant", participant)}
+                          onClick={() =>
+                            handleReject("participant", participant)
+                          }
                           disabled={rejectingId === participant.id}
                         >
                           {rejectingId === participant.id ? (
@@ -356,8 +396,11 @@ export function ApproveRegistrationsModal({
           <DialogHeader className="text-right">
             <DialogTitle>תצוגת הודעה לשליחה</DialogTitle>
             <DialogDescription>
-              הודעת {notification?.decision === "approved" ? "אישור הרשמה" : "דחיית בקשה"} עבור{" "}
-              {notification?.name}
+              הודעת{" "}
+              {notification?.decision === "approved"
+                ? "אישור הרשמה"
+                : "דחיית בקשה"}{" "}
+              עבור {notification?.name}
             </DialogDescription>
           </DialogHeader>
 
@@ -367,7 +410,8 @@ export function ApproveRegistrationsModal({
 
           {!notification?.phone && !notification?.email && (
             <p className="text-sm text-amber-700">
-              לא הוזנו טלפון או כתובת דוא״ל. ניתן להעתיק את ההודעה ולשלוח אותה ידנית.
+              לא הוזנו טלפון או כתובת דוא״ל. ניתן להעתיק את ההודעה ולשלוח אותה
+              ידנית.
             </p>
           )}
 

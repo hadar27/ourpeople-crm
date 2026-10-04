@@ -75,7 +75,9 @@ type PendingParticipantRow = {
   created_at: string;
 };
 
-function toPendingVolunteerRecord(row: PendingVolunteerRow): PendingVolunteerRecord {
+function toPendingVolunteerRecord(
+  row: PendingVolunteerRow,
+): PendingVolunteerRecord {
   return {
     id: row.id,
     projectId: row.project_id,
@@ -91,7 +93,9 @@ function toPendingVolunteerRecord(row: PendingVolunteerRow): PendingVolunteerRec
   };
 }
 
-function toPendingParticipantRecord(row: PendingParticipantRow): PendingParticipantRecord {
+function toPendingParticipantRecord(
+  row: PendingParticipantRow,
+): PendingParticipantRecord {
   return {
     id: row.id,
     projectId: row.project_id,
@@ -100,7 +104,8 @@ function toPendingParticipantRecord(row: PendingParticipantRow): PendingParticip
     phone: row.phone,
     email: row.email ?? undefined,
     status: row.status as PendingParticipantRecord["status"],
-    paymentStatus: row.payment_status as PendingParticipantRecord["paymentStatus"],
+    paymentStatus:
+      row.payment_status as PendingParticipantRecord["paymentStatus"],
     paymentAcknowledged: row.payment_acknowledged ?? false,
     agreedPrice: row.agreed_price ?? 0,
     registrationDate: row.registration_date,
@@ -118,18 +123,16 @@ function toPendingParticipantRecord(row: PendingParticipantRow): PendingParticip
 export const pendingRegistrationKeys = {
   all: ["pendingRegistrations"] as const,
   volunteers: () => [...pendingRegistrationKeys.all, "volunteers"] as const,
-  volunteersForProject: (projectId: string | undefined) => [
-    ...pendingRegistrationKeys.volunteers(),
-    projectId,
-  ] as const,
+  volunteersForProject: (projectId: string | undefined) =>
+    [...pendingRegistrationKeys.volunteers(), projectId] as const,
   participants: () => [...pendingRegistrationKeys.all, "participants"] as const,
-  participantsForProject: (projectId: string | undefined) => [
-    ...pendingRegistrationKeys.participants(),
-    projectId,
-  ] as const,
+  participantsForProject: (projectId: string | undefined) =>
+    [...pendingRegistrationKeys.participants(), projectId] as const,
 };
 
-export function usePendingVolunteerRegistrations(projectId: string | undefined) {
+export function usePendingVolunteerRegistrations(
+  projectId: string | undefined,
+) {
   return useQuery({
     queryKey: pendingRegistrationKeys.volunteersForProject(projectId),
     queryFn: async () => {
@@ -146,7 +149,9 @@ export function usePendingVolunteerRegistrations(projectId: string | undefined) 
   });
 }
 
-export function usePendingParticipantRegistrations(projectId: string | undefined) {
+export function usePendingParticipantRegistrations(
+  projectId: string | undefined,
+) {
   return useQuery({
     queryKey: pendingRegistrationKeys.participantsForProject(projectId),
     queryFn: async () => {
@@ -227,7 +232,9 @@ export function useApprovePendingVolunteer() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
-        queryKey: pendingRegistrationKeys.volunteersForProject(variables.projectId),
+        queryKey: pendingRegistrationKeys.volunteersForProject(
+          variables.projectId,
+        ),
       });
       queryClient.invalidateQueries({ queryKey: volunteerKeys.list() });
     },
@@ -250,66 +257,99 @@ export function useApprovePendingParticipant() {
         .from("pending_participant_registrations")
         .select("*")
         .eq("id", pendingId)
+        .eq("project_id", projectId)
         .single();
 
       if (fetchError) throw fetchError;
 
       const pending = pendingData as PendingParticipantRow;
 
-      // Create new participant in participants table
-      const { data: participantData, error: createError } = await supabase
-        .from("participants")
-        .insert({
-          name: pending.name,
-          id_number: pending.id_number,
-          phone: pending.phone,
-          email: pending.email,
-          status: pending.status,
-          payment_status: pending.payment_status,
-          registration_date: pending.registration_date,
-          documents_complete: pending.documents_complete,
-          is_new_immigrant: pending.is_new_immigrant,
-          immigration_year: pending.immigration_year,
-          address: pending.address,
-          city: pending.city,
-          source: pending.source,
-          notes: pending.notes,
-          project_id: projectId,
-        })
-        .select()
-        .single();
-
-      if (createError) throw createError;
-
-      const participant = participantData as any;
+      // Reuse an existing identity, including a partially completed approval.
+      const findParticipant = async () => {
+        const { data, error } = await supabase
+          .from("participants")
+          .select("*")
+          .eq("id_number", pending.id_number)
+          .maybeSingle();
+        if (error) throw error;
+        return data as { id: string; status: string } | null;
+      };
+      let participant = await findParticipant();
+      if (!participant) {
+        const { data: participantData, error: createError } = await supabase
+          .from("participants")
+          .insert({
+            name: pending.name,
+            id_number: pending.id_number,
+            phone: pending.phone,
+            email: pending.email,
+            status: "מאושר",
+            payment_status: pending.payment_status,
+            registration_date: pending.registration_date,
+            documents_complete: pending.documents_complete,
+            is_new_immigrant: pending.is_new_immigrant,
+            immigration_year: pending.immigration_year,
+            address: pending.address,
+            city: pending.city,
+            source: pending.source,
+            notes: pending.notes,
+            project_id: projectId,
+          })
+          .select()
+          .single();
+        if (createError) {
+          // Another approval may have just created the same participant.
+          if (createError.code !== "23505") throw createError;
+          participant = await findParticipant();
+          if (!participant) throw createError;
+        } else {
+          participant = participantData as { id: string; status: string };
+        }
+      }
 
       // Create M2M link in project_participants
       const { error: linkError } = await supabase
         .from("project_participants")
-        .insert({
-          project_id: projectId,
-          participant_id: participant.id,
-          payment_acknowledged: pending.payment_acknowledged ?? false,
-          agreed_price: pending.agreed_price ?? 0,
-        });
+        .upsert(
+          {
+            project_id: projectId,
+            participant_id: participant.id,
+            payment_acknowledged: pending.payment_acknowledged ?? false,
+            agreed_price: pending.agreed_price ?? 0,
+          },
+          { onConflict: "project_id,participant_id", ignoreDuplicates: true },
+        );
 
       if (linkError) throw linkError;
+
+      if (participant.status !== "מאושר") {
+        const { error: approvalError } = await supabase
+          .from("participants")
+          .update({ status: "מאושר" })
+          .eq("id", participant.id);
+        if (approvalError) throw approvalError;
+      }
 
       // Delete from pending table
       const { error: deleteError } = await supabase
         .from("pending_participant_registrations")
         .delete()
-        .eq("id", pendingId);
+        .eq("id", pendingId)
+        .eq("project_id", projectId);
 
       if (deleteError) throw deleteError;
 
       return participant;
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: pendingRegistrationKeys.participantsForProject(variables.projectId),
-      });
-      queryClient.invalidateQueries({ queryKey: participantKeys.list() });
+    onSuccess: async (_data, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: pendingRegistrationKeys.participantsForProject(
+            variables.projectId,
+          ),
+        }),
+        queryClient.invalidateQueries({ queryKey: participantKeys.all }),
+      ]);
     },
   });
 }
@@ -339,11 +379,15 @@ export function useRejectPendingRegistration() {
     onSuccess: (_data, variables) => {
       if (variables.type === "volunteer") {
         queryClient.invalidateQueries({
-          queryKey: pendingRegistrationKeys.volunteersForProject(variables.projectId),
+          queryKey: pendingRegistrationKeys.volunteersForProject(
+            variables.projectId,
+          ),
         });
       } else {
         queryClient.invalidateQueries({
-          queryKey: pendingRegistrationKeys.participantsForProject(variables.projectId),
+          queryKey: pendingRegistrationKeys.participantsForProject(
+            variables.projectId,
+          ),
         });
       }
     },
