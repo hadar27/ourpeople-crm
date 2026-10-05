@@ -42,6 +42,7 @@ import {
   useAllParticipantProjectAssignments,
   useProjectParticipantIds,
   useAssignParticipantToProject,
+  type ParticipantRecord,
 } from "@/lib/queries/participants";
 import {
   useCreateTask,
@@ -70,11 +71,13 @@ import { ApproveRegistrationsModal } from "@/components/approve-registrations-mo
 import { useCanEdit, useCanView, useCurrentUser } from "@/lib/permissions";
 import { useCreateBudgetRequest } from "@/lib/queries/budgets";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_app/project/$id")({
   component: ProjectDetail,
@@ -252,6 +255,45 @@ function ProjectDetail() {
   const relatedSuppliers = Array.from(
     new Set(expenses.map((e) => e.supplier).filter(Boolean)),
   ) as string[];
+
+  const renderParticipantRow = (participant: ParticipantRecord) => {
+    const entries = getParticipantPayments(
+      participant,
+      participantAssignments ?? [],
+    ).filter((entry) => entry.projectId === project.id);
+    return (
+      <li key={participant.id}>
+        <Link
+          to="/participants/$participantId"
+          params={{ participantId: participant.id }}
+          className="flex items-center justify-between p-2 rounded-lg hover:bg-surface-muted transition-colors"
+        >
+          <span className="text-sm font-medium">{participant.name}</span>
+          <span className="text-xs text-muted-foreground">
+            {participant.status}
+          </span>
+        </Link>
+        {entries.map((entry) => (
+          <div
+            key={entry.projectId}
+            className="flex flex-wrap items-center gap-2 px-2 pb-2"
+          >
+            <span className="text-xs">
+              {entry.isPaidProject
+                ? `עלות: ₪${entry.amount.toLocaleString()}`
+                : "ללא תשלום"}
+            </span>
+            <StatusBadge value={entry.paymentStatus} />
+            <ParticipantPaymentsButton
+              participantId={participant.id}
+              name={participant.name}
+              entries={[entry]}
+            />
+          </div>
+        ))}
+      </li>
+    );
+  };
 
   return (
     <>
@@ -490,70 +532,6 @@ function ProjectDetail() {
               </div>
             )}
           </div>
-          <div className="rounded-xl border border-border bg-surface-muted/40 p-4 mb-6">
-            <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
-              <div>
-                <div className="font-semibold">הכנסות מתשלומי נרשמים</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  הסכום שהתקבל מחושב לפי נרשמים שסומנו כ״שולם״.
-                </div>
-              </div>
-              <div className="text-left">
-                <div className="text-xs text-muted-foreground">
-                  סך הכנסות שהתקבלו
-                </div>
-                <div className="text-xl font-bold text-brand-deep">
-                  ₪{participantPaymentIncome.toLocaleString()}
-                </div>
-              </div>
-            </div>
-            {project.type !== "בתשלום" ? (
-              <div className="text-sm text-muted-foreground py-2">
-                הפרויקט מוגדר ללא תשלום.
-              </div>
-            ) : participantPaymentRows.length === 0 ? (
-              <div className="text-sm text-muted-foreground py-2">
-                עדיין אין נרשמים עם חיוב בפרויקט.
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-xs text-muted-foreground">
-                    <tr className="border-b">
-                      <th className="text-right py-2 font-medium">נרשם</th>
-                      <th className="text-right py-2 font-medium">
-                        סטטוס תשלום
-                      </th>
-                      <th className="text-left py-2 font-medium">סכום לחיוב</th>
-                      <th className="text-left py-2 font-medium">התקבל</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {participantPaymentRows.map(({ participant, entry }) => (
-                      <tr
-                        key={participant.id}
-                        className="border-b last:border-0"
-                      >
-                        <td className="py-2 font-medium">{participant.name}</td>
-                        <td className="py-2">
-                          <StatusBadge value={entry.paymentStatus} />
-                        </td>
-                        <td className="py-2 text-left">
-                          ₪{entry.amount.toLocaleString()}
-                        </td>
-                        <td className="py-2 text-left font-semibold">
-                          {entry.paymentStatus === "שולם"
-                            ? `₪${entry.amount.toLocaleString()}`
-                            : "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-          <div className="font-semibold mb-2">הוצאות הפרויקט</div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-xs text-muted-foreground">
@@ -816,107 +794,85 @@ function ProjectDetail() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
-        <div className="card-elevated px-5">
-          <Accordion type="single" collapsible>
-            <AccordionItem value="project-participants" className="border-0">
-              <AccordionTrigger className="py-5 text-base hover:no-underline">
-                נרשמים משויכים ({projectParticipants.length})
-              </AccordionTrigger>
-              <AccordionContent>
-                {canOperateProject && availableParticipants.length > 0 && (
-                  <div className="flex justify-end mb-3">
-                    <EntityFormDialog
-                      triggerLabel="שייך נרשם"
-                      title="שיוך נרשם לפרויקט"
-                      description="בחרו נרשם קיים להוספה לפרויקט."
-                      successMessage="הנרשם שויך לפרויקט"
-                      fields={[
-                        {
-                          name: "participant",
-                          label: "נרשם",
-                          type: "select",
-                          required: true,
-                          options: availableParticipants.map(
-                            (participant) =>
-                              `${participant.name} (${participant.id})`,
-                          ),
-                        },
-                      ]}
-                      onCreate={async (values) => {
-                        const participant = availableParticipants.find(
-                          (item) =>
-                            `${item.name} (${item.id})` === values.participant,
-                        );
-                        if (!participant)
-                          return { ok: false, error: "הנרשם לא נמצא" };
-                        try {
-                          await assignParticipant.mutateAsync({
-                            projectId: project.id,
-                            participantId: participant.id,
-                          });
-                          return { ok: true };
-                        } catch (error) {
-                          return {
-                            ok: false,
-                            error:
-                              error instanceof Error
-                                ? error.message
-                                : "שיוך הנרשם נכשל",
-                          };
-                        }
-                      }}
-                    />
-                  </div>
-                )}
-                {projectParticipants.length === 0 ? (
-                  <EmptyState text="אין נרשמים משויכים" />
-                ) : (
-                  <ul className="space-y-2">
-                    {projectParticipants.map((participant) => {
-                      const entries = getParticipantPayments(
-                        participant,
-                        participantAssignments ?? [],
-                      ).filter((entry) => entry.projectId === project.id);
-                      return (
-                        <li key={participant.id}>
-                          <Link
-                            to="/participants/$participantId"
-                            params={{ participantId: participant.id }}
-                            className="flex items-center justify-between p-2 rounded-lg hover:bg-surface-muted transition-colors"
-                          >
-                            <span className="text-sm font-medium">
-                              {participant.name}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {participant.status}
-                            </span>
-                          </Link>
-                          {entries.map((entry) => (
-                            <div
-                              key={entry.projectId}
-                              className="flex flex-wrap items-center gap-2 px-2 pb-2"
-                            >
-                              <span className="text-xs">
-                                {entry.isPaidProject
-                                  ? `עלות: ₪${entry.amount.toLocaleString()}`
-                                  : "ללא תשלום"}
-                              </span>
-                              <StatusBadge value={entry.paymentStatus} />
-                              <ParticipantPaymentsButton
-                                participantId={participant.id}
-                                name={participant.name}
-                                entries={[entry]}
-                              />
-                            </div>
-                          ))}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+        <div className="card-elevated p-5 self-start">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="font-semibold">
+              נרשמים משויכים ({projectParticipants.length})
+            </div>
+            {canOperateProject && availableParticipants.length > 0 && (
+              <EntityFormDialog
+                triggerLabel="שייך נרשם"
+                title="שיוך נרשם לפרויקט"
+                description="בחרו נרשם קיים להוספה לפרויקט."
+                successMessage="הנרשם שויך לפרויקט"
+                fields={[
+                  {
+                    name: "participant",
+                    label: "נרשם",
+                    type: "select",
+                    required: true,
+                    options: availableParticipants.map(
+                      (participant) =>
+                        `${participant.name} (${participant.id})`,
+                    ),
+                  },
+                ]}
+                onCreate={async (values) => {
+                  const participant = availableParticipants.find(
+                    (item) =>
+                      `${item.name} (${item.id})` === values.participant,
+                  );
+                  if (!participant)
+                    return { ok: false, error: "הנרשם לא נמצא" };
+                  try {
+                    await assignParticipant.mutateAsync({
+                      projectId: project.id,
+                      participantId: participant.id,
+                    });
+                    return { ok: true };
+                  } catch (error) {
+                    return {
+                      ok: false,
+                      error:
+                        error instanceof Error
+                          ? error.message
+                          : "שיוך הנרשם נכשל",
+                    };
+                  }
+                }}
+              />
+            )}
+          </div>
+          {projectParticipants.length === 0 ? (
+            <EmptyState text="אין נרשמים משויכים" />
+          ) : (
+            <ul className="space-y-2">
+              {projectParticipants.slice(0, 4).map(renderParticipantRow)}
+            </ul>
+          )}
+          {projectParticipants.length > 4 && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="w-full mt-3">
+                  הצג את כל הנרשמים ({projectParticipants.length})
+                </Button>
+              </DialogTrigger>
+              <DialogContent
+                dir="rtl"
+                className="sm:max-w-2xl max-h-[85vh] overflow-y-auto"
+              >
+                <DialogHeader className="text-right">
+                  <DialogTitle>נרשמים משויכים לפרויקט</DialogTitle>
+                  <DialogDescription>
+                    הרשימה המלאה של הנרשמים בפרויקט {project.name}
+                  </DialogDescription>
+                </DialogHeader>
+                <ul className="space-y-2">
+                  {projectParticipants.map(renderParticipantRow)}
+                </ul>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         <div className="card-elevated p-5">
@@ -1014,6 +970,15 @@ function ProjectDetail() {
                 ))}
               </ul>
             )}
+            <div className="mt-4 border-t border-border pt-3">
+              <div className="text-sm font-semibold">הכנסות לפרויקט</div>
+              <div className="text-xl font-bold text-brand-deep mt-1">
+                ₪{participantPaymentIncome.toLocaleString()}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                מתשלומי נרשמים שסומנו כ״שולם״
+              </div>
+            </div>
           </div>
         )}
 
