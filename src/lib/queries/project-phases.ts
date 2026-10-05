@@ -10,6 +10,8 @@ export type GanttPhase = {
   progress: number;
   dependsOn?: string;
   milestone?: boolean;
+  status?: "todo" | "doing" | "done";
+  statusLabel?: string;
 };
 
 type ProjectPhaseRow = {
@@ -39,7 +41,8 @@ function toGanttPhase(row: ProjectPhaseRow): GanttPhase {
 
 export const projectPhaseKeys = {
   all: ["projectPhases"] as const,
-  forProject: (projectId: string | undefined) => [...projectPhaseKeys.all, "project", projectId] as const,
+  forProject: (projectId: string | undefined) =>
+    [...projectPhaseKeys.all, "project", projectId] as const,
 };
 
 export function useProjectPhases(projectId: string | undefined) {

@@ -30,8 +30,12 @@ export function GanttChart({
     const marks: { label: string; offset: number }[] = [];
     const cur = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
     while (cur <= endDate) {
-      const off = ((toDays(cur.toISOString().slice(0, 10)) - min) / totalDays) * 100;
-      const label = cur.toLocaleDateString("he-IL", { month: "short", year: "2-digit" });
+      const off =
+        ((toDays(cur.toISOString().slice(0, 10)) - min) / totalDays) * 100;
+      const label = cur.toLocaleDateString("he-IL", {
+        month: "short",
+        year: "2-digit",
+      });
       marks.push({ label, offset: Math.max(0, off) });
       cur.setMonth(cur.getMonth() + 1);
     }
@@ -46,7 +50,7 @@ export function GanttChart({
     <div className="w-full" dir="ltr">
       {/* Header timeline */}
       <div className="grid grid-cols-[220px_1fr] gap-3 mb-2">
-        <div className="text-xs font-semibold text-muted-foreground">משימה / שלב</div>
+        <div className="text-xs font-semibold text-muted-foreground">משימה</div>
         <div className="relative h-6 border-b border-border">
           {monthMarks.map((m, i) => (
             <div
@@ -66,11 +70,29 @@ export function GanttChart({
           const end = toDays(p.end);
           const left = ((start - min) / totalDays) * 100;
           const width = Math.max(1.5, ((end - start) / totalDays) * 100);
-          const delayed = today > end && p.progress < 100;
-          const onTrack = !delayed && p.progress >= 50;
+          const delayed = today > end && p.status !== "done";
+          const statusStyle =
+            p.status === "done"
+              ? "bg-emerald-100 border-emerald-300"
+              : p.status === "doing"
+                ? "bg-brand-light border-brand/40"
+                : delayed
+                  ? "bg-rose-100 border-rose-300"
+                  : "bg-amber-50 border-amber-300";
+          const fillStyle =
+            p.status === "done"
+              ? "bg-emerald-500"
+              : p.status === "doing"
+                ? "bg-brand"
+                : delayed
+                  ? "bg-rose-400"
+                  : "bg-amber-400";
 
           return (
-            <div key={p.id} className="grid grid-cols-[220px_1fr] gap-3 items-center">
+            <div
+              key={p.id}
+              className="grid grid-cols-[220px_1fr] gap-3 items-center"
+            >
               <div className="text-xs" dir="rtl">
                 <div className="font-semibold flex items-center justify-between gap-1">
                   <span className="truncate flex items-center gap-1">
@@ -80,7 +102,8 @@ export function GanttChart({
                   {renderAction?.(p)}
                 </div>
                 <div className="text-[11px] text-muted-foreground truncate">
-                  {p.owner} · {fmt(p.start)} → {fmt(p.end)}
+                  {p.owner} · {p.statusLabel ?? `${p.progress}%`} ·{" "}
+                  {fmt(p.start)} → {fmt(p.end)}
                 </div>
               </div>
               <div className="relative h-8 bg-surface-muted rounded-md">
@@ -99,23 +122,15 @@ export function GanttChart({
                   />
                 ) : (
                   <div
-                    className={`absolute top-1.5 bottom-1.5 rounded-md border ${
-                      delayed
-                        ? "bg-rose-100 border-rose-300"
-                        : onTrack
-                          ? "bg-brand-light border-brand/40"
-                          : "bg-amber-50 border-amber-300"
-                    }`}
+                    className={`absolute top-1.5 bottom-1.5 rounded-md border ${statusStyle}`}
                     style={{ left: `${left}%`, width: `${width}%` }}
                   >
                     <div
-                      className={`h-full rounded-md ${
-                        delayed ? "bg-rose-400" : onTrack ? "bg-brand" : "bg-amber-400"
-                      }`}
+                      className={`h-full rounded-md ${fillStyle}`}
                       style={{ width: `${p.progress}%` }}
                     />
                     <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-brand-deep">
-                      {p.progress}%
+                      {p.statusLabel ?? `${p.progress}%`}
                     </div>
                   </div>
                 )}
@@ -126,10 +141,14 @@ export function GanttChart({
       </div>
 
       {/* Legend */}
-      <div className="mt-4 flex flex-wrap gap-3 text-[11px] text-muted-foreground" dir="rtl">
-        <LegendDot color="bg-brand" label="במסלול" />
-        <LegendDot color="bg-amber-400" label="בהתנעה / בעיכוב קל" />
-        <LegendDot color="bg-rose-400" label="באיחור" />
+      <div
+        className="mt-4 flex flex-wrap gap-3 text-[11px] text-muted-foreground"
+        dir="rtl"
+      >
+        <LegendDot color="bg-amber-400" label="לביצוע" />
+        <LegendDot color="bg-brand" label="בעבודה" />
+        <LegendDot color="bg-emerald-500" label="הושלם" />
+        <LegendDot color="bg-rose-400" label="לביצוע באיחור" />
         <LegendDot color="bg-rose-400/70" label="היום" />
       </div>
     </div>
