@@ -51,11 +51,6 @@ const columns: Column<ParticipantRecord>[] = [
     render: (r) => <StatusBadge value={r.status} />,
   },
   {
-    key: "paymentStatus",
-    header: "תשלום",
-    render: (r) => <StatusBadge value={r.paymentStatus} />,
-  },
-  {
     key: "documentsComplete",
     header: "מסמכים",
     render: (r) =>
@@ -88,62 +83,11 @@ function ParticipantsPage() {
   const canAccess = useCanView("participants");
   const { data: participants, isLoading, isError, refetch } = useParticipants();
   const { data: projects } = useProjects();
-  const { data: assignments, isError: assignmentError } =
-    useAllParticipantProjectAssignments();
+  const { data: assignments } = useAllParticipantProjectAssignments();
   const createParticipant = useCreateParticipant();
   if (!canAccess) return <ModuleAccessDenied title="ניהול נרשמים" />;
   const paymentsFor = (participant: ParticipantRecord) =>
     getParticipantPayments(participant, assignments ?? []);
-  const paymentColumns: Column<ParticipantRecord>[] = columns.map((column) =>
-    column.key === "paymentStatus"
-      ? {
-          ...column,
-          render: (participant) =>
-            assignmentError ? (
-              "שגיאה בטעינת תשלומים"
-            ) : (
-              <div className="space-y-2">
-                {paymentsFor(participant).map((entry) => (
-                  <div key={entry.projectId}>
-                    <div className="text-xs text-muted-foreground mb-1">
-                      {entry.projectName}
-                    </div>
-                    <StatusBadge value={entry.paymentStatus} />
-                  </div>
-                ))}
-              </div>
-            ),
-        }
-      : column,
-  );
-  paymentColumns.splice(
-    paymentColumns.findIndex((column) => column.key === "paymentStatus"),
-    0,
-    {
-      key: "participationCost",
-      header: "עלות לנרשם",
-      render: (participant) =>
-        assignmentError ? (
-          "—"
-        ) : (
-          <div className="space-y-2">
-            {paymentsFor(participant).map((entry) => (
-              <div key={entry.projectId}>
-                <div className="text-xs text-muted-foreground">
-                  {entry.projectName}
-                </div>
-                <span className="font-semibold">
-                  {entry.isPaidProject
-                    ? `₪${entry.amount.toLocaleString()}`
-                    : "ללא תשלום"}
-                </span>
-              </div>
-            ))}
-          </div>
-        ),
-    },
-  );
-
   // Operational KPIs derived from data
   const list = [...(participants ?? [])].sort(
     (first, second) =>
@@ -334,7 +278,7 @@ function ParticipantsPage() {
 
           <DataTable
             rows={list}
-            columns={paymentColumns}
+            columns={columns}
             searchKeys={["name", "idNumber", "phone"]}
             filters={filters}
             getRowHref={(r) => `/participants/${r.id}`}
