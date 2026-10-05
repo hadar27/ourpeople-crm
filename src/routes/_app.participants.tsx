@@ -29,6 +29,8 @@ import {
   ParticipantEditButton,
   ParticipantDeleteButton,
 } from "@/components/module-edit-dialogs";
+import { ModuleAccessDenied } from "@/components/module-access-denied";
+import { useCanView } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_app/participants")({
   component: ParticipantsPage,
@@ -83,11 +85,13 @@ const baseFilters: FilterConfig<ParticipantRecord>[] = [
 ];
 
 function ParticipantsPage() {
+  const canAccess = useCanView("participants");
   const { data: participants, isLoading, isError, refetch } = useParticipants();
   const { data: projects } = useProjects();
   const { data: assignments, isError: assignmentError } =
     useAllParticipantProjectAssignments();
   const createParticipant = useCreateParticipant();
+  if (!canAccess) return <ModuleAccessDenied title="ניהול נרשמים" />;
   const paymentsFor = (participant: ParticipantRecord) =>
     getParticipantPayments(participant, assignments ?? []);
   const paymentColumns: Column<ParticipantRecord>[] = columns.map((column) =>

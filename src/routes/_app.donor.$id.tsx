@@ -46,6 +46,7 @@ import { useCreateFollowUp } from "@/lib/queries/follow-ups";
 import type { InteractionType } from "@/lib/crm-types";
 import { toast } from "sonner";
 import { useCanEdit, useCanView } from "@/lib/permissions";
+import { ModuleAccessDenied } from "@/components/module-access-denied";
 
 export const Route = createFileRoute("/_app/donor/$id")({
   component: DonorDetail,
@@ -54,6 +55,7 @@ export const Route = createFileRoute("/_app/donor/$id")({
 const CURRENT_STAFF = "שרה כהן";
 
 function DonorDetail() {
+  const canAccess = useCanView("donors");
   const { id } = useParams({ from: "/_app/donor/$id" });
   const { data: donor, isLoading, isError } = useDonor(id);
   const { data: donations } = useDonations();
@@ -64,8 +66,14 @@ function DonorDetail() {
   const setInteractionStatus = useSetInteractionStatus();
   const canViewDonations = useCanView("donations");
 
+  if (!canAccess) return <ModuleAccessDenied title="כרטיס תורם" />;
+
   if (isLoading) {
-    return <div className="card-elevated p-8 text-center text-muted-foreground">טוען...</div>;
+    return (
+      <div className="card-elevated p-8 text-center text-muted-foreground">
+        טוען...
+      </div>
+    );
   }
 
   if (isError || !donor) {
@@ -80,9 +88,14 @@ function DonorDetail() {
   }
 
   const history = (donations ?? []).filter((d) => d.donorId === donor.id);
-  const totalDonated = history.reduce((sum, donation) => sum + donation.amount, 0);
+  const totalDonated = history.reduce(
+    (sum, donation) => sum + donation.amount,
+    0,
+  );
   const sorted = [...interactions].sort((a, b) => (a.date < b.date ? 1 : -1));
-  const openFollowUps = sorted.filter((i) => i.followUpDate && i.status !== "הושלם");
+  const openFollowUps = sorted.filter(
+    (i) => i.followUpDate && i.status !== "הושלם",
+  );
   const overdue = openFollowUps.filter((i) => isOverdue(i.followUpDate));
   const lastTouch = sorted[0]?.date ?? "—";
 
@@ -100,7 +113,12 @@ function DonorDetail() {
     ),
     meta: `${i.staff} · ${i.date} ${i.time}`,
     date: i.date,
-    tone: i.status === "הושלם" ? "good" : isOverdue(i.followUpDate) ? "danger" : "brand",
+    tone:
+      i.status === "הושלם"
+        ? "good"
+        : isOverdue(i.followUpDate)
+          ? "danger"
+          : "brand",
     body: (
       <div className="space-y-2">
         <p className="text-muted-foreground">{i.summary}</p>
@@ -130,7 +148,10 @@ function DonorDetail() {
                 className="text-emerald-700 hover:underline flex items-center gap-1"
                 onClick={async () => {
                   try {
-                    await setInteractionStatus.mutateAsync({ id: i.id, status: "הושלם" });
+                    await setInteractionStatus.mutateAsync({
+                      id: i.id,
+                      status: "הושלם",
+                    });
                     toast.success("משימת ההמשך סומנה כהושלמה");
                   } catch {
                     toast.error("העדכון נכשל");
@@ -192,7 +213,12 @@ function DonorDetail() {
     },
     { name: "date", label: "תאריך", type: "date" as const, required: true },
     { name: "time", label: "שעה", placeholder: "14:30" },
-    { name: "staff", label: "איש צוות", required: true, placeholder: CURRENT_STAFF },
+    {
+      name: "staff",
+      label: "איש צוות",
+      required: true,
+      placeholder: CURRENT_STAFF,
+    },
     { name: "subject", label: "נושא", required: true, colSpan: 2 as const },
     {
       name: "summary",
@@ -201,7 +227,12 @@ function DonorDetail() {
       required: true,
       colSpan: 2 as const,
     },
-    { name: "outcome", label: "תוצאה / החלטות", type: "textarea" as const, colSpan: 2 as const },
+    {
+      name: "outcome",
+      label: "תוצאה / החלטות",
+      type: "textarea" as const,
+      colSpan: 2 as const,
+    },
     {
       name: "followUpAction",
       label: "משימת המשך",
@@ -257,7 +288,9 @@ function DonorDetail() {
               <DialogContent dir="rtl" className="sm:max-w-md">
                 <DialogHeader className="text-right">
                   <DialogTitle>מספר הטלפון של {donor.name}</DialogTitle>
-                  <DialogDescription>ניתן להעתיק את המספר ולבצע את השיחה.</DialogDescription>
+                  <DialogDescription>
+                    ניתן להעתיק את המספר ולבצע את השיחה.
+                  </DialogDescription>
                 </DialogHeader>
                 <div
                   className="rounded-xl border bg-surface-muted p-5 text-center text-2xl font-bold tabular-nums"
@@ -281,7 +314,9 @@ function DonorDetail() {
               <DialogContent dir="rtl" className="sm:max-w-lg">
                 <DialogHeader className="text-right">
                   <DialogTitle>תצוגת הודעה לשליחה</DialogTitle>
-                  <DialogDescription>הודעת תודה קבועה עבור {donor.name}</DialogDescription>
+                  <DialogDescription>
+                    הודעת תודה קבועה עבור {donor.name}
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="rounded-xl border bg-surface-muted p-4 text-sm leading-7 whitespace-pre-line">
                   {`שלום ${donor.name},\n\nתודה רבה על תרומתך הנדיבה לעמותת Our People. תרומתך מסייעת לנו להמשיך בעשייה ולתמוך בקהילות ובמשפחות הזקוקות לכך.\n\nבהערכה רבה,\nצוות Our People`}
@@ -323,16 +358,21 @@ function DonorDetail() {
 
         {overdue.length > 0 && (
           <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3 text-sm">
-            {overdue.length} משימות המשך עברו את תאריך היעד — נדרש טיפול של מנהל קשרי התורמים.
+            {overdue.length} משימות המשך עברו את תאריך היעד — נדרש טיפול של מנהל
+            קשרי התורמים.
           </div>
         )}
       </div>
 
       <Tabs defaultValue="crm" dir="rtl">
         <TabsList className="mb-4">
-          <TabsTrigger value="crm">היסטוריית קשר ({interactions.length})</TabsTrigger>
+          <TabsTrigger value="crm">
+            היסטוריית קשר ({interactions.length})
+          </TabsTrigger>
           {canViewDonations && (
-            <TabsTrigger value="donations">תרומות ({history.length})</TabsTrigger>
+            <TabsTrigger value="donations">
+              תרומות ({history.length})
+            </TabsTrigger>
           )}
         </TabsList>
 
@@ -362,7 +402,10 @@ function DonorDetail() {
                   </thead>
                   <tbody>
                     {history.map((d) => (
-                      <tr key={d.id} className="border-t border-border hover:bg-surface-muted">
+                      <tr
+                        key={d.id}
+                        className="border-t border-border hover:bg-surface-muted"
+                      >
                         <td className="py-3">
                           <Link
                             to="/donation/$id"
@@ -373,14 +416,21 @@ function DonorDetail() {
                           </Link>
                         </td>
                         <td className="py-3">{d.project}</td>
-                        <td className="py-3 font-semibold">₪{d.amount.toLocaleString()}</td>
-                        <td className="py-3 text-muted-foreground">{d.method}</td>
+                        <td className="py-3 font-semibold">
+                          ₪{d.amount.toLocaleString()}
+                        </td>
+                        <td className="py-3 text-muted-foreground">
+                          {d.method}
+                        </td>
                         <td className="py-3">
                           <StatusBadge value={d.receipt} />
                         </td>
                         <td className="py-3 text-muted-foreground">{d.date}</td>
                         <td className="py-3">
-                          <DonationEditButton record={d} triggerLabel="עדכון קבלה" />
+                          <DonationEditButton
+                            record={d}
+                            triggerLabel="עדכון קבלה"
+                          />
                         </td>
                       </tr>
                     ))}

@@ -35,10 +35,14 @@ const ROLE_EDIT_MATRIX: Record<UserRecord["role"], EditableModule[]> = {
     "finance",
     "users",
   ],
-  "מנהל פרויקטים": ["participants", "volunteers", "donors", "projects", "suppliers", "families"],
-  "מנהל כספים": [
+  "מנהל פרויקטים": [
     "participants",
     "volunteers",
+    "projects",
+    "suppliers",
+    "families",
+  ],
+  "מנהל כספים": [
     "donors",
     "donations",
     "projects",
@@ -63,12 +67,35 @@ const ALL_MODULES: EditableModule[] = [
 const ROLE_VIEW_MATRIX: Record<UserRecord["role"], EditableModule[]> = {
   "מנהלת העמותה": ALL_MODULES,
   "מנהל מערכת": ALL_MODULES,
-  "מנהל כספים": ALL_MODULES,
-  "מנהל פרויקטים": ALL_MODULES,
+  "מנהל כספים": [
+    "donors",
+    "donations",
+    "projects",
+    "suppliers",
+    "families",
+    "finance",
+  ],
+  "מנהל פרויקטים": [
+    "participants",
+    "volunteers",
+    "projects",
+    "suppliers",
+    "families",
+  ],
 };
 
-export function canEditModule(role: UserRecord["role"], module: EditableModule): boolean {
+export function canEditModule(
+  role: UserRecord["role"],
+  module: EditableModule,
+): boolean {
   return (ROLE_EDIT_MATRIX[role] ?? []).includes(module);
+}
+
+export function canViewModule(
+  role: UserRecord["role"],
+  module: EditableModule,
+): boolean {
+  return (ROLE_VIEW_MATRIX[role] ?? []).includes(module);
 }
 
 /** The signed-in user's staff-directory record, matched by id against the real Supabase Auth session. */
@@ -88,5 +115,5 @@ export function useCanEdit(module: EditableModule): boolean {
 /** True when the signed-in user may view the given module, even without edit rights. */
 export function useCanView(module: EditableModule): boolean {
   const user = useCurrentUser();
-  return user ? (ROLE_VIEW_MATRIX[user.role] ?? []).includes(module) : false;
+  return user ? canViewModule(user.role, module) : false;
 }

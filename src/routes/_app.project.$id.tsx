@@ -102,6 +102,8 @@ function ProjectDetail() {
   const { data: pendingParticipants } = usePendingParticipantRegistrations(id);
   const { data: suppliersData } = useSuppliers();
   const canViewDonations = useCanView("donations");
+  const canViewParticipants = useCanView("participants");
+  const canViewVolunteers = useCanView("volunteers");
   const canEditProjects = useCanEdit("projects");
   const currentUser = useCurrentUser();
   const createProjectExpense = useCreateProjectExpense();
@@ -758,188 +760,195 @@ function ProjectDetail() {
       </div>
 
       {/* Registration Links and Pending Approvals */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="card-elevated p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="font-semibold flex items-center gap-1.5">
-              <LinkIcon className="h-4 w-4 text-brand" /> קישורי הרשמה
-            </div>
-          </div>
-          <RegistrationLinksSection projectId={id} />
-        </div>
-
-        {totalPending > 0 && (
-          <div className="card-elevated p-5 border-2 border-amber-200 bg-amber-50">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-semibold flex items-center gap-1.5">
-                  <AlertTriangle className="h-4 w-4 text-amber-600" /> הרשמות
-                  ממתינות לאישור
-                </div>
-                <div className="text-sm text-amber-700 mt-1">
-                  {pendingVolunteersCount} מתנדבים · {pendingParticipantsCount}{" "}
-                  משתתפים
-                </div>
+      {(canViewParticipants || canViewVolunteers) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="card-elevated p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="font-semibold flex items-center gap-1.5">
+                <LinkIcon className="h-4 w-4 text-brand" /> קישורי הרשמה
               </div>
-              <Button
-                size="sm"
-                className="bg-amber-600 hover:bg-amber-700"
-                onClick={() => setApprovalsOpen(true)}
-              >
-                סקור
-              </Button>
             </div>
+            <RegistrationLinksSection projectId={id} />
           </div>
-        )}
-      </div>
+
+          {totalPending > 0 && (
+            <div className="card-elevated p-5 border-2 border-amber-200 bg-amber-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-semibold flex items-center gap-1.5">
+                    <AlertTriangle className="h-4 w-4 text-amber-600" /> הרשמות
+                    ממתינות לאישור
+                  </div>
+                  <div className="text-sm text-amber-700 mt-1">
+                    {pendingVolunteersCount} מתנדבים ·{" "}
+                    {pendingParticipantsCount} משתתפים
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  className="bg-amber-600 hover:bg-amber-700"
+                  onClick={() => setApprovalsOpen(true)}
+                >
+                  סקור
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
-        <div className="card-elevated p-5 self-start">
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <div className="font-semibold">
-              נרשמים משויכים ({projectParticipants.length})
+        {canViewParticipants && (
+          <div className="card-elevated p-5 self-start">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="font-semibold">
+                נרשמים משויכים ({projectParticipants.length})
+              </div>
+              {canOperateProject && availableParticipants.length > 0 && (
+                <EntityFormDialog
+                  triggerLabel="שייך נרשם"
+                  title="שיוך נרשם לפרויקט"
+                  description="בחרו נרשם קיים להוספה לפרויקט."
+                  successMessage="הנרשם שויך לפרויקט"
+                  fields={[
+                    {
+                      name: "participant",
+                      label: "נרשם",
+                      type: "select",
+                      required: true,
+                      options: availableParticipants.map(
+                        (participant) =>
+                          `${participant.name} (${participant.id})`,
+                      ),
+                    },
+                  ]}
+                  onCreate={async (values) => {
+                    const participant = availableParticipants.find(
+                      (item) =>
+                        `${item.name} (${item.id})` === values.participant,
+                    );
+                    if (!participant)
+                      return { ok: false, error: "הנרשם לא נמצא" };
+                    try {
+                      await assignParticipant.mutateAsync({
+                        projectId: project.id,
+                        participantId: participant.id,
+                      });
+                      return { ok: true };
+                    } catch (error) {
+                      return {
+                        ok: false,
+                        error:
+                          error instanceof Error
+                            ? error.message
+                            : "שיוך הנרשם נכשל",
+                      };
+                    }
+                  }}
+                />
+              )}
             </div>
-            {canOperateProject && availableParticipants.length > 0 && (
-              <EntityFormDialog
-                triggerLabel="שייך נרשם"
-                title="שיוך נרשם לפרויקט"
-                description="בחרו נרשם קיים להוספה לפרויקט."
-                successMessage="הנרשם שויך לפרויקט"
-                fields={[
-                  {
-                    name: "participant",
-                    label: "נרשם",
-                    type: "select",
-                    required: true,
-                    options: availableParticipants.map(
-                      (participant) =>
-                        `${participant.name} (${participant.id})`,
-                    ),
-                  },
-                ]}
-                onCreate={async (values) => {
-                  const participant = availableParticipants.find(
-                    (item) =>
-                      `${item.name} (${item.id})` === values.participant,
-                  );
-                  if (!participant)
-                    return { ok: false, error: "הנרשם לא נמצא" };
-                  try {
-                    await assignParticipant.mutateAsync({
-                      projectId: project.id,
-                      participantId: participant.id,
-                    });
-                    return { ok: true };
-                  } catch (error) {
-                    return {
-                      ok: false,
-                      error:
-                        error instanceof Error
-                          ? error.message
-                          : "שיוך הנרשם נכשל",
-                    };
-                  }
-                }}
-              />
+            {projectParticipants.length === 0 ? (
+              <EmptyState text="אין נרשמים משויכים" />
+            ) : (
+              <ul className="space-y-2">
+                {projectParticipants.slice(0, 4).map(renderParticipantRow)}
+              </ul>
+            )}
+            {projectParticipants.length > 4 && (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full mt-3">
+                    הצג את כל הנרשמים ({projectParticipants.length})
+                  </Button>
+                </DialogTrigger>
+                <DialogContent
+                  dir="rtl"
+                  className="sm:max-w-2xl max-h-[85vh] overflow-y-auto"
+                >
+                  <DialogHeader className="text-right">
+                    <DialogTitle>נרשמים משויכים לפרויקט</DialogTitle>
+                    <DialogDescription>
+                      הרשימה המלאה של הנרשמים בפרויקט {project.name}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <ul className="space-y-2">
+                    {projectParticipants.map(renderParticipantRow)}
+                  </ul>
+                </DialogContent>
+              </Dialog>
             )}
           </div>
-          {projectParticipants.length === 0 ? (
-            <EmptyState text="אין נרשמים משויכים" />
-          ) : (
-            <ul className="space-y-2">
-              {projectParticipants.slice(0, 4).map(renderParticipantRow)}
-            </ul>
-          )}
-          {projectParticipants.length > 4 && (
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="w-full mt-3">
-                  הצג את כל הנרשמים ({projectParticipants.length})
-                </Button>
-              </DialogTrigger>
-              <DialogContent
-                dir="rtl"
-                className="sm:max-w-2xl max-h-[85vh] overflow-y-auto"
-              >
-                <DialogHeader className="text-right">
-                  <DialogTitle>נרשמים משויכים לפרויקט</DialogTitle>
-                  <DialogDescription>
-                    הרשימה המלאה של הנרשמים בפרויקט {project.name}
-                  </DialogDescription>
-                </DialogHeader>
-                <ul className="space-y-2">
-                  {projectParticipants.map(renderParticipantRow)}
-                </ul>
-              </DialogContent>
-            </Dialog>
-          )}
-        </div>
+        )}
 
-        <div className="card-elevated p-5">
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <div className="font-semibold">
-              מתנדבים משויכים ({projectVolunteers.length})
+        {canViewVolunteers && (
+          <div className="card-elevated p-5">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="font-semibold">
+                מתנדבים משויכים ({projectVolunteers.length})
+              </div>
+              {canOperateProject && availableVolunteers.length > 0 && (
+                <EntityFormDialog
+                  triggerLabel="שייך מתנדב"
+                  title="שיוך מתנדב לפרויקט"
+                  description="בחרו מתנדב פעיל להוספה לפרויקט."
+                  successMessage="המתנדב שויך לפרויקט"
+                  fields={[
+                    {
+                      name: "volunteer",
+                      label: "מתנדב",
+                      type: "select",
+                      required: true,
+                      options: availableVolunteers.map(
+                        (v) => `${v.name} (${v.id})`,
+                      ),
+                    },
+                  ]}
+                  onCreate={async (values) => {
+                    const volunteer = availableVolunteers.find(
+                      (v) => `${v.name} (${v.id})` === values.volunteer,
+                    );
+                    if (!volunteer)
+                      return { ok: false, error: "המתנדב לא נמצא" };
+                    try {
+                      await assignVolunteer.mutateAsync({
+                        projectId: project.id,
+                        volunteerId: volunteer.id,
+                      });
+                      return { ok: true };
+                    } catch (err) {
+                      return {
+                        ok: false,
+                        error:
+                          err instanceof Error ? err.message : "השמירה נכשלה",
+                      };
+                    }
+                  }}
+                />
+              )}
             </div>
-            {canOperateProject && availableVolunteers.length > 0 && (
-              <EntityFormDialog
-                triggerLabel="שייך מתנדב"
-                title="שיוך מתנדב לפרויקט"
-                description="בחרו מתנדב פעיל להוספה לפרויקט."
-                successMessage="המתנדב שויך לפרויקט"
-                fields={[
-                  {
-                    name: "volunteer",
-                    label: "מתנדב",
-                    type: "select",
-                    required: true,
-                    options: availableVolunteers.map(
-                      (v) => `${v.name} (${v.id})`,
-                    ),
-                  },
-                ]}
-                onCreate={async (values) => {
-                  const volunteer = availableVolunteers.find(
-                    (v) => `${v.name} (${v.id})` === values.volunteer,
-                  );
-                  if (!volunteer) return { ok: false, error: "המתנדב לא נמצא" };
-                  try {
-                    await assignVolunteer.mutateAsync({
-                      projectId: project.id,
-                      volunteerId: volunteer.id,
-                    });
-                    return { ok: true };
-                  } catch (err) {
-                    return {
-                      ok: false,
-                      error:
-                        err instanceof Error ? err.message : "השמירה נכשלה",
-                    };
-                  }
-                }}
-              />
+            {projectVolunteers.length === 0 ? (
+              <EmptyState text="אין מתנדבים משויכים" />
+            ) : (
+              <ul className="space-y-2">
+                {projectVolunteers.map((v) => (
+                  <li key={v.id}>
+                    <Link
+                      to="/volunteer/$id"
+                      params={{ id: v.id }}
+                      className="flex items-center justify-between p-2 rounded-lg hover:bg-surface-muted transition-colors"
+                    >
+                      <span className="text-sm font-medium">{v.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {v.hours} שעות
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
-          {projectVolunteers.length === 0 ? (
-            <EmptyState text="אין מתנדבים משויכים" />
-          ) : (
-            <ul className="space-y-2">
-              {projectVolunteers.map((v) => (
-                <li key={v.id}>
-                  <Link
-                    to="/volunteer/$id"
-                    params={{ id: v.id }}
-                    className="flex items-center justify-between p-2 rounded-lg hover:bg-surface-muted transition-colors"
-                  >
-                    <span className="text-sm font-medium">{v.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {v.hours} שעות
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        )}
 
         {canViewDonations && (
           <div className="card-elevated p-5">

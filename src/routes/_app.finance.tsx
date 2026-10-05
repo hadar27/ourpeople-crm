@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Wallet, TrendingDown, TrendingUp, LockKeyhole, Clock3, History } from "lucide-react";
+import {
+  Wallet,
+  TrendingDown,
+  TrendingUp,
+  LockKeyhole,
+  Clock3,
+  History,
+} from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, StatCard, StatusBadge } from "@/components/page-header";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
@@ -44,12 +51,19 @@ import {
   useReleaseProjectBudget,
   useUpdateProjectBudget,
 } from "@/lib/queries/budgets";
-import { useCanEdit, useCurrentUser } from "@/lib/permissions";
-import { isInCalendarMonth, useCalendarMonth } from "@/components/calendar-month-filter";
+import { useCanEdit, useCanView, useCurrentUser } from "@/lib/permissions";
+import {
+  isInCalendarMonth,
+  useCalendarMonth,
+} from "@/components/calendar-month-filter";
+import { ModuleAccessDenied } from "@/components/module-access-denied";
 
-export const Route = createFileRoute("/_app/finance")({ component: FinancePage });
+export const Route = createFileRoute("/_app/finance")({
+  component: FinancePage,
+});
 
 function FinancePage() {
+  const canAccess = useCanView("finance");
   const { data: income } = useIncomes();
   const { data: donations } = useDonations();
   const { data: donors } = useDonors();
@@ -73,32 +87,64 @@ function FinancePage() {
   const [historyProjectId, setHistoryProjectId] = useState<string | null>(null);
   const { month } = useCalendarMonth();
 
-  const incomeList = (income ?? []).filter((item) => isInCalendarMonth(item.date, month));
-  const donationList = (donations ?? []).filter((item) => isInCalendarMonth(item.date, month));
-  const expenseList = (expenses ?? []).filter((item) => isInCalendarMonth(item.date, month));
+  if (!canAccess) return <ModuleAccessDenied title="כספים ותקציבים" />;
+
+  const incomeList = (income ?? []).filter((item) =>
+    isInCalendarMonth(item.date, month),
+  );
+  const donationList = (donations ?? []).filter((item) =>
+    isInCalendarMonth(item.date, month),
+  );
+  const expenseList = (expenses ?? []).filter((item) =>
+    isInCalendarMonth(item.date, month),
+  );
   const projectList = projects ?? [];
-  const approvedProjectList = projectList.filter((project) => project.approvalStatus === "מאושר");
+  const approvedProjectList = projectList.filter(
+    (project) => project.approvalStatus === "מאושר",
+  );
   const pendingInitialProjects = projectList.filter(
     (project) => project.approvalStatus === "ממתין לאישור",
   );
   const canApproveProjects = currentUser?.role === "מנהל כספים";
-  const requestList = (requests ?? []).filter((item) => isInCalendarMonth(item.createdAt, month));
-  const transactionList = (transactions ?? []).filter((item) => isInCalendarMonth(item.date, month));
+  const requestList = (requests ?? []).filter((item) =>
+    isInCalendarMonth(item.createdAt, month),
+  );
+  const transactionList = (transactions ?? []).filter((item) =>
+    isInCalendarMonth(item.date, month),
+  );
   const allOtherIncome = (income ?? []).filter(
     (item) => item.category !== "תרומה" && !item.donationId,
   );
-  const otherIncome = incomeList.filter((item) => item.category !== "תרומה" && !item.donationId);
-  const donationIncome = (donations ?? []).reduce((sum, item) => sum + item.amount, 0);
-  const otherIncomeTotal = allOtherIncome.reduce((sum, item) => sum + item.amount, 0);
+  const otherIncome = incomeList.filter(
+    (item) => item.category !== "תרומה" && !item.donationId,
+  );
+  const donationIncome = (donations ?? []).reduce(
+    (sum, item) => sum + item.amount,
+    0,
+  );
+  const otherIncomeTotal = allOtherIncome.reduce(
+    (sum, item) => sum + item.amount,
+    0,
+  );
   const totalIncome = donationIncome + otherIncomeTotal;
-  const reservedBudget = approvedProjectList.reduce((sum, project) => sum + project.budget, 0);
+  const reservedBudget = approvedProjectList.reduce(
+    (sum, project) => sum + project.budget,
+    0,
+  );
   const availablePool = totalIncome - reservedBudget;
-  const actualExpenses = (expenses ?? []).reduce((sum, item) => sum + item.amount, 0);
-  const pendingRequests = requestList.filter((request) => request.status === "ממתינה");
+  const actualExpenses = (expenses ?? []).reduce(
+    (sum, item) => sum + item.amount,
+    0,
+  );
+  const pendingRequests = requestList.filter(
+    (request) => request.status === "ממתינה",
+  );
   const selectedTransactions = transactionList.filter(
     (item) => item.projectId === historyProjectId,
   );
-  const selectedProject = projectList.find((project) => project.id === historyProjectId);
+  const selectedProject = projectList.find(
+    (project) => project.id === historyProjectId,
+  );
   const detailedIncome = [
     ...donationList.map((donation) => ({
       id: donation.id,
@@ -150,9 +196,17 @@ function FinancePage() {
                       label: "תורם",
                       type: "select",
                       required: true,
-                      options: [ANONYMOUS_DONOR, ...(donors ?? []).map((donor) => donor.name)],
+                      options: [
+                        ANONYMOUS_DONOR,
+                        ...(donors ?? []).map((donor) => donor.name),
+                      ],
                     },
-                    { name: "amount", label: "סכום (₪)", type: "number", required: true },
+                    {
+                      name: "amount",
+                      label: "סכום (₪)",
+                      type: "number",
+                      required: true,
+                    },
                     {
                       name: "project",
                       label: "פרויקט / ייעוד",
@@ -166,7 +220,12 @@ function FinancePage() {
                       required: true,
                       options: ["העברה בנקאית", "אשראי", "מזומן", "שיק"],
                     },
-                    { name: "date", label: "תאריך", type: "date", required: true },
+                    {
+                      name: "date",
+                      label: "תאריך",
+                      type: "date",
+                      required: true,
+                    },
                     {
                       name: "receipt",
                       label: "סטטוס קבלה",
@@ -174,15 +233,24 @@ function FinancePage() {
                       required: true,
                       options: ["הופק", "לא הופק"],
                     },
-                    { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
+                    {
+                      name: "notes",
+                      label: "הערות",
+                      type: "textarea",
+                      colSpan: 2,
+                    },
                   ]}
                   customValidate={(values) =>
                     Number(values.amount) > 0 ? null : "יש להזין סכום חיובי."
                   }
                   onCreate={async (values) => {
                     const isAnonymous = values.donor === ANONYMOUS_DONOR;
-                    const donor = (donors ?? []).find((item) => item.name === values.donor);
-                    const project = projectList.find((item) => item.name === values.project);
+                    const donor = (donors ?? []).find(
+                      (item) => item.name === values.donor,
+                    );
+                    const project = projectList.find(
+                      (item) => item.name === values.project,
+                    );
                     try {
                       await createDonation.mutateAsync({
                         donorId: donor?.id,
@@ -200,7 +268,9 @@ function FinancePage() {
                       return {
                         ok: false,
                         error:
-                          error instanceof Error ? error.message : "קליטת התרומה נכשלה",
+                          error instanceof Error
+                            ? error.message
+                            : "קליטת התרומה נכשלה",
                       };
                     }
                   }}
@@ -212,8 +282,18 @@ function FinancePage() {
                   successMessage="ההכנסה נוספה לקופה"
                   fields={[
                     { name: "source", label: "מקור הכנסה", required: true },
-                    { name: "amount", label: "סכום (₪)", type: "number", required: true },
-                    { name: "date", label: "תאריך", type: "date", required: true },
+                    {
+                      name: "amount",
+                      label: "סכום (₪)",
+                      type: "number",
+                      required: true,
+                    },
+                    {
+                      name: "date",
+                      label: "תאריך",
+                      type: "date",
+                      required: true,
+                    },
                     {
                       name: "category",
                       label: "קטגוריה",
@@ -222,7 +302,12 @@ function FinancePage() {
                       options: ["מענק", "אגרות נרשמים", "אחר"],
                     },
                     { name: "reference", label: "אסמכתא" },
-                    { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
+                    {
+                      name: "notes",
+                      label: "הערות",
+                      type: "textarea",
+                      colSpan: 2,
+                    },
                   ]}
                   customValidate={(values) =>
                     Number(values.amount) > 0 ? null : "יש להזין סכום חיובי."
@@ -242,7 +327,10 @@ function FinancePage() {
                     } catch (error) {
                       return {
                         ok: false,
-                        error: error instanceof Error ? error.message : "השמירה נכשלה",
+                        error:
+                          error instanceof Error
+                            ? error.message
+                            : "השמירה נכשלה",
                       };
                     }
                   }}
@@ -260,16 +348,28 @@ function FinancePage() {
                       required: true,
                       options: projectList.map((project) => project.name),
                     },
-                    { name: "amount", label: "סכום (₪)", type: "number", required: true },
+                    {
+                      name: "amount",
+                      label: "סכום (₪)",
+                      type: "number",
+                      required: true,
+                    },
                     { name: "category", label: "קטגוריה", required: true },
                     {
                       name: "supplier",
                       label: "ספק",
                       type: "select",
                       required: true,
-                      options: (suppliers ?? []).map((supplier) => supplier.name),
+                      options: (suppliers ?? []).map(
+                        (supplier) => supplier.name,
+                      ),
                     },
-                    { name: "date", label: "תאריך", type: "date", required: true },
+                    {
+                      name: "date",
+                      label: "תאריך",
+                      type: "date",
+                      required: true,
+                    },
                     {
                       name: "status",
                       label: "סטטוס תשלום",
@@ -284,10 +384,17 @@ function FinancePage() {
                       colSpan: 2,
                       required: true,
                     },
-                    { name: "reference", label: "אסמכתא", colSpan: 2, required: true },
+                    {
+                      name: "reference",
+                      label: "אסמכתא",
+                      colSpan: 2,
+                      required: true,
+                    },
                   ]}
                   customValidate={(values) => {
-                    const project = projectList.find((item) => item.name === values.project);
+                    const project = projectList.find(
+                      (item) => item.name === values.project,
+                    );
                     const projectSpent = (expenses ?? [])
                       .filter((item) => item.projectId === project?.id)
                       .reduce((sum, item) => sum + item.amount, 0);
@@ -298,7 +405,9 @@ function FinancePage() {
                     return null;
                   }}
                   onCreate={async (values) => {
-                    const project = projectList.find((item) => item.name === values.project);
+                    const project = projectList.find(
+                      (item) => item.name === values.project,
+                    );
                     const supplier = (suppliers ?? []).find(
                       (item) => item.name === values.supplier,
                     );
@@ -312,13 +421,19 @@ function FinancePage() {
                         status: values.status as "שולם" | "ממתין" | "חלקי",
                         description: values.description,
                         reference: values.reference,
-                        createdBy: currentUser?.name ?? currentUser?.email ?? "משתמש מערכת",
+                        createdBy:
+                          currentUser?.name ??
+                          currentUser?.email ??
+                          "משתמש מערכת",
                       });
                       return { ok: true };
                     } catch (error) {
                       return {
                         ok: false,
-                        error: error instanceof Error ? error.message : "שמירת ההוצאה נכשלה",
+                        error:
+                          error instanceof Error
+                            ? error.message
+                            : "שמירת ההוצאה נכשלה",
                       };
                     }
                   }}
@@ -338,7 +453,12 @@ function FinancePage() {
                   required: true,
                   options: projectList.map((project) => project.name),
                 },
-                { name: "amount", label: "סכום מבוקש (₪)", type: "number", required: true },
+                {
+                  name: "amount",
+                  label: "סכום מבוקש (₪)",
+                  type: "number",
+                  required: true,
+                },
                 {
                   name: "reason",
                   label: "סיבת הבקשה",
@@ -351,20 +471,26 @@ function FinancePage() {
                 Number(values.amount) > 0 ? null : "יש להזין סכום חיובי."
               }
               onCreate={async (values) => {
-                const project = projectList.find((item) => item.name === values.project);
+                const project = projectList.find(
+                  (item) => item.name === values.project,
+                );
                 try {
                   if (!project) return { ok: false, error: "יש לבחור פרויקט." };
                   await createRequest.mutateAsync({
                     projectId: project.id,
                     amount: Number(values.amount),
                     reason: values.reason,
-                    requestedBy: currentUser?.name ?? currentUser?.email ?? "משתמש מערכת",
+                    requestedBy:
+                      currentUser?.name ?? currentUser?.email ?? "משתמש מערכת",
                   });
                   return { ok: true };
                 } catch (error) {
                   return {
                     ok: false,
-                    error: error instanceof Error ? error.message : "הגשת הבקשה נכשלה",
+                    error:
+                      error instanceof Error
+                        ? error.message
+                        : "הגשת הבקשה נכשלה",
                   };
                 }
               }}
@@ -403,14 +529,19 @@ function FinancePage() {
           label="בקשות הממתינות לאישור"
           value={String(pendingRequests.length)}
           delta={formatCurrency(
-            pendingRequests.reduce((sum, item) => sum + item.requestedAmount, 0),
+            pendingRequests.reduce(
+              (sum, item) => sum + item.requestedAmount,
+              0,
+            ),
           )}
           icon={<Clock3 className="h-5 w-5" />}
         />
       </div>
 
       <section className="card-elevated p-5 mb-6 overflow-x-auto">
-        <h2 className="text-lg font-semibold mb-4">פרויקטים הממתינים לאישור תקציב ראשוני</h2>
+        <h2 className="text-lg font-semibold mb-4">
+          פרויקטים הממתינים לאישור תקציב ראשוני
+        </h2>
         <table className="w-full min-w-[760px] text-sm">
           <thead className="text-muted-foreground">
             <tr className="border-b text-right">
@@ -427,7 +558,9 @@ function FinancePage() {
                 <td className="py-3 font-medium">{project.name}</td>
                 <td>{formatCurrency(project.requestedInitialBudget)}</td>
                 <td>{project.manager || "—"}</td>
-                <td><StatusBadge value="ממתין לאישור" /></td>
+                <td>
+                  <StatusBadge value="ממתין לאישור" />
+                </td>
                 <td>
                   {canApproveProjects ? (
                     <div className="flex gap-2">
@@ -441,9 +574,15 @@ function FinancePage() {
                               approved: true,
                               reviewer: currentUser?.name ?? "מנהל כספים",
                             });
-                            toast.success("התקציב אושר והפרויקט הועבר לרשימת הפרויקטים");
+                            toast.success(
+                              "התקציב אושר והפרויקט הועבר לרשימת הפרויקטים",
+                            );
                           } catch (error) {
-                            toast.error(error instanceof Error ? error.message : "אישור הפרויקט נכשל");
+                            toast.error(
+                              error instanceof Error
+                                ? error.message
+                                : "אישור הפרויקט נכשל",
+                            );
                           }
                         }}
                       >
@@ -462,7 +601,11 @@ function FinancePage() {
                             });
                             toast.success("הפרויקט נדחה");
                           } catch (error) {
-                            toast.error(error instanceof Error ? error.message : "דחיית הפרויקט נכשלה");
+                            toast.error(
+                              error instanceof Error
+                                ? error.message
+                                : "דחיית הפרויקט נכשלה",
+                            );
                           }
                         }}
                       >
@@ -470,14 +613,19 @@ function FinancePage() {
                       </Button>
                     </div>
                   ) : (
-                    <span className="text-xs text-muted-foreground">אישור זמין למנהל הכספים בלבד</span>
+                    <span className="text-xs text-muted-foreground">
+                      אישור זמין למנהל הכספים בלבד
+                    </span>
                   )}
                 </td>
               </tr>
             ))}
             {pendingInitialProjects.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                <td
+                  colSpan={5}
+                  className="py-8 text-center text-muted-foreground"
+                >
                   אין פרויקטים הממתינים לאישור
                 </td>
               </tr>
@@ -509,10 +657,13 @@ function FinancePage() {
               const spent = (expenses ?? [])
                 .filter((item) => item.projectId === project.id)
                 .reduce((sum, item) => sum + item.amount, 0);
-              const totalApproved = project.initialBudget + project.approvedAdditions;
+              const totalApproved =
+                project.initialBudget + project.approvedAdditions;
               const balance = project.budget - spent;
               const utilization =
-                project.budget > 0 ? Math.round((spent / project.budget) * 100) : 0;
+                project.budget > 0
+                  ? Math.round((spent / project.budget) * 100)
+                  : 0;
               return (
                 <tr key={project.id} className="border-b last:border-0">
                   <td className="py-3 font-medium">{project.name}</td>
@@ -521,7 +672,13 @@ function FinancePage() {
                   <td>{formatCurrency(totalApproved)}</td>
                   <td>{formatCurrency(project.releasedAmount)}</td>
                   <td>{formatCurrency(spent)}</td>
-                  <td className={balance < 0 ? "text-rose-600 font-semibold" : "font-semibold"}>
+                  <td
+                    className={
+                      balance < 0
+                        ? "text-rose-600 font-semibold"
+                        : "font-semibold"
+                    }
+                  >
                     {formatCurrency(balance)}
                   </td>
                   <td>{utilization}%</td>
@@ -547,16 +704,25 @@ function FinancePage() {
                           ]}
                           initialValues={{
                             initialBudget: String(project.initialBudget),
-                            approvedAdditions: String(project.approvedAdditions),
+                            approvedAdditions: String(
+                              project.approvedAdditions,
+                            ),
                           }}
-                          sensitiveFields={["initialBudget", "approvedAdditions"]}
+                          sensitiveFields={[
+                            "initialBudget",
+                            "approvedAdditions",
+                          ]}
                           customValidate={(values) => {
                             const initialBudget = Number(values.initialBudget);
-                            const approvedAdditions = Number(values.approvedAdditions);
+                            const approvedAdditions = Number(
+                              values.approvedAdditions,
+                            );
                             if (initialBudget < 0 || approvedAdditions < 0)
                               return "סכומי התקציב אינם יכולים להיות שליליים.";
                             const updatedBudget =
-                              initialBudget + approvedAdditions - project.releasedAmount;
+                              initialBudget +
+                              approvedAdditions -
+                              project.releasedAmount;
                             if (updatedBudget < spent)
                               return "לא ניתן להגדיר תקציב נמוך מסך ההוצאות שכבר נרשמו.";
                             return null;
@@ -566,9 +732,13 @@ function FinancePage() {
                               await updateProjectBudget.mutateAsync({
                                 projectId: project.id,
                                 initialBudget: Number(values.initialBudget),
-                                approvedAdditions: Number(values.approvedAdditions),
+                                approvedAdditions: Number(
+                                  values.approvedAdditions,
+                                ),
                                 performer:
-                                  currentUser?.name ?? currentUser?.email ?? "מנהלת כספים",
+                                  currentUser?.name ??
+                                  currentUser?.email ??
+                                  "מנהלת כספים",
                               });
                               return { ok: true };
                             } catch (error) {
@@ -592,27 +762,35 @@ function FinancePage() {
                         <History className="h-4 w-4 ml-1" />
                         היסטוריה
                       </Button>
-                      {canManageFinance && project.status === "הסתיים" && balance > 0 && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={async () => {
-                            try {
-                              const released = await releaseBudget.mutateAsync({
-                                projectId: project.id,
-                                performer: currentUser?.name ?? "מנהלת כספים",
-                              });
-                              toast.success(`${formatCurrency(released)} הוחזרו לקופה`);
-                            } catch (error) {
-                              toast.error(
-                                error instanceof Error ? error.message : "שחרור היתרה נכשל",
-                              );
-                            }
-                          }}
-                        >
-                          שחרור יתרה
-                        </Button>
-                      )}
+                      {canManageFinance &&
+                        project.status === "הסתיים" &&
+                        balance > 0 && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              try {
+                                const released =
+                                  await releaseBudget.mutateAsync({
+                                    projectId: project.id,
+                                    performer:
+                                      currentUser?.name ?? "מנהלת כספים",
+                                  });
+                                toast.success(
+                                  `${formatCurrency(released)} הוחזרו לקופה`,
+                                );
+                              } catch (error) {
+                                toast.error(
+                                  error instanceof Error
+                                    ? error.message
+                                    : "שחרור היתרה נכשל",
+                                );
+                              }
+                            }}
+                          >
+                            שחרור יתרה
+                          </Button>
+                        )}
                     </div>
                   </td>
                 </tr>
@@ -668,7 +846,8 @@ function FinancePage() {
                             const amount = Number(values.approvedAmount);
                             if (amount <= 0 || amount > request.requestedAmount)
                               return "סכום האישור אינו תקין.";
-                            if (amount > availablePool) return "אין מספיק כסף זמין בקופה.";
+                            if (amount > availablePool)
+                              return "אין מספיק כסף זמין בקופה.";
                             return null;
                           }}
                           onCreate={async (values) => {
@@ -682,7 +861,10 @@ function FinancePage() {
                             } catch (error) {
                               return {
                                 ok: false,
-                                error: error instanceof Error ? error.message : "האישור נכשל",
+                                error:
+                                  error instanceof Error
+                                    ? error.message
+                                    : "האישור נכשל",
                               };
                             }
                           }}
@@ -710,7 +892,10 @@ function FinancePage() {
             ))}
             {requestList.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                <td
+                  colSpan={7}
+                  className="py-8 text-center text-muted-foreground"
+                >
                   אין בקשות תקציב
                 </td>
               </tr>
@@ -736,7 +921,10 @@ function FinancePage() {
           </thead>
           <tbody>
             {detailedIncome.map((item) => (
-              <tr key={`${item.category}-${item.id}`} className="border-b last:border-0">
+              <tr
+                key={`${item.category}-${item.id}`}
+                className="border-b last:border-0"
+              >
                 <td className="py-3 font-medium">{item.source}</td>
                 <td>{item.category}</td>
                 <td>{item.project}</td>
@@ -745,7 +933,9 @@ function FinancePage() {
                 <td>
                   <StatusBadge value={item.status} />
                 </td>
-                <td className="font-semibold text-emerald-700">{formatCurrency(item.amount)}</td>
+                <td className="font-semibold text-emerald-700">
+                  {formatCurrency(item.amount)}
+                </td>
                 {canManageFinance && (
                   <td>
                     <div className="flex items-center gap-2">
@@ -767,7 +957,10 @@ function FinancePage() {
             ))}
             {detailedIncome.length === 0 && (
               <tr>
-                <td colSpan={canManageFinance ? 8 : 7} className="py-8 text-center text-muted-foreground">
+                <td
+                  colSpan={canManageFinance ? 8 : 7}
+                  className="py-8 text-center text-muted-foreground"
+                >
                   אין הכנסות להצגה
                 </td>
               </tr>
@@ -792,18 +985,26 @@ function FinancePage() {
           </thead>
           <tbody>
             {expenseList.map((expense) => {
-              const project = projectList.find((item) => item.id === expense.projectId);
-              const supplier = (suppliers ?? []).find((item) => item.id === expense.supplierId);
+              const project = projectList.find(
+                (item) => item.id === expense.projectId,
+              );
+              const supplier = (suppliers ?? []).find(
+                (item) => item.id === expense.supplierId,
+              );
               return (
                 <tr key={expense.id} className="border-b last:border-0">
-                  <td className="py-3 font-medium">{project?.name ?? expense.projectId}</td>
+                  <td className="py-3 font-medium">
+                    {project?.name ?? expense.projectId}
+                  </td>
                   <td>{expense.category}</td>
                   <td>{supplier?.name ?? expense.supplier ?? "—"}</td>
                   <td>{expense.date}</td>
                   <td>
                     <StatusBadge value={expense.status} />
                   </td>
-                  <td className="font-semibold">{formatCurrency(expense.amount)}</td>
+                  <td className="font-semibold">
+                    {formatCurrency(expense.amount)}
+                  </td>
                   {canManageFinance && (
                     <td>
                       <div className="flex items-center gap-2">
@@ -818,16 +1019,32 @@ function FinancePage() {
                               required: true,
                               options: projectList.map((item) => item.name),
                             },
-                            { name: "amount", label: "סכום (₪)", type: "number", required: true },
-                            { name: "category", label: "קטגוריה", required: true },
+                            {
+                              name: "amount",
+                              label: "סכום (₪)",
+                              type: "number",
+                              required: true,
+                            },
+                            {
+                              name: "category",
+                              label: "קטגוריה",
+                              required: true,
+                            },
                             {
                               name: "supplier",
                               label: "ספק",
                               type: "select",
                               required: true,
-                              options: (suppliers ?? []).map((item) => item.name),
+                              options: (suppliers ?? []).map(
+                                (item) => item.name,
+                              ),
                             },
-                            { name: "date", label: "תאריך", type: "date", required: true },
+                            {
+                              name: "date",
+                              label: "תאריך",
+                              type: "date",
+                              required: true,
+                            },
                             {
                               name: "status",
                               label: "סטטוס תשלום",
@@ -835,7 +1052,12 @@ function FinancePage() {
                               required: true,
                               options: ["שולם", "ממתין", "חלקי"],
                             },
-                            { name: "description", label: "תיאור", type: "textarea", colSpan: 2 },
+                            {
+                              name: "description",
+                              label: "תיאור",
+                              type: "textarea",
+                              colSpan: 2,
+                            },
                             { name: "reference", label: "אסמכתא", colSpan: 2 },
                           ]}
                           initialValues={{
@@ -858,10 +1080,14 @@ function FinancePage() {
                             const otherExpenses = (expenses ?? [])
                               .filter(
                                 (item) =>
-                                  item.projectId === selectedProject?.id && item.id !== expense.id,
+                                  item.projectId === selectedProject?.id &&
+                                  item.id !== expense.id,
                               )
                               .reduce((sum, item) => sum + item.amount, 0);
-                            if (selectedProject && otherExpenses + amount > selectedProject.budget)
+                            if (
+                              selectedProject &&
+                              otherExpenses + amount > selectedProject.budget
+                            )
                               return "ההוצאה חורגת מיתרת תקציב הפרויקט.";
                             return null;
                           }}
@@ -881,7 +1107,8 @@ function FinancePage() {
                                   category: values.category,
                                   supplierId: selectedSupplier?.id,
                                   date: values.date,
-                                  status: values.status as "שולם" | "ממתין" | "חלקי",
+                                  status: values.status as
+                                    "שולם" | "ממתין" | "חלקי",
                                   description: values.description || undefined,
                                   reference: values.reference || undefined,
                                 },
@@ -891,7 +1118,9 @@ function FinancePage() {
                               return {
                                 ok: false,
                                 error:
-                                  error instanceof Error ? error.message : "שמירת ההוצאה נכשלה",
+                                  error instanceof Error
+                                    ? error.message
+                                    : "שמירת ההוצאה נכשלה",
                               };
                             }
                           }}
@@ -928,7 +1157,9 @@ function FinancePage() {
       >
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>היסטוריית תנועות — {selectedProject?.name}</DialogTitle>
+            <DialogTitle>
+              היסטוריית תנועות — {selectedProject?.name}
+            </DialogTitle>
             <DialogDescription>
               הקצאות, תוספות, הוצאות והחזרי יתרה לפי סדר כרונולוגי.
             </DialogDescription>
@@ -959,7 +1190,9 @@ function FinancePage() {
               </div>
             ))}
             {selectedTransactions.length === 0 && (
-              <div className="text-center text-muted-foreground py-8">אין תנועות להצגה</div>
+              <div className="text-center text-muted-foreground py-8">
+                אין תנועות להצגה
+              </div>
             )}
           </div>
         </DialogContent>

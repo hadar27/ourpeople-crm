@@ -1,12 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
-import { DataTable, type Column, type FilterConfig } from "@/components/data-table";
+import {
+  DataTable,
+  type Column,
+  type FilterConfig,
+} from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
-import { useDonors, useCreateDonor, type DonorRecord } from "@/lib/queries/donors";
+import {
+  useDonors,
+  useCreateDonor,
+  type DonorRecord,
+} from "@/lib/queries/donors";
 import { useAllInteractions } from "@/lib/queries/interactions";
 import { useDonations } from "@/lib/queries/donations";
-import { DonorEditButton, DonorDeleteButton } from "@/components/module-edit-dialogs";
+import {
+  DonorEditButton,
+  DonorDeleteButton,
+} from "@/components/module-edit-dialogs";
+import { ModuleAccessDenied } from "@/components/module-access-denied";
+import { useCanView } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_app/donors")({
   component: DonorsPage,
@@ -15,7 +28,11 @@ export const Route = createFileRoute("/_app/donors")({
 type DonorTableRecord = DonorRecord & { receiptStatus: string };
 
 const columns: Column<DonorTableRecord>[] = [
-  { key: "name", header: "שם תורם", render: (r) => <span className="font-medium">{r.name}</span> },
+  {
+    key: "name",
+    header: "שם תורם",
+    render: (r) => <span className="font-medium">{r.name}</span>,
+  },
   { key: "idNumber", header: "ת.ז. / ח.פ.", render: (r) => r.idNumber || "—" },
   { key: "phone", header: "טלפון", render: (r) => r.phone || "—" },
   { key: "email", header: "אימייל", render: (r) => r.email || "—" },
@@ -24,7 +41,9 @@ const columns: Column<DonorTableRecord>[] = [
     key: "totalDonated",
     header: "סך תרומות",
     render: (r) => (
-      <span className="font-semibold tabular-nums">₪{r.totalDonated.toLocaleString()}</span>
+      <span className="font-semibold tabular-nums">
+        ₪{r.totalDonated.toLocaleString()}
+      </span>
     ),
   },
   { key: "lastDonation", header: "תרומה אחרונה" },
@@ -33,7 +52,11 @@ const columns: Column<DonorTableRecord>[] = [
     header: "קבלות",
     render: (r) => <StatusBadge value={r.receiptStatus} />,
   },
-  { key: "status", header: "סטטוס", render: (r) => <StatusBadge value={r.status} /> },
+  {
+    key: "status",
+    header: "סטטוס",
+    render: (r) => <StatusBadge value={r.status} />,
+  },
 ];
 
 const getDonorSize = (donor: DonorRecord): string => {
@@ -43,8 +66,18 @@ const getDonorSize = (donor: DonorRecord): string => {
 };
 
 const filters: FilterConfig<DonorRecord>[] = [
-  { key: "type", label: "סוג תורם", type: "multi-select", options: ["פרטי", "תאגיד", "קרן"] },
-  { key: "status", label: "סטטוס", type: "multi-select", options: ["פעיל", "לא פעיל"] },
+  {
+    key: "type",
+    label: "סוג תורם",
+    type: "multi-select",
+    options: ["פרטי", "תאגיד", "קרן"],
+  },
+  {
+    key: "status",
+    label: "סטטוס",
+    type: "multi-select",
+    options: ["פעיל", "לא פעיל"],
+  },
   {
     key: "donorSize",
     label: "גודל תורם",
@@ -55,13 +88,19 @@ const filters: FilterConfig<DonorRecord>[] = [
 ];
 
 function DonorsPage() {
+  const canAccess = useCanView("donors");
   const { data: donors, isLoading, isError, refetch } = useDonors();
   const { data: interactions } = useAllInteractions();
   const { data: donations } = useDonations();
   const createDonor = useCreateDonor();
+  if (!canAccess) return <ModuleAccessDenied title="ניהול תורמים" />;
   const tableRows: DonorTableRecord[] = (donors ?? []).map((donor) => {
-    const donorDonations = (donations ?? []).filter((donation) => donation.donorId === donor.id);
-    const notIssued = donorDonations.filter((donation) => donation.receipt !== "הופק").length;
+    const donorDonations = (donations ?? []).filter(
+      (donation) => donation.donorId === donor.id,
+    );
+    const notIssued = donorDonations.filter(
+      (donation) => donation.receipt !== "הופק",
+    ).length;
     return {
       ...donor,
       receiptStatus:
@@ -79,7 +118,9 @@ function DonorsPage() {
   const repeatDonors = donors?.filter((d) => d.totalDonated > 0).length ?? 0;
   const avgDonation =
     donors && donors.length > 0
-      ? Math.round(donors.reduce((sum, d) => sum + d.totalDonated, 0) / donors.length)
+      ? Math.round(
+          donors.reduce((sum, d) => sum + d.totalDonated, 0) / donors.length,
+        )
       : 0;
 
   // Count meetings this month (type = "פגישה")
@@ -150,7 +191,10 @@ function DonorsPage() {
                 });
                 return { ok: true };
               } catch (err) {
-                return { ok: false, error: err instanceof Error ? err.message : "השמירה נכשלה" };
+                return {
+                  ok: false,
+                  error: err instanceof Error ? err.message : "השמירה נכשלה",
+                };
               }
             }}
           />
@@ -167,7 +211,9 @@ function DonorsPage() {
         </div>
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">תרומה ממוצעת</div>
-          <div className="text-xl font-bold mt-1">₪{avgDonation.toLocaleString()}</div>
+          <div className="text-xl font-bold mt-1">
+            ₪{avgDonation.toLocaleString()}
+          </div>
         </div>
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">פגישות החודש</div>
@@ -180,8 +226,13 @@ function DonorsPage() {
         </div>
       ) : isError ? (
         <div className="card-elevated flex flex-col items-center gap-3 p-16 text-center">
-          <div className="text-sm text-muted-foreground">אירעה שגיאה בטעינת התורמים.</div>
-          <button onClick={() => refetch()} className="text-sm text-brand hover:underline">
+          <div className="text-sm text-muted-foreground">
+            אירעה שגיאה בטעינת התורמים.
+          </div>
+          <button
+            onClick={() => refetch()}
+            className="text-sm text-brand hover:underline"
+          >
             נסה שוב
           </button>
         </div>

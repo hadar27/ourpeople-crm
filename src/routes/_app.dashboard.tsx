@@ -34,15 +34,28 @@ import { useVolunteers } from "@/lib/queries/volunteers";
 import { monthlyDonationTotals } from "@/lib/dashboard-metrics";
 import { toast } from "sonner";
 import { useCanView } from "@/lib/permissions";
-import { isInCalendarMonth, useCalendarMonth } from "@/components/calendar-month-filter";
+import {
+  isInCalendarMonth,
+  useCalendarMonth,
+} from "@/components/calendar-month-filter";
 
 export const Route = createFileRoute("/_app/dashboard")({
   component: Dashboard,
 });
 
 const quickActions = [
-  { label: "הוסף תורם", icon: UserPlus, to: "/donors" as const, msg: "טופס תורם חדש נפתח" },
-  { label: "צור פרויקט", icon: FolderPlus, to: "/projects" as const, msg: "טופס פרויקט חדש נפתח" },
+  {
+    label: "הוסף תורם",
+    icon: UserPlus,
+    to: "/donors" as const,
+    msg: "טופס תורם חדש נפתח",
+  },
+  {
+    label: "צור פרויקט",
+    icon: FolderPlus,
+    to: "/projects" as const,
+    msg: "טופס פרויקט חדש נפתח",
+  },
   {
     label: "תרומה חדשה",
     icon: GiftIcon,
@@ -55,6 +68,7 @@ const quickActions = [
     icon: HeartHandshake,
     to: "/volunteers" as const,
     msg: "מסך שיוך מתנדבים",
+    module: "volunteers" as const,
   },
   {
     label: "צור הוצאה",
@@ -72,23 +86,32 @@ function Dashboard() {
   const { data: volunteers } = useVolunteers();
   const canViewDonations = useCanView("donations");
   const canViewFinance = useCanView("finance");
+  const canViewVolunteers = useCanView("volunteers");
   const { month } = useCalendarMonth();
   const visibleQuickActions = quickActions.filter(
     (qa) =>
       (qa.module !== "donations" || canViewDonations) &&
-      (qa.module !== "finance" || canViewFinance),
+      (qa.module !== "finance" || canViewFinance) &&
+      (qa.module !== "volunteers" || canViewVolunteers),
   );
 
-  const donationList = (donations ?? []).filter((item) => isInCalendarMonth(item.date, month));
-  const projectList = (projects ?? []).filter((item) => isInCalendarMonth(item.startDate, month));
+  const donationList = (donations ?? []).filter((item) =>
+    isInCalendarMonth(item.date, month),
+  );
+  const projectList = (projects ?? []).filter((item) =>
+    isInCalendarMonth(item.startDate, month),
+  );
   const volunteerList = (volunteers ?? []).filter((item) =>
     isInCalendarMonth(item.createdAt, month),
   );
 
   const now = new Date();
-  const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const monthKey = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   const thisMonthKey = month || monthKey(now);
-  const lastMonthKey = monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+  const lastMonthKey = monthKey(
+    new Date(now.getFullYear(), now.getMonth() - 1, 1),
+  );
   const thisMonthTotal = donationList
     .filter((d) => d.date.slice(0, 7) === thisMonthKey)
     .reduce((s, d) => s + d.amount, 0);
@@ -102,18 +125,29 @@ function Dashboard() {
         )}% מהחודש שעבר`
       : "אין נתונים להשוואה לחודש שעבר";
 
-  const activeVolunteers = volunteerList.filter((v) => v.status === "פעיל").length;
-  const onBreakVolunteers = volunteerList.filter((v) => v.status === "בהפסקה").length;
+  const activeVolunteers = volunteerList.filter(
+    (v) => v.status === "פעיל",
+  ).length;
+  const onBreakVolunteers = volunteerList.filter(
+    (v) => v.status === "בהפסקה",
+  ).length;
 
   const activeProjects = projectList.filter((p) => p.status === "פעיל").length;
-  const planningProjects = projectList.filter((p) => p.status === "בתכנון").length;
-  const closedProjects = projectList.filter((p) => p.status === "הסתיים").length;
+  const planningProjects = projectList.filter(
+    (p) => p.status === "בתכנון",
+  ).length;
+  const closedProjects = projectList.filter(
+    (p) => p.status === "הסתיים",
+  ).length;
 
   const totalBudget = projectList.reduce((s, p) => s + p.budget, 0);
   const totalSpent = projectList.reduce((s, p) => s + p.spent, 0);
-  const budgetPct = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
+  const budgetPct =
+    totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
   const shortMoney = (v: number) =>
-    v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : `${Math.round(v / 1000)}K`;
+    v >= 1_000_000
+      ? `${(v / 1_000_000).toFixed(1)}M`
+      : `${Math.round(v / 1000)}K`;
 
   const monthlyDonations = monthlyDonationTotals(donationList);
   const budgetVsActual = projectList.map((p) => ({
@@ -148,24 +182,28 @@ function Dashboard() {
             tone="brand"
           />
         )}
-        <StatCard
-          label="מתנדבים פעילים"
-          value={String(activeVolunteers)}
-          delta={`${onBreakVolunteers} בהפסקה`}
-          icon={<HeartHandshake className="h-5 w-5" />}
-        />
+        {canViewVolunteers && (
+          <StatCard
+            label="מתנדבים פעילים"
+            value={String(activeVolunteers)}
+            delta={`${onBreakVolunteers} בהפסקה`}
+            icon={<HeartHandshake className="h-5 w-5" />}
+          />
+        )}
         <StatCard
           label="פרויקטים פעילים"
           value={String(activeProjects)}
           delta={`${planningProjects} בתכנון · ${closedProjects} הסתיימו`}
           icon={<TrendingUp className="h-5 w-5" />}
         />
-        <StatCard
-          label="ניצול תקציב שנתי"
-          value={`${budgetPct}%`}
-          delta={`₪${shortMoney(totalSpent)} מתוך ₪${shortMoney(totalBudget)}`}
-          icon={<Wallet className="h-5 w-5" />}
-        />
+        {canViewFinance && (
+          <StatCard
+            label="ניצול תקציב שנתי"
+            value={`${budgetPct}%`}
+            delta={`₪${shortMoney(totalSpent)} מתוך ₪${shortMoney(totalBudget)}`}
+            icon={<Wallet className="h-5 w-5" />}
+          />
+        )}
       </div>
 
       {/* Quick Actions */}
@@ -174,7 +212,9 @@ function Dashboard() {
           <div className="text-sm font-semibold flex items-center gap-2">
             <Zap className="h-4 w-4 text-brand" /> פעולות מהירות
           </div>
-          <span className="text-xs text-muted-foreground">קיצורי דרך לפעולות יומיומיות</span>
+          <span className="text-xs text-muted-foreground">
+            קיצורי דרך לפעולות יומיומיות
+          </span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {visibleQuickActions.map((qa) => {
@@ -187,7 +227,9 @@ function Dashboard() {
                 className="group flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-border bg-surface-muted hover:bg-brand hover:text-white hover:border-brand transition-all"
               >
                 <Icon className="h-6 w-6 text-brand group-hover:text-white transition-colors" />
-                <span className="text-xs font-medium text-center">{qa.label}</span>
+                <span className="text-xs font-medium text-center">
+                  {qa.label}
+                </span>
               </Link>
             );
           })}
@@ -198,8 +240,12 @@ function Dashboard() {
         <div className="card-elevated p-5 mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <div className="text-sm text-muted-foreground">גיוס תרומות לפי חודש</div>
-              <div className="text-lg font-semibold">מגמת גיוס — חודשים אחרונים</div>
+              <div className="text-sm text-muted-foreground">
+                גיוס תרומות לפי חודש
+              </div>
+              <div className="text-lg font-semibold">
+                מגמת גיוס — חודשים אחרונים
+              </div>
             </div>
             <StatusBadge value="פעיל" />
           </div>
@@ -213,7 +259,11 @@ function Dashboard() {
               </defs>
               <CartesianGrid stroke="#E2E8F0" strokeDasharray="3 3" />
               <XAxis dataKey="month" stroke="#94A3B8" fontSize={12} />
-              <YAxis stroke="#94A3B8" fontSize={12} tickFormatter={(v) => `₪${v / 1000}K`} />
+              <YAxis
+                stroke="#94A3B8"
+                fontSize={12}
+                tickFormatter={(v) => `₪${v / 1000}K`}
+              />
               <Tooltip formatter={(v: number) => `₪${v.toLocaleString()}`} />
               <Area
                 type="monotone"
@@ -228,25 +278,45 @@ function Dashboard() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 card-elevated p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-sm text-muted-foreground">תקציב מול ביצוע</div>
-              <div className="text-lg font-semibold">השוואת תקציב מתוכנן לפועל</div>
+        {canViewFinance && (
+          <div className="lg:col-span-2 card-elevated p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <div className="text-sm text-muted-foreground">
+                  תקציב מול ביצוע
+                </div>
+                <div className="text-lg font-semibold">
+                  השוואת תקציב מתוכנן לפועל
+                </div>
+              </div>
             </div>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={budgetVsActual}>
+                <CartesianGrid stroke="#E2E8F0" strokeDasharray="3 3" />
+                <XAxis dataKey="project" stroke="#94A3B8" fontSize={11} />
+                <YAxis
+                  stroke="#94A3B8"
+                  fontSize={11}
+                  tickFormatter={(v) => `₪${v / 1000}K`}
+                />
+                <Tooltip formatter={(v: number) => `₪${v.toLocaleString()}`} />
+                <Legend />
+                <Bar
+                  dataKey="budget"
+                  name="תקציב"
+                  fill="#93C5FD"
+                  radius={[6, 6, 0, 0]}
+                />
+                <Bar
+                  dataKey="actual"
+                  name="ביצוע"
+                  fill="#2563EB"
+                  radius={[6, 6, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={budgetVsActual}>
-              <CartesianGrid stroke="#E2E8F0" strokeDasharray="3 3" />
-              <XAxis dataKey="project" stroke="#94A3B8" fontSize={11} />
-              <YAxis stroke="#94A3B8" fontSize={11} tickFormatter={(v) => `₪${v / 1000}K`} />
-              <Tooltip formatter={(v: number) => `₪${v.toLocaleString()}`} />
-              <Legend />
-              <Bar dataKey="budget" name="תקציב" fill="#93C5FD" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="actual" name="ביצוע" fill="#2563EB" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        )}
 
         <div className="card-elevated p-5">
           <div className="flex items-center justify-between mb-3">
@@ -286,9 +356,14 @@ function Dashboard() {
               <div className="text-lg font-semibold flex items-center gap-2">
                 <CalendarClock className="h-4 w-4" /> פעילות אחרונה
               </div>
-              <div className="text-xs text-muted-foreground">תרומות אחרונות שנקלטו במערכת</div>
+              <div className="text-xs text-muted-foreground">
+                תרומות אחרונות שנקלטו במערכת
+              </div>
             </div>
-            <Link to="/donations" className="text-xs text-brand hover:underline">
+            <Link
+              to="/donations"
+              className="text-xs text-brand hover:underline"
+            >
               לכל התרומות
             </Link>
           </div>
@@ -309,12 +384,18 @@ function Dashboard() {
                   className="border-t border-border hover:bg-surface-muted/60 cursor-pointer"
                 >
                   <td className="py-3 font-medium">
-                    <Link to="/donation/$id" params={{ id: d.id }} className="hover:text-brand">
+                    <Link
+                      to="/donation/$id"
+                      params={{ id: d.id }}
+                      className="hover:text-brand"
+                    >
                       {d.donor}
                     </Link>
                   </td>
                   <td className="py-3 text-muted-foreground">{d.project}</td>
-                  <td className="py-3 font-semibold">₪{d.amount.toLocaleString()}</td>
+                  <td className="py-3 font-semibold">
+                    ₪{d.amount.toLocaleString()}
+                  </td>
                   <td className="py-3">
                     <StatusBadge value={d.receipt} />
                   </td>

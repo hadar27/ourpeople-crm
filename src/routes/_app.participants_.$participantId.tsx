@@ -27,6 +27,8 @@ import { useProjects } from "@/lib/queries/projects";
 import { ParticipantEditButton } from "@/components/module-edit-dialogs";
 import { Loader2 } from "lucide-react";
 import { EntityDocumentsPanel } from "@/components/entity-documents-panel";
+import { ModuleAccessDenied } from "@/components/module-access-denied";
+import { useCanView } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_app/participants_/$participantId")({
   component: ParticipantProfile,
@@ -47,6 +49,7 @@ export const Route = createFileRoute("/_app/participants_/$participantId")({
 });
 
 function ParticipantProfile() {
+  const canAccess = useCanView("participants");
   const { participantId } = useParams({
     from: "/_app/participants_/$participantId",
   });
@@ -58,6 +61,8 @@ function ParticipantProfile() {
   } = useParticipant(participantId);
   const { data: assignedProjects } = useProjectsForParticipant(participantId);
   const { data: projects } = useProjects();
+
+  if (!canAccess) return <ModuleAccessDenied title="כרטיס נרשם" />;
 
   if (isLoading) {
     return (
@@ -193,18 +198,10 @@ function ParticipantProfile() {
       <div className="grid lg:grid-cols-2 gap-6">
         <SectionCard title="פרטי קשר" icon={<Phone className="h-4 w-4" />}>
           <div className="divide-y divide-border text-sm">
-            <Row label="תאריך לידה" value={participant.dateOfBirth} />
-            <Row label="מין" value={participant.sex} />
-            <Row label="כתובת" value={participant.address} />
-            <Row label="עיר" value={participant.city} />
-            <Row label="שם הורה/אפוטרופוס" value={participant.parentName} />
-            <Row label="טלפון הורה" value={participant.parentPhone} />
-            <Row label="אלרגיות אוכל" value={participant.foodAllergies} />
-            <Row label="הערות" value={participant.notes} />
             <Row label="טלפון" value={participant.phone} />
             <Row
               label="אימייל"
-              value={participant.email}
+              value="—"
               icon={<Mail className="h-3.5 w-3.5" />}
             />
             <Row

@@ -17,8 +17,8 @@ import {
   VolunteerEditButton,
   VolunteerDeleteButton,
 } from "@/components/module-edit-dialogs";
-
-import { volunteerFields } from "@/lib/edit-forms";
+import { ModuleAccessDenied } from "@/components/module-access-denied";
+import { useCanView } from "@/lib/permissions";
 
 const UNASSIGNED = "ללא שיוך";
 
@@ -78,9 +78,11 @@ const filters: FilterConfig<VolunteerRecord>[] = [
 ];
 
 function VolunteersPage() {
+  const canAccess = useCanView("volunteers");
   const { data: volunteers, isLoading, isError, refetch } = useVolunteers();
   const { data: projects } = useProjects();
   const createVolunteer = useCreateVolunteer();
+  if (!canAccess) return <ModuleAccessDenied title="ניהול מתנדבים" />;
   const projectOptions = [...(projects ?? []).map((p) => p.name), UNASSIGNED];
 
   // Calculate real aggregations
@@ -109,9 +111,6 @@ function VolunteersPage() {
             successMessage="מתנדב חדש נוסף בהצלחה"
             fields={[
               { name: "fullName", label: "שם מלא", required: true },
-              ...volunteerFields
-                .filter((field) => ["idNumber", "email"].includes(field.name))
-                .map((field) => ({ ...field, required: true })),
               { name: "phone", label: "טלפון", type: "tel", required: true },
               {
                 name: "availability",
@@ -138,8 +137,6 @@ function VolunteersPage() {
               try {
                 await createVolunteer.mutateAsync({
                   name: v.fullName,
-                  idNumber: v.idNumber?.trim() || undefined,
-                  email: v.email?.trim() || undefined,
                   phone: v.phone || undefined,
                   availability: v.availability,
                   projectId: def?.id,
