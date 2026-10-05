@@ -14,7 +14,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { FormField } from "@/components/entity-form-dialog";
 
 export type SaveResult = { ok: boolean; error?: string };
@@ -85,13 +91,27 @@ export function RecordEditDialog({
     const next: Record<string, string> = {};
     for (const f of fields) {
       const v = (values[f.name] ?? "").trim();
-      if (f.required && !v) next[f.name] = "שדה חובה";
-      else if (v && f.type === "email" && !/^\S+@\S+\.\S+$/.test(v)) next[f.name] = "אימייל לא תקין";
-      else if (v && f.type === "number" && f.max !== undefined && Number(v) > f.max) next[f.name] = `הערך חייב להיות לכל היותר ${f.max}`;
+      const required =
+        typeof f.required === "function" ? f.required(values) : f.required;
+      if (required && !v) next[f.name] = "שדה חובה";
+      else if (v && f.type === "email" && !/^\S+@\S+\.\S+$/.test(v))
+        next[f.name] = "אימייל לא תקין";
+      else if (
+        v &&
+        f.type === "number" &&
+        f.max !== undefined &&
+        Number(v) > f.max
+      )
+        next[f.name] = `הערך חייב להיות לכל היותר ${f.max}`;
       else if (v && f.validate) {
         const result = f.validate(v);
-        if (result !== true) next[f.name] = typeof result === "string" ? result : f.patternMessage ?? "ערך לא תקין";
-      } else if (v && f.pattern && !f.pattern.test(v)) next[f.name] = f.patternMessage ?? "ערך לא תקין";
+        if (result !== true)
+          next[f.name] =
+            typeof result === "string"
+              ? result
+              : (f.patternMessage ?? "ערך לא תקין");
+      } else if (v && f.pattern && !f.pattern.test(v))
+        next[f.name] = f.patternMessage ?? "ערך לא תקין";
       else if (v && f.type === "tel" && !f.pattern && !/^\d{10}$/.test(v))
         next[f.name] = "מספר טלפון חייב להכיל 10 ספרות";
     }
@@ -141,7 +161,11 @@ export function RecordEditDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {triggerNode ?? (
-          <Button variant="outline" size="sm" className="gap-1 border-brand/30 text-brand-deep hover:bg-brand/5">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1 border-brand/30 text-brand-deep hover:bg-brand/5"
+          >
             <Pencil className="h-3.5 w-3.5" /> {triggerLabel}
           </Button>
         )}
@@ -151,59 +175,88 @@ export function RecordEditDialog({
         className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl border-brand/10 p-0"
       >
         <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-l from-brand-light/40 to-white rounded-t-2xl text-right">
-          <DialogTitle className="text-xl font-bold text-brand-deep">{title}</DialogTitle>
-          {description && <DialogDescription className="text-sm">{description}</DialogDescription>}
+          <DialogTitle className="text-xl font-bold text-brand-deep">
+            {title}
+          </DialogTitle>
+          {description && (
+            <DialogDescription className="text-sm">
+              {description}
+            </DialogDescription>
+          )}
         </DialogHeader>
 
         <div className="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {fields.map((f) => (
-            <div key={f.name} className={`space-y-1.5 ${f.colSpan === 2 ? "sm:col-span-2" : ""}`}>
-              <Label htmlFor={`edit-${f.name}`} className="text-sm font-medium">
-                {f.label} {f.required && <span className="text-destructive">*</span>}
-              </Label>
-              {f.type === "textarea" ? (
-                <Textarea
-                  id={`edit-${f.name}`}
-                  placeholder={f.placeholder}
-                  value={values[f.name] ?? ""}
-                  onChange={(e) => setField(f.name, e.target.value)}
-                  rows={3}
-                />
-              ) : f.type === "select" ? (
-                <Select value={values[f.name] ?? ""} onValueChange={(v) => setField(f.name, v)}>
-                  <SelectTrigger id={`edit-${f.name}`}>
-                    <SelectValue placeholder={f.placeholder ?? "בחר..."} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {f.options?.map((o) => (
-                      <SelectItem key={o} value={o}>
-                        {o}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  id={`edit-${f.name}`}
-                  type={f.type ?? "text"}
-                  placeholder={f.placeholder}
-                  maxLength={f.maxLength}
-                  max={f.max}
-                  value={values[f.name] ?? ""}
-                  onChange={(e) => setField(f.name, e.target.value)}
-                />
-              )}
-              {f.helper && !errors[f.name] && <p className="text-xs text-muted-foreground">{f.helper}</p>}
-              {errors[f.name] && <p className="text-xs text-destructive">{errors[f.name]}</p>}
-            </div>
-          ))}
+          {fields.map((f) => {
+            const required =
+              typeof f.required === "function"
+                ? f.required(values)
+                : f.required;
+            return (
+              <div
+                key={f.name}
+                className={`space-y-1.5 ${f.colSpan === 2 ? "sm:col-span-2" : ""}`}
+              >
+                <Label
+                  htmlFor={`edit-${f.name}`}
+                  className="text-sm font-medium"
+                >
+                  {f.label}{" "}
+                  {required && <span className="text-destructive">*</span>}
+                </Label>
+                {f.type === "textarea" ? (
+                  <Textarea
+                    id={`edit-${f.name}`}
+                    placeholder={f.placeholder}
+                    value={values[f.name] ?? ""}
+                    onChange={(e) => setField(f.name, e.target.value)}
+                    rows={3}
+                  />
+                ) : f.type === "select" ? (
+                  <Select
+                    value={values[f.name] ?? ""}
+                    onValueChange={(v) => setField(f.name, v)}
+                  >
+                    <SelectTrigger id={`edit-${f.name}`}>
+                      <SelectValue placeholder={f.placeholder ?? "בחר..."} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {f.options?.map((o) => (
+                        <SelectItem key={o} value={o}>
+                          {o}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id={`edit-${f.name}`}
+                    type={f.type ?? "text"}
+                    placeholder={f.placeholder}
+                    maxLength={f.maxLength}
+                    max={f.max}
+                    value={values[f.name] ?? ""}
+                    onChange={(e) => setField(f.name, e.target.value)}
+                  />
+                )}
+                {f.helper && !errors[f.name] && (
+                  <p className="text-xs text-muted-foreground">{f.helper}</p>
+                )}
+                {errors[f.name] && (
+                  <p className="text-xs text-destructive">{errors[f.name]}</p>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {changedSensitive.length > 0 && (
           <div className="mx-6 mb-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
             <span>
-              שינוי רגיש בשדות: {changedSensitive.join(", ")}. {confirmed ? "לחצו 'שמור שינויים' לאישור סופי." : "יידרש אישור נוסף לפני השמירה."}
+              שינוי רגיש בשדות: {changedSensitive.join(", ")}.{" "}
+              {confirmed
+                ? "לחצו 'שמור שינויים' לאישור סופי."
+                : "יידרש אישור נוסף לפני השמירה."}
             </span>
           </div>
         )}
@@ -215,7 +268,11 @@ export function RecordEditDialog({
         )}
 
         <DialogFooter className="px-6 py-4 border-t bg-muted/30 rounded-b-2xl gap-2 sm:gap-2 flex-row-reverse">
-          <Button onClick={handleSave} disabled={saving} className="bg-brand hover:bg-brand-deep min-w-32">
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-brand hover:bg-brand-deep min-w-32"
+          >
             {saving ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin ml-2" /> שומר...
@@ -224,7 +281,11 @@ export function RecordEditDialog({
               "שמור שינויים"
             )}
           </Button>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
+          <Button
+            variant="outline"
+            onClick={() => setOpen(false)}
+            disabled={saving}
+          >
             ביטול
           </Button>
         </DialogFooter>

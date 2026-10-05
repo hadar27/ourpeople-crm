@@ -2,7 +2,7 @@
 // Keeping them in one place means the table row edit and the profile page edit
 // always show identical fields and validation.
 import type { FormField } from "@/components/entity-form-dialog";
-import { validateIsraeliId } from "@/lib/validation";
+import { isMinor, validateIsraeliId } from "@/lib/validation";
 
 export const ID_PATTERN = /^\d{9}$/;
 export const PHONE_PATTERN = /^\d{10}$/;
@@ -40,15 +40,21 @@ export const participantFields: FormField[] = [
   { name: "email", required: true, label: "אימייל", type: "email" },
   { name: "address", required: true, label: "כתובת" },
   { name: "city", required: true, label: "עיר" },
-  { name: "parentName", required: true, label: "שם הורה/אפוטרופוס" },
+  {
+    name: "parentName",
+    required: (values) => isMinor(values.dateOfBirth ?? ""),
+    label: "שם הורה/אפוטרופוס",
+    helper: "חובה לנרשם מתחת לגיל 18",
+  },
   {
     name: "parentPhone",
-    required: true,
+    required: (values) => isMinor(values.dateOfBirth ?? ""),
     label: "טלפון הורה",
     type: "tel",
     maxLength: 10,
     pattern: PHONE_PATTERN,
     patternMessage: "טלפון חייב להכיל 10 ספרות",
+    helper: "חובה לנרשם מתחת לגיל 18",
   },
   { name: "foodAllergies", label: "אלרגיות אוכל", type: "textarea" },
   {

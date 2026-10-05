@@ -1,4 +1,8 @@
-import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useParams,
+} from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,7 +19,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
-import { validateIsraeliId } from "@/lib/validation";
+import { isMinor, validateIsraeliId } from "@/lib/validation";
 import { PHONE_PATTERN } from "@/lib/edit-forms";
 
 export const Route = createFileRoute("/register/participant/$token")({
@@ -95,7 +99,9 @@ function ParticipantRegistrationPage() {
           return;
         }
 
-        const projectInfo = (links as any).projects;
+        const projectInfo = (
+          links as unknown as { projects: ProjectInfo | null }
+        ).projects;
         if (!projectInfo) {
           setError("הפרויקט לא נמצא.");
           setLoading(false);
@@ -114,7 +120,9 @@ function ParticipantRegistrationPage() {
   }, [token]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) => {
     const { name, value, type } = e.target;
     if (type === "checkbox") {
@@ -159,13 +167,28 @@ function ParticipantRegistrationPage() {
       return;
     }
 
+    if (isMinor(formData.dateOfBirth)) {
+      if (!formData.parentName.trim() || !formData.parentPhone.trim()) {
+        toast.error(
+          "לנרשם מתחת לגיל 18 חובה למלא שם וטלפון של הורה או אפוטרופוס",
+        );
+        return;
+      }
+      if (!PHONE_PATTERN.test(formData.parentPhone)) {
+        toast.error("טלפון ההורה חייב להכיל 10 ספרות");
+        return;
+      }
+    }
+
     if (!project) {
       toast.error("שגיאה: הפרויקט לא נמצא");
       return;
     }
 
     if (project.type === "בתשלום" && !formData.paymentAcknowledged) {
-      toast.error(`יש לאשר שהפעילות כרוכה בתשלום בסך ₪${project.price.toLocaleString()}`);
+      toast.error(
+        `יש לאשר שהפעילות כרוכה בתשלום בסך ₪${project.price.toLocaleString()}`,
+      );
       return;
     }
 
@@ -185,14 +208,20 @@ function ParticipantRegistrationPage() {
           sex: formData.sex || null,
           parent_name: formData.parentName || null,
           parent_phone: formData.parentPhone || null,
-          food_allergies: formData.hasAllergyWarning ? formData.foodAllergies || null : null,
+          food_allergies: formData.hasAllergyWarning
+            ? formData.foodAllergies || null
+            : null,
           registration_date: formData.registrationDate,
           status: "ממתין לאישור",
-          payment_status: project.type === "בתשלום" ? "לא שולם" : "לא נדרש תשלום",
-          payment_acknowledged: project.type === "בתשלום" && formData.paymentAcknowledged,
+          payment_status:
+            project.type === "בתשלום" ? "לא שולם" : "לא נדרש תשלום",
+          payment_acknowledged:
+            project.type === "בתשלום" && formData.paymentAcknowledged,
           documents_complete: formData.documentsComplete,
           is_new_immigrant: formData.isNewImmigrant,
-          immigration_year: formData.immigrationYear ? parseInt(formData.immigrationYear) : null,
+          immigration_year: formData.immigrationYear
+            ? parseInt(formData.immigrationYear)
+            : null,
           address: formData.address || null,
           city: formData.city || null,
           source: "אתר",
@@ -229,9 +258,12 @@ function ParticipantRegistrationPage() {
       }, 2000);
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : ((err as { message?: string } | null)?.message ?? "");
+        err instanceof Error
+          ? err.message
+          : ((err as { message?: string } | null)?.message ?? "");
       toast.error(
-        message.includes("payment_acknowledged") || message.includes("agreed_price")
+        message.includes("payment_acknowledged") ||
+          message.includes("agreed_price")
           ? "יש להריץ את מיגרציה 0026 ב-Supabase ולאחר מכן לנסות שוב."
           : "שגיאה בשליחת הטופס. אנא נסה שוב.",
       );
@@ -286,7 +318,8 @@ function ParticipantRegistrationPage() {
             <div className="mb-8 rounded-xl border border-amber-200 bg-amber-50 p-4">
               <div className="font-semibold text-amber-900">פרויקט בתשלום</div>
               <div className="mt-1 text-sm text-amber-800">
-                עלות ההשתתפות בפרויקט היא ₪{project.price.toLocaleString()} לכל משתתף/ת.
+                עלות ההשתתפות בפרויקט היא ₪{project.price.toLocaleString()} לכל
+                משתתף/ת.
               </div>
             </div>
           )}
@@ -386,19 +419,24 @@ function ParticipantRegistrationPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="parentName">שם הורה/אפוטרופוס</Label>
+                  <Label htmlFor="parentName">
+                    שם הורה/אפוטרופוס {isMinor(formData.dateOfBirth) && "*"}
+                  </Label>
                   <Input
                     id="parentName"
                     name="parentName"
                     value={formData.parentName}
                     onChange={handleChange}
                     placeholder="שם ההורה"
+                    required={isMinor(formData.dateOfBirth)}
                     disabled={submitting}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="parentPhone">טלפון הורה</Label>
+                  <Label htmlFor="parentPhone">
+                    טלפון הורה {isMinor(formData.dateOfBirth) && "*"}
+                  </Label>
                   <Input
                     id="parentPhone"
                     name="parentPhone"
@@ -406,6 +444,7 @@ function ParticipantRegistrationPage() {
                     value={formData.parentPhone}
                     onChange={handleChange}
                     placeholder="0501234567"
+                    required={isMinor(formData.dateOfBirth)}
                     disabled={submitting}
                   />
                 </div>
@@ -591,9 +630,13 @@ function ParticipantRegistrationPage() {
                     }
                     disabled={submitting}
                   />
-                  <Label htmlFor="paymentAcknowledged" className="cursor-pointer font-normal leading-6">
+                  <Label
+                    htmlFor="paymentAcknowledged"
+                    className="cursor-pointer font-normal leading-6"
+                  >
                     אני מאשר/ת שידוע לי כי הפעילות כרוכה בתשלום בסך ₪
-                    {project.price.toLocaleString()} לכל משתתף/ת. <span className="text-destructive">*</span>
+                    {project.price.toLocaleString()} לכל משתתף/ת.{" "}
+                    <span className="text-destructive">*</span>
                   </Label>
                 </div>
               </div>

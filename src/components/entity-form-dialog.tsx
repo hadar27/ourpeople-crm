@@ -2,19 +2,34 @@ import { useState, type ReactNode } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-export type FieldType = "text" | "email" | "tel" | "number" | "date" | "textarea" | "select";
+export type FieldType =
+  "text" | "email" | "tel" | "number" | "date" | "textarea" | "select";
 
 export interface FormField {
   name: string;
   label: string;
   type?: FieldType;
-  required?: boolean;
+  required?: boolean | ((values: Record<string, string>) => boolean);
   placeholder?: string;
   options?: string[];
   colSpan?: 1 | 2;
@@ -35,7 +50,9 @@ interface EntityFormDialogProps {
   triggerNode?: ReactNode;
   customValidate?: (values: Record<string, string>) => string | null;
   /** Persist the new record. When omitted, the dialog simulates a save (no data is stored). */
-  onCreate?: (values: Record<string, string>) => Promise<{ ok: boolean; error?: string }>;
+  onCreate?: (
+    values: Record<string, string>,
+  ) => Promise<{ ok: boolean; error?: string }>;
 }
 
 export function EntityFormDialog({
@@ -62,14 +79,34 @@ export function EntityFormDialog({
     const next: Record<string, string> = {};
     for (const f of fields) {
       const v = (values[f.name] ?? "").trim();
-      if (f.required && !v) next[f.name] = "שדה חובה";
-      else if (v && f.type === "email" && !/^\S+@\S+\.\S+$/.test(v)) next[f.name] = "אימייל לא תקין";
-      else if (v && f.type === "number" && f.max !== undefined && Number(v) > f.max) next[f.name] = `הערך חייב להיות לכל היותר ${f.max}`;
+      const required =
+        typeof f.required === "function" ? f.required(values) : f.required;
+      if (required && !v) next[f.name] = "שדה חובה";
+      else if (v && f.type === "email" && !/^\S+@\S+\.\S+$/.test(v))
+        next[f.name] = "אימייל לא תקין";
+      else if (
+        v &&
+        f.type === "number" &&
+        f.max !== undefined &&
+        Number(v) > f.max
+      )
+        next[f.name] = `הערך חייב להיות לכל היותר ${f.max}`;
       else if (v && f.validate) {
         const result = f.validate(v);
-        if (result !== true) next[f.name] = typeof result === "string" ? result : f.patternMessage ?? "ערך לא תקין";
-      } else if (v && f.pattern && !f.pattern.test(v)) next[f.name] = f.patternMessage ?? "ערך לא תקין";
-      else if (v && f.type === "tel" && !f.pattern && !/^[\d\-+\s()]{7,}$/.test(v)) next[f.name] = "טלפון לא תקין";
+        if (result !== true)
+          next[f.name] =
+            typeof result === "string"
+              ? result
+              : (f.patternMessage ?? "ערך לא תקין");
+      } else if (v && f.pattern && !f.pattern.test(v))
+        next[f.name] = f.patternMessage ?? "ערך לא תקין";
+      else if (
+        v &&
+        f.type === "tel" &&
+        !f.pattern &&
+        !/^[\d\-+\s()]{7,}$/.test(v)
+      )
+        next[f.name] = "טלפון לא תקין";
     }
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -119,57 +156,96 @@ export function EntityFormDialog({
         className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl border-brand/10 p-0"
       >
         <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-l from-brand-light/40 to-white rounded-t-2xl text-right">
-          <DialogTitle className="text-xl font-bold text-brand-deep">{title}</DialogTitle>
-          {description && <DialogDescription className="text-sm">{description}</DialogDescription>}
+          <DialogTitle className="text-xl font-bold text-brand-deep">
+            {title}
+          </DialogTitle>
+          {description && (
+            <DialogDescription className="text-sm">
+              {description}
+            </DialogDescription>
+          )}
         </DialogHeader>
 
         <div className="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {fields.map((f) => (
-            <div key={f.name} className={`space-y-1.5 ${f.colSpan === 2 ? "sm:col-span-2" : ""}`}>
-              <Label htmlFor={f.name} className="text-sm font-medium">
-                {f.label} {f.required && <span className="text-destructive">*</span>}
-              </Label>
-              {f.type === "textarea" ? (
-                <Textarea
-                  id={f.name}
-                  placeholder={f.placeholder}
-                  value={values[f.name] ?? ""}
-                  onChange={(e) => setField(f.name, e.target.value)}
-                  rows={3}
-                />
-              ) : f.type === "select" ? (
-                <Select value={values[f.name] ?? ""} onValueChange={(v) => setField(f.name, v)}>
-                  <SelectTrigger id={f.name}>
-                    <SelectValue placeholder={f.placeholder ?? "בחר..."} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {f.options?.map((o) => (
-                      <SelectItem key={o} value={o}>{o}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  id={f.name}
-                  type={f.type ?? "text"}
-                  placeholder={f.placeholder}
-                  maxLength={f.maxLength}
-                  max={f.max}
-                  value={values[f.name] ?? ""}
-                  onChange={(e) => setField(f.name, e.target.value)}
-                />
-              )}
-              {f.helper && !errors[f.name] && <p className="text-xs text-muted-foreground">{f.helper}</p>}
-              {errors[f.name] && <p className="text-xs text-destructive">{errors[f.name]}</p>}
-            </div>
-          ))}
+          {fields.map((f) => {
+            const required =
+              typeof f.required === "function"
+                ? f.required(values)
+                : f.required;
+            return (
+              <div
+                key={f.name}
+                className={`space-y-1.5 ${f.colSpan === 2 ? "sm:col-span-2" : ""}`}
+              >
+                <Label htmlFor={f.name} className="text-sm font-medium">
+                  {f.label}{" "}
+                  {required && <span className="text-destructive">*</span>}
+                </Label>
+                {f.type === "textarea" ? (
+                  <Textarea
+                    id={f.name}
+                    placeholder={f.placeholder}
+                    value={values[f.name] ?? ""}
+                    onChange={(e) => setField(f.name, e.target.value)}
+                    rows={3}
+                  />
+                ) : f.type === "select" ? (
+                  <Select
+                    value={values[f.name] ?? ""}
+                    onValueChange={(v) => setField(f.name, v)}
+                  >
+                    <SelectTrigger id={f.name}>
+                      <SelectValue placeholder={f.placeholder ?? "בחר..."} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {f.options?.map((o) => (
+                        <SelectItem key={o} value={o}>
+                          {o}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id={f.name}
+                    type={f.type ?? "text"}
+                    placeholder={f.placeholder}
+                    maxLength={f.maxLength}
+                    max={f.max}
+                    value={values[f.name] ?? ""}
+                    onChange={(e) => setField(f.name, e.target.value)}
+                  />
+                )}
+                {f.helper && !errors[f.name] && (
+                  <p className="text-xs text-muted-foreground">{f.helper}</p>
+                )}
+                {errors[f.name] && (
+                  <p className="text-xs text-destructive">{errors[f.name]}</p>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         <DialogFooter className="px-6 py-4 border-t bg-muted/30 rounded-b-2xl gap-2 sm:gap-2 flex-row-reverse">
-          <Button onClick={handleSave} disabled={saving} className="bg-brand hover:bg-brand-deep min-w-24">
-            {saving ? <><Loader2 className="h-4 w-4 animate-spin ml-2" /> שומר...</> : "שמור"}
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-brand hover:bg-brand-deep min-w-24"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin ml-2" /> שומר...
+              </>
+            ) : (
+              "שמור"
+            )}
           </Button>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
+          <Button
+            variant="outline"
+            onClick={() => setOpen(false)}
+            disabled={saving}
+          >
             ביטול
           </Button>
         </DialogFooter>
