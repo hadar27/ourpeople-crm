@@ -76,7 +76,8 @@ const SELECT = "*, projects(id, name)";
 export const volunteerKeys = {
   all: ["volunteers"] as const,
   list: () => [...volunteerKeys.all, "list"] as const,
-  detail: (id: string | undefined) => [...volunteerKeys.all, "detail", id] as const,
+  detail: (id: string | undefined) =>
+    [...volunteerKeys.all, "detail", id] as const,
   forProject: (projectId: string | undefined) =>
     [...volunteerKeys.all, "project", projectId] as const,
   assignments: () => [...volunteerKeys.all, "assignments"] as const,
@@ -86,7 +87,10 @@ export function useVolunteers() {
   return useQuery({
     queryKey: volunteerKeys.list(),
     queryFn: async () => {
-      const { data, error } = await supabase.from("volunteers").select(SELECT).order("name");
+      const { data, error } = await supabase
+        .from("volunteers")
+        .select(SELECT)
+        .order("name");
       if (error) throw error;
       return (data as unknown as VolunteerRow[]).map(toVolunteerRecord);
     },
@@ -102,7 +106,9 @@ export function useProjectVolunteerIds(projectId: string | undefined) {
         .select("volunteer_id")
         .eq("project_id", projectId);
       if (error) throw error;
-      return (data as { volunteer_id: string }[]).map((row) => row.volunteer_id);
+      return (data as { volunteer_id: string }[]).map(
+        (row) => row.volunteer_id,
+      );
     },
     enabled: !!projectId,
   });
@@ -116,10 +122,12 @@ export function useAllProjectVolunteerAssignments() {
         .from("project_volunteers")
         .select("project_id, volunteer_id");
       if (error) throw error;
-      return (data as { project_id: string; volunteer_id: string }[]).map((row) => ({
-        projectId: row.project_id,
-        volunteerId: row.volunteer_id,
-      }));
+      return (data as { project_id: string; volunteer_id: string }[]).map(
+        (row) => ({
+          projectId: row.project_id,
+          volunteerId: row.volunteer_id,
+        }),
+      );
     },
   });
 }
@@ -127,15 +135,24 @@ export function useAllProjectVolunteerAssignments() {
 export function useAssignVolunteerToProject() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ projectId, volunteerId }: { projectId: string; volunteerId: string }) => {
+    mutationFn: async ({
+      projectId,
+      volunteerId,
+    }: {
+      projectId: string;
+      volunteerId: string;
+    }) => {
       const { error } = await supabase
         .from("project_volunteers")
         .insert({ project_id: projectId, volunteer_id: volunteerId });
       if (error) throw error;
     },
     onSuccess: (_data, values) => {
-      queryClient.invalidateQueries({ queryKey: volunteerKeys.forProject(values.projectId) });
+      queryClient.invalidateQueries({
+        queryKey: volunteerKeys.forProject(values.projectId),
+      });
       queryClient.invalidateQueries({ queryKey: volunteerKeys.list() });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
 }
@@ -166,6 +183,7 @@ export function useDeleteVolunteer() {
     onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: volunteerKeys.list() });
       queryClient.invalidateQueries({ queryKey: volunteerKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
 }
@@ -184,6 +202,7 @@ export function useCreateVolunteer() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: volunteerKeys.list() });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
 }
@@ -191,7 +210,13 @@ export function useCreateVolunteer() {
 export function useUpdateVolunteer() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Partial<VolunteerRecord> }) => {
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch: Partial<VolunteerRecord>;
+    }) => {
       const { data, error } = await supabase
         .from("volunteers")
         .update(toRow(patch))
@@ -203,7 +228,10 @@ export function useUpdateVolunteer() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: volunteerKeys.list() });
-      queryClient.invalidateQueries({ queryKey: volunteerKeys.detail(variables.id) });
+      queryClient.invalidateQueries({
+        queryKey: volunteerKeys.detail(variables.id),
+      });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
 }

@@ -260,6 +260,7 @@ export function useAssignParticipantToProject() {
         queryKey: participantKeys.forProject(values.projectId),
       });
       queryClient.invalidateQueries({ queryKey: participantKeys.list() });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
 }
@@ -365,6 +366,7 @@ export function useDeleteParticipant() {
     onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: participantKeys.list() });
       queryClient.invalidateQueries({ queryKey: participantKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
 }
@@ -396,6 +398,7 @@ export function useCreateParticipant() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: participantKeys.list() });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
 }
@@ -441,6 +444,7 @@ export function useUpdateParticipant() {
           ),
       );
       await queryClient.invalidateQueries({ queryKey: participantKeys.all });
+      await queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
 }

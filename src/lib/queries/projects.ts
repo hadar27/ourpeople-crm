@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { calculateProjectProgress } from "@/lib/project-progress";
 
 export type ProjectRecord = {
   id: string;
@@ -23,6 +24,7 @@ export type ProjectRecord = {
   startDate?: string;
   endDate?: string;
   requiredVolunteers?: number;
+  targetParticipants: number;
   suppliers?: string;
   notes?: string;
   insights?: string;
@@ -50,6 +52,7 @@ type ProjectRow = {
   start_date: string | null;
   end_date: string | null;
   required_volunteers: number | null;
+  target_participants: number;
   suppliers: string | null;
   notes: string | null;
   insights: string | null;
@@ -80,6 +83,7 @@ function toProjectRecord(row: ProjectRow): ProjectRecord {
     startDate: row.start_date ?? undefined,
     endDate: row.end_date ?? undefined,
     requiredVolunteers: row.required_volunteers ?? undefined,
+    targetParticipants: row.target_participants ?? 0,
     suppliers: row.suppliers ?? undefined,
     notes: row.notes ?? undefined,
     insights: row.insights ?? undefined,
@@ -107,6 +111,8 @@ function toRow(patch: Partial<ProjectRecord>): Record<string, unknown> {
   if (patch.endDate !== undefined) row.end_date = patch.endDate || null;
   if (patch.requiredVolunteers !== undefined)
     row.required_volunteers = patch.requiredVolunteers ?? null;
+  if (patch.targetParticipants !== undefined)
+    row.target_participants = patch.targetParticipants;
   if (patch.suppliers !== undefined) row.suppliers = patch.suppliers ?? null;
   if (patch.notes !== undefined) row.notes = patch.notes ?? null;
   if (patch.insights !== undefined) row.insights = patch.insights ?? null;
@@ -120,6 +126,93 @@ export const projectKeys = {
     [...projectKeys.all, "detail", id] as const,
 };
 
+type ProjectProgressRow = { project_id: string };
+type ProjectTaskProgressRow = ProjectProgressRow & { board_column: string };
+
+async function getProjectProgress(projectId?: string) {
+  const projectFilter = <
+    T extends { eq: (column: string, value: string) => T },
+  >(
+    query: T,
+  ) => (projectId ? query.eq("project_id", projectId) : query);
+  const [
+    tasksResult,
+    participantsResult,
+    directParticipantsResult,
+    volunteersResult,
+    directVolunteersResult,
+  ] = await Promise.all([
+    projectFilter(supabase.from("tasks").select("project_id, board_column")),
+    projectFilter(
+      supabase
+        .from("project_participants")
+        .select("project_id, participant_id"),
+    ),
+    projectFilter(supabase.from("participants").select("id, project_id")),
+    projectFilter(
+      supabase.from("project_volunteers").select("project_id, volunteer_id"),
+    ),
+    projectFilter(supabase.from("volunteers").select("id, project_id")),
+  ]);
+
+  for (const result of [
+    tasksResult,
+    participantsResult,
+    directParticipantsResult,
+    volunteersResult,
+    directVolunteersResult,
+  ]) {
+    if (result.error) throw result.error;
+  }
+
+  const taskStats = new Map<string, { total: number; done: number }>();
+  for (const task of (tasksResult.data ?? []) as ProjectTaskProgressRow[]) {
+    const stats = taskStats.get(task.project_id) ?? { total: 0, done: 0 };
+    stats.total += 1;
+    if (task.board_column === "done") stats.done += 1;
+    taskStats.set(task.project_id, stats);
+  }
+  const participantIds = new Map<string, Set<string>>();
+  const volunteerIds = new Map<string, Set<string>>();
+  const add = (map: Map<string, Set<string>>, project: string, id: string) => {
+    const ids = map.get(project) ?? new Set<string>();
+    ids.add(id);
+    map.set(project, ids);
+  };
+  for (const row of (participantsResult.data ?? []) as (ProjectProgressRow & {
+    participant_id: string;
+  })[])
+    add(participantIds, row.project_id, row.participant_id);
+  for (const row of (directParticipantsResult.data ??
+    []) as (ProjectProgressRow & { id: string })[])
+    add(participantIds, row.project_id, row.id);
+  for (const row of (volunteersResult.data ?? []) as (ProjectProgressRow & {
+    volunteer_id: string;
+  })[])
+    add(volunteerIds, row.project_id, row.volunteer_id);
+  for (const row of (directVolunteersResult.data ??
+    []) as (ProjectProgressRow & { id: string })[])
+    add(volunteerIds, row.project_id, row.id);
+  return { taskStats, participantIds, volunteerIds };
+}
+
+function applyProgress(
+  record: ProjectRecord,
+  data: Awaited<ReturnType<typeof getProjectProgress>>,
+) {
+  const tasks = data.taskStats.get(record.id) ?? { total: 0, done: 0 };
+  record.progress = calculateProjectProgress({
+    completedTasks: tasks.done,
+    totalTasks: tasks.total,
+    participants: data.participantIds.get(record.id)?.size ?? 0,
+    targetParticipants: record.targetParticipants,
+    volunteers: data.volunteerIds.get(record.id)?.size ?? 0,
+    requiredVolunteers: record.requiredVolunteers ?? 0,
+  });
+  record.volunteers = data.volunteerIds.get(record.id)?.size ?? 0;
+  return record;
+}
+
 export function useProjects() {
   return useQuery({
     queryKey: projectKeys.list(),
@@ -130,9 +223,11 @@ export function useProjects() {
         .order("name");
       if (error) throw error;
 
-      const { data: expenseData, error: expenseError } = await supabase
-        .from("project_expenses")
-        .select("project_id, amount");
+      const [{ data: expenseData, error: expenseError }, progressData] =
+        await Promise.all([
+          supabase.from("project_expenses").select("project_id, amount"),
+          getProjectProgress(),
+        ]);
       if (expenseError) throw expenseError;
 
       const spentByProject = (
@@ -148,7 +243,7 @@ export function useProjects() {
       return (data as ProjectRow[]).map((row) => {
         const record = toProjectRecord(row);
         record.spent = spentByProject[record.id] ?? 0;
-        return record;
+        return applyProgress(record, progressData);
       });
     },
   });
@@ -167,10 +262,14 @@ export function useProject(id: string | undefined) {
 
       if (!data) return null;
 
-      const { data: expenseData, error: expenseError } = await supabase
-        .from("project_expenses")
-        .select("amount")
-        .eq("project_id", id);
+      const [{ data: expenseData, error: expenseError }, progressData] =
+        await Promise.all([
+          supabase
+            .from("project_expenses")
+            .select("amount")
+            .eq("project_id", id),
+          getProjectProgress(id),
+        ]);
       if (expenseError) throw expenseError;
 
       const spent = (expenseData as { amount: number }[]).reduce(
@@ -180,7 +279,7 @@ export function useProject(id: string | undefined) {
 
       const record = toProjectRecord(data as ProjectRow);
       record.spent = spent;
-      return record;
+      return applyProgress(record, progressData);
     },
     enabled: !!id,
   });
@@ -196,6 +295,10 @@ export function useCreateProject() {
         .select()
         .single();
       if (error) {
+        if (error.message.includes("target_participants"))
+          throw new Error(
+            "יש להריץ תחילה את קובץ ה-SQL לחישוב התקדמות משוקללת.",
+          );
         if (
           error.message.includes("requested_initial_budget") ||
           error.message.includes("approval_status") ||
@@ -247,7 +350,16 @@ export function useUpdateProject() {
         .eq("id", id)
         .select()
         .single();
-      if (error) throw error;
+      if (error) {
+        if (
+          error.message.includes("target_participants") ||
+          error.code === "PGRST204"
+        )
+          throw new Error(
+            "יש להריץ תחילה את קובץ ה-SQL לחישוב התקדמות משוקללת.",
+          );
+        throw error;
+      }
       return toProjectRecord(data as ProjectRow);
     },
     onSuccess: async (_data, variables) => {

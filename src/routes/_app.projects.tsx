@@ -13,7 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { isInCalendarMonth, useCalendarMonth } from "@/components/calendar-month-filter";
+import {
+  isInCalendarMonth,
+  useCalendarMonth,
+} from "@/components/calendar-month-filter";
 
 export const Route = createFileRoute("/_app/projects")({
   component: ProjectsPage,
@@ -80,8 +83,30 @@ function ProjectsPage() {
                 type: "number",
                 helper: "חובה למלא סכום בפרויקט בתשלום",
               },
-              { name: "startDate", label: "תאריך התחלה", type: "date", required: true },
-              { name: "endDate", label: "תאריך סיום", type: "date", required: true },
+              {
+                name: "targetParticipants",
+                label: "יעד נרשמים",
+                type: "number",
+                required: true,
+              },
+              {
+                name: "requiredVolunteers",
+                label: "מתנדבים נדרשים",
+                type: "number",
+                required: true,
+              },
+              {
+                name: "startDate",
+                label: "תאריך התחלה",
+                type: "date",
+                required: true,
+              },
+              {
+                name: "endDate",
+                label: "תאריך סיום",
+                type: "date",
+                required: true,
+              },
               {
                 name: "description",
                 label: "תיאור",
@@ -95,6 +120,10 @@ function ProjectsPage() {
                 return "תאריך הסיום חייב להיות אחרי תאריך ההתחלה.";
               if (v.paymentType === "בתשלום" && Number(v.price) <= 0)
                 return "בפרויקט בתשלום יש להזין סכום חיובי לכל משתתף.";
+              if (Number(v.targetParticipants) <= 0)
+                return "יש להזין יעד נרשמים גדול מאפס.";
+              if (Number(v.requiredVolunteers) <= 0)
+                return "יש להזין כמות מתנדבים נדרשת הגדולה מאפס.";
               return null;
             }}
             onCreate={async (v) => {
@@ -109,6 +138,8 @@ function ProjectsPage() {
                   spent: 0,
                   progress: 0,
                   volunteers: 0,
+                  targetParticipants: Number(v.targetParticipants),
+                  requiredVolunteers: Number(v.requiredVolunteers),
                   manager: "",
                   status: "בתכנון",
                   startDate: v.startDate || undefined,
@@ -117,7 +148,10 @@ function ProjectsPage() {
                 });
                 return { ok: true };
               } catch (err) {
-                return { ok: false, error: err instanceof Error ? err.message : "השמירה נכשלה" };
+                return {
+                  ok: false,
+                  error: err instanceof Error ? err.message : "השמירה נכשלה",
+                };
               }
             }}
           />
@@ -139,7 +173,8 @@ function ProjectsPage() {
                   <div>
                     <div className="font-semibold">{project.name}</div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      תקציב מבוקש: ₪{project.requestedInitialBudget.toLocaleString()}
+                      תקציב מבוקש: ₪
+                      {project.requestedInitialBudget.toLocaleString()}
                     </div>
                   </div>
                   <StatusBadge value="ממתין לאישור" />
@@ -171,8 +206,13 @@ function ProjectsPage() {
         </div>
       ) : isError ? (
         <div className="card-elevated flex flex-col items-center gap-3 p-16 text-center mb-8">
-          <div className="text-sm text-muted-foreground">אירעה שגיאה בטעינת הפרויקטים.</div>
-          <button onClick={() => refetch()} className="text-sm text-brand hover:underline">
+          <div className="text-sm text-muted-foreground">
+            אירעה שגיאה בטעינת הפרויקטים.
+          </div>
+          <button
+            onClick={() => refetch()}
+            className="text-sm text-brand hover:underline"
+          >
             נסה שוב
           </button>
         </div>
@@ -190,7 +230,9 @@ function ProjectsPage() {
                   <div className="text-xs text-muted-foreground">
                     {p.id} · מנהל/ת: {p.manager}
                   </div>
-                  <div className="text-base font-bold truncate mt-0.5">{p.name}</div>
+                  <div className="text-base font-bold truncate mt-0.5">
+                    {p.name}
+                  </div>
                 </div>
                 <StatusBadge value={p.status} />
               </div>
@@ -210,11 +252,15 @@ function ProjectsPage() {
               <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
                 <div className="rounded-lg bg-surface-muted p-2">
                   <div className="text-muted-foreground">תקציב</div>
-                  <div className="font-semibold mt-0.5">₪{(p.budget / 1000).toFixed(0)}K</div>
+                  <div className="font-semibold mt-0.5">
+                    ₪{(p.budget / 1000).toFixed(0)}K
+                  </div>
                 </div>
                 <div className="rounded-lg bg-surface-muted p-2">
                   <div className="text-muted-foreground">בוצע</div>
-                  <div className="font-semibold mt-0.5">₪{(p.spent / 1000).toFixed(0)}K</div>
+                  <div className="font-semibold mt-0.5">
+                    ₪{(p.spent / 1000).toFixed(0)}K
+                  </div>
                 </div>
                 <div className="rounded-lg bg-surface-muted p-2 flex flex-col">
                   <div className="text-muted-foreground flex items-center gap-1">
@@ -244,7 +290,10 @@ function ProjectsPage() {
               (t) => t.column === col && isInCalendarMonth(t.startDate, month),
             );
             return (
-              <div key={col} className="bg-surface-muted rounded-xl p-3 min-h-[280px]">
+              <div
+                key={col}
+                className="bg-surface-muted rounded-xl p-3 min-h-[280px]"
+              >
                 <div className="flex items-center justify-between px-1 pb-3">
                   <div className="text-sm font-semibold">{labels[col]}</div>
                   <span className="text-xs bg-white rounded-full px-2 py-0.5 border border-border">
@@ -258,12 +307,16 @@ function ProjectsPage() {
                       className="bg-white rounded-lg p-3 border border-border shadow-soft"
                     >
                       <div className="text-sm font-medium">{t.title}</div>
-                      <div className="text-xs text-muted-foreground mt-1">{t.project}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {t.project}
+                      </div>
                       <div className="text-xs mt-2 flex items-center gap-2">
                         <span className="h-5 w-5 rounded-full bg-brand/15 text-brand text-[10px] flex items-center justify-center">
                           {t.assignee.charAt(0)}
                         </span>
-                        <span className="text-muted-foreground">{t.assignee}</span>
+                        <span className="text-muted-foreground">
+                          {t.assignee}
+                        </span>
                       </div>
                     </div>
                   ))}

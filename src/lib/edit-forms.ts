@@ -266,7 +266,18 @@ export const projectFields: FormField[] = [
   { name: "startDate", label: "תאריך התחלה", type: "date" },
   { name: "endDate", label: "תאריך סיום", type: "date" },
   { name: "budget", label: "תקציב מתוכנן (₪)", type: "number", required: true },
-  { name: "requiredVolunteers", label: "מתנדבים נדרשים", type: "number" },
+  {
+    name: "targetParticipants",
+    label: "יעד נרשמים",
+    type: "number",
+    required: true,
+  },
+  {
+    name: "requiredVolunteers",
+    label: "מתנדבים נדרשים",
+    type: "number",
+    required: true,
+  },
   {
     name: "suppliers",
     label: "ספקים קשורים",

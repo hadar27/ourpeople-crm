@@ -505,6 +505,7 @@ export function ProjectEditButton({
         manager: record.manager,
         startDate: record.startDate ?? "",
         endDate: record.endDate ?? "",
+        targetParticipants: String(record.targetParticipants ?? 0),
         requiredVolunteers: String(
           record.requiredVolunteers ?? record.volunteers,
         ),
@@ -519,6 +520,10 @@ export function ProjectEditButton({
           (!Number.isFinite(Number(v.price)) || Number(v.price) <= 0)
         )
           return "בפרויקט בתשלום יש להזין סכום חיובי לכל נרשם.";
+        if (Number(v.targetParticipants) <= 0)
+          return "יש להזין יעד נרשמים גדול מאפס.";
+        if (Number(v.requiredVolunteers) <= 0)
+          return "יש להזין כמות מתנדבים נדרשת הגדולה מאפס.";
         return null;
       }}
       onSave={async (v) => {
@@ -534,7 +539,8 @@ export function ProjectEditButton({
               manager: v.manager,
               startDate: v.startDate || undefined,
               endDate: v.endDate || undefined,
-              requiredVolunteers: Number(v.requiredVolunteers) || undefined,
+              targetParticipants: Number(v.targetParticipants),
+              requiredVolunteers: Number(v.requiredVolunteers),
               suppliers: v.suppliers || undefined,
               notes: v.notes || undefined,
             },

@@ -208,7 +208,7 @@ export function useApprovePendingVolunteer() {
 
       if (createError) throw createError;
 
-      const volunteer = volunteerData as any;
+      const volunteer = volunteerData as { id: string };
 
       // Create M2M link in project_volunteers
       const { error: linkError } = await supabase
@@ -237,6 +237,7 @@ export function useApprovePendingVolunteer() {
         ),
       });
       queryClient.invalidateQueries({ queryKey: volunteerKeys.list() });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
 }
@@ -349,6 +350,7 @@ export function useApprovePendingParticipant() {
           ),
         }),
         queryClient.invalidateQueries({ queryKey: participantKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ["projects"] }),
       ]);
     },
   });

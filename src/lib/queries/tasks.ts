@@ -41,14 +41,18 @@ const SELECT = "*, projects(name)";
 export const taskKeys = {
   all: ["tasks"] as const,
   list: () => [...taskKeys.all, "list"] as const,
-  forProject: (projectId: string | undefined) => [...taskKeys.all, "project", projectId] as const,
+  forProject: (projectId: string | undefined) =>
+    [...taskKeys.all, "project", projectId] as const,
 };
 
 export function useTasks() {
   return useQuery({
     queryKey: taskKeys.list(),
     queryFn: async () => {
-      const { data, error } = await supabase.from("tasks").select(SELECT).order("id");
+      const { data, error } = await supabase
+        .from("tasks")
+        .select(SELECT)
+        .order("id");
       if (error) throw error;
       return (data as unknown as TaskRow[]).map(toTaskRecord);
     },
@@ -92,7 +96,10 @@ export function useCreateTask() {
     },
     onSuccess: (_data, values) => {
       queryClient.invalidateQueries({ queryKey: taskKeys.list() });
-      queryClient.invalidateQueries({ queryKey: taskKeys.forProject(values.projectId) });
+      queryClient.invalidateQueries({
+        queryKey: taskKeys.forProject(values.projectId),
+      });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
 }
@@ -111,7 +118,8 @@ export function useUpdateTask() {
       if (patch.title !== undefined) values.title = patch.title;
       if (patch.assignee !== undefined) values.assignee = patch.assignee;
       if (patch.column !== undefined) values.board_column = patch.column;
-      if (patch.startDate !== undefined) values.start_date = patch.startDate || null;
+      if (patch.startDate !== undefined)
+        values.start_date = patch.startDate || null;
       if (patch.endDate !== undefined) values.end_date = patch.endDate || null;
 
       const { data, error } = await supabase
@@ -125,7 +133,10 @@ export function useUpdateTask() {
     },
     onSuccess: (record) => {
       queryClient.invalidateQueries({ queryKey: taskKeys.list() });
-      queryClient.invalidateQueries({ queryKey: taskKeys.forProject(record.projectId) });
+      queryClient.invalidateQueries({
+        queryKey: taskKeys.forProject(record.projectId),
+      });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
 }

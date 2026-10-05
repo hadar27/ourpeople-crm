@@ -329,12 +329,14 @@ function ProjectDetail() {
           <Metric
             icon={<UserCheck className="h-4 w-4" />}
             label="נרשמים"
-            value={String(participantsCount)}
+            value={`${participantsCount} / ${project.targetParticipants}`}
+            sub="בפועל / יעד"
           />
           <Metric
             icon={<Users className="h-4 w-4" />}
             label="מתנדבים"
-            value={String(projectVolunteers.length)}
+            value={`${projectVolunteers.length} / ${project.requiredVolunteers ?? 0}`}
+            sub="משויכים / נדרשים"
           />
           <Metric
             icon={<Calendar className="h-4 w-4" />}
@@ -349,6 +351,9 @@ function ProjectDetail() {
             <span className="font-medium">{project.progress}%</span>
           </div>
           <Progress value={project.progress} className="h-2" />
+          <div className="mt-2 text-xs text-muted-foreground">
+            משימות שהושלמו 50% · עמידה ביעד נרשמים 25% · עמידה ביעד מתנדבים 25%
+          </div>
         </div>
       </div>
 
