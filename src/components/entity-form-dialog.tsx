@@ -23,7 +23,14 @@ import {
 } from "@/components/ui/select";
 
 export type FieldType =
-  "text" | "email" | "tel" | "number" | "date" | "textarea" | "select";
+  | "text"
+  | "email"
+  | "tel"
+  | "number"
+  | "date"
+  | "textarea"
+  | "select"
+  | "password";
 
 export interface FormField {
   name: string;

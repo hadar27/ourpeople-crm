@@ -9,6 +9,7 @@ import {
   UserDeleteButton,
 } from "@/components/module-edit-dialogs";
 import { useCanEdit, useCanView } from "@/lib/permissions";
+import { UserCreateDialog } from "@/components/user-create-dialog";
 
 export const Route = createFileRoute("/_app/users")({
   component: UsersPage,
@@ -35,20 +36,7 @@ const columns: Column<UserRecord>[] = [
     header: "סטטוס",
     render: (r) => <StatusBadge value={r.status} />,
   },
-  {
-    key: "lastLogin",
-    header: "כניסה אחרונה",
-    render: (r) => {
-      if (!r.lastLogin) return "אין כניסה מתועדת";
-      const date = new Date(r.lastLogin);
-      if (Number.isNaN(date.getTime())) return "אין כניסה מתועדת";
-      return new Intl.DateTimeFormat("he-IL", {
-        dateStyle: "short",
-        timeStyle: "short",
-        timeZone: "Asia/Jerusalem",
-      }).format(date);
-    },
-  },
+  { key: "lastLogin", header: "כניסה אחרונה" },
 ];
 
 function UsersPage() {
@@ -77,7 +65,7 @@ function UsersPage() {
     <>
       <PageHeader
         title="משתמשים והרשאות"
-        description="ניהול משתמשי המערכת ותפקידיהם."
+        actions={canEdit ? <UserCreateDialog /> : undefined}
       />
       <div className="mb-6">
         {isLoading ? (

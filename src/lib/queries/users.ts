@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { createUser } from "@/lib/create-user";
 
 export type UserRecord = {
   id: string;
@@ -53,30 +54,36 @@ export const userKeys = {
 export function useUsers() {
   return useQuery({
     queryKey: userKeys.list(),
-    refetchInterval: 60_000,
-    refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("users")
         .select("*")
         .order("name");
       if (error) throw error;
-      const { data: signIns, error: signInError } = await supabase.rpc(
-        "get_user_last_sign_ins",
-      );
-      // Keep role resolution available before the accompanying migration is run.
-      // Never fall back to the old, manually populated last_login values.
-      if (signInError && !["PGRST202", "42883"].includes(signInError.code))
-        throw signInError;
-      const lastSignIns = new Map(
-        (
-          (signIns ?? []) as { user_id: string; last_login: string | null }[]
-        ).map((row) => [row.user_id, row.last_login] as const),
-      );
-      return (data as UserRow[]).map((row) => ({
-        ...toUserRecord(row),
-        lastLogin: lastSignIns.get(row.id) ?? "",
-      }));
+      return (data as UserRow[]).map(toUserRecord);
+    },
+  });
+}
+
+export function useCreateUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      name: string;
+      email: string;
+      role: UserRecord["role"];
+      password: string;
+    }) => {
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session)
+        return { ok: false, error: "יש להתחבר מחדש למערכת." };
+      return createUser({
+        data: { ...input, accessToken: data.session.access_token },
+      });
+    },
+    onSuccess: (result) => {
+      if (result.ok)
+        queryClient.invalidateQueries({ queryKey: userKeys.list() });
     },
   });
 }
