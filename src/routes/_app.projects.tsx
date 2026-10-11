@@ -79,9 +79,11 @@ function ProjectsPage() {
               },
               {
                 name: "price",
+                disabled: (v) => v.paymentType === "ללא תשלום",
+                required: (v) => v.paymentType === "בתשלום",
                 label: "גובה התשלום לכל משתתף (₪)",
                 type: "number",
-                helper: "חובה למלא סכום בפרויקט בתשלום",
+                helper: "בבחירה ללא תשלום הסכום מתאפס וננעל לעריכה",
               },
               {
                 name: "targetParticipants",
@@ -115,6 +117,9 @@ function ProjectsPage() {
                 placeholder: "מטרות הפרויקט וקהל היעד...",
               },
             ]}
+            normalizeValues={(v) =>
+              v.paymentType === "ללא תשלום" ? { ...v, price: "0" } : v
+            }
             customValidate={(v) => {
               if (v.startDate && v.endDate && v.startDate > v.endDate)
                 return "תאריך הסיום חייב להיות אחרי תאריך ההתחלה.";

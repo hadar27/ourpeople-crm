@@ -37,6 +37,7 @@ export interface FormField {
   label: string;
   type?: FieldType;
   required?: boolean | ((values: Record<string, string>) => boolean);
+  disabled?: boolean | ((values: Record<string, string>) => boolean);
   placeholder?: string;
   options?: string[];
   colSpan?: 1 | 2;
@@ -56,6 +57,7 @@ interface EntityFormDialogProps {
   successMessage: string;
   triggerNode?: ReactNode;
   customValidate?: (values: Record<string, string>) => string | null;
+  normalizeValues?: (values: Record<string, string>) => Record<string, string>;
   /** Persist the new record. When omitted, the dialog simulates a save (no data is stored). */
   onCreate?: (
     values: Record<string, string>,
@@ -70,6 +72,7 @@ export function EntityFormDialog({
   successMessage,
   triggerNode,
   customValidate,
+  normalizeValues,
   onCreate,
 }: EntityFormDialogProps) {
   const [open, setOpen] = useState(false);
@@ -78,7 +81,10 @@ export function EntityFormDialog({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const setField = (name: string, val: string) => {
-    setValues((v) => ({ ...v, [name]: val }));
+    setValues((v) => {
+      const next = { ...v, [name]: val };
+      return normalizeValues ? normalizeValues(next) : next;
+    });
     if (errors[name]) setErrors((e) => ({ ...e, [name]: "" }));
   };
 
@@ -175,6 +181,10 @@ export function EntityFormDialog({
 
         <div className="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
           {fields.map((f) => {
+            const disabled =
+              typeof f.disabled === "function"
+                ? f.disabled(values)
+                : f.disabled;
             const required =
               typeof f.required === "function"
                 ? f.required(values)
@@ -190,6 +200,7 @@ export function EntityFormDialog({
                 </Label>
                 {f.type === "textarea" ? (
                   <Textarea
+                    disabled={disabled}
                     id={f.name}
                     placeholder={f.placeholder}
                     value={values[f.name] ?? ""}
@@ -198,6 +209,7 @@ export function EntityFormDialog({
                   />
                 ) : f.type === "select" ? (
                   <Select
+                    disabled={disabled}
                     value={values[f.name] ?? ""}
                     onValueChange={(v) => setField(f.name, v)}
                   >
@@ -214,6 +226,7 @@ export function EntityFormDialog({
                   </Select>
                 ) : (
                   <Input
+                    disabled={disabled}
                     id={f.name}
                     type={f.type ?? "text"}
                     placeholder={f.placeholder}
@@ -226,7 +239,7 @@ export function EntityFormDialog({
                 {f.helper && !errors[f.name] && (
                   <p className="text-xs text-muted-foreground">{f.helper}</p>
                 )}
-                {errors[f.name] && (
+                {errors[f.name] && !disabled && (
                   <p className="text-xs text-destructive">{errors[f.name]}</p>
                 )}
               </div>
