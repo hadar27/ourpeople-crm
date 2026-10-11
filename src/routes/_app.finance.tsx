@@ -139,6 +139,18 @@ function FinancePage() {
   const pendingRequests = requestList.filter(
     (request) => request.status === "ממתינה",
   );
+  const pendingInitialBudgetTotal = pendingInitialProjects.reduce(
+    (sum, project) => sum + project.requestedInitialBudget,
+    0,
+  );
+  const pendingAdditionalBudgetTotal = pendingRequests.reduce(
+    (sum, request) => sum + request.requestedAmount,
+    0,
+  );
+  const pendingApprovalCount =
+    pendingInitialProjects.length + pendingRequests.length;
+  const pendingApprovalTotal =
+    pendingInitialBudgetTotal + pendingAdditionalBudgetTotal;
   const selectedTransactions = transactionList.filter(
     (item) => item.projectId === historyProjectId,
   );
@@ -527,13 +539,8 @@ function FinancePage() {
         />
         <StatCard
           label="בקשות הממתינות לאישור"
-          value={String(pendingRequests.length)}
-          delta={formatCurrency(
-            pendingRequests.reduce(
-              (sum, item) => sum + item.requestedAmount,
-              0,
-            ),
-          )}
+          value={String(pendingApprovalCount)}
+          delta={`${formatCurrency(pendingApprovalTotal)} · ראשוני ${formatCurrency(pendingInitialBudgetTotal)} · נוסף ${formatCurrency(pendingAdditionalBudgetTotal)}`}
           icon={<Clock3 className="h-5 w-5" />}
         />
       </div>
