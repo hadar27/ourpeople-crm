@@ -939,9 +939,6 @@ function ProjectDetail() {
                       className="flex items-center justify-between p-2 rounded-lg hover:bg-surface-muted transition-colors"
                     >
                       <span className="text-sm font-medium">{v.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {v.hours} שעות
-                      </span>
                     </Link>
                   </li>
                 ))}

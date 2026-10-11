@@ -125,11 +125,7 @@ export function ApproveRegistrationsModal({
         kind: "participant",
       });
     } catch (err) {
-      const message =
-        err && typeof err === "object" && "message" in err
-          ? String(err.message)
-          : "שגיאה באישור המשתתף";
-      toast.error(message);
+      toast.error("שגיאה באישור המשתתף");
       console.error(err);
     } finally {
       setApprovingId(null);
@@ -221,10 +217,7 @@ export function ApproveRegistrationsModal({
                           <span className="text-muted-foreground">זמינות:</span>{" "}
                           {volunteer.availability}
                         </div>
-                        <div>
-                          <span className="text-muted-foreground">שעות:</span>{" "}
-                          {volunteer.hours}
-                        </div>
+
                         {volunteer.skills.length > 0 && (
                           <div className="col-span-2">
                             <span className="text-muted-foreground">

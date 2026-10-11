@@ -8,7 +8,6 @@ export type PendingVolunteerRecord = {
   projectId: string;
   name: string;
   availability: string;
-  hours: number;
   status: "פעיל" | "בהפסקה" | "ארכיון";
   skills: string[];
   phone?: string;
@@ -44,7 +43,6 @@ type PendingVolunteerRow = {
   project_id: string;
   name: string;
   availability: string;
-  hours: number;
   status: string;
   skills: string[];
   phone: string | null;
@@ -83,7 +81,6 @@ function toPendingVolunteerRecord(
     projectId: row.project_id,
     name: row.name,
     availability: row.availability,
-    hours: row.hours,
     status: row.status as PendingVolunteerRecord["status"],
     skills: row.skills ?? [],
     phone: row.phone ?? undefined,
@@ -196,7 +193,6 @@ export function useApprovePendingVolunteer() {
         .insert({
           name: pending.name,
           availability: pending.availability,
-          hours: pending.hours,
           status: pending.status,
           skills: pending.skills,
           phone: pending.phone,

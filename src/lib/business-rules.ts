@@ -46,7 +46,7 @@ export type AlertEngineData = {
 };
 
 /** Count of distinct rule blocks implemented in generateAlerts() below — bump when adding/removing a rule. */
-export const ALERT_RULE_COUNT = 10;
+export const ALERT_RULE_COUNT = 9;
 
 const REQUIRED_VOLUNTEERS_PER_PROJECT: Record<string, number> = {
   "קייטנת קיץ 2025": 30,
@@ -59,7 +59,6 @@ const REQUIRED_VOLUNTEERS_PER_PROJECT: Record<string, number> = {
 export function generateAlerts(data: AlertEngineData): Alert[] {
   const {
     projects,
-    volunteers,
     donations,
     suppliers,
     interactions,
@@ -137,20 +136,6 @@ export function generateAlerts(data: AlertEngineData): Alert[] {
         severity: s.openInvoices >= 2 ? "בינונית" : "נמוכה",
         module: "ספקים",
         rule: `${s.openInvoices} חשבוניות פתוחות לתשלום`,
-        createdAt: "השבוע",
-      });
-    });
-
-  // Volunteer workload overload
-  volunteers
-    .filter((v) => v.hours > 100)
-    .forEach((v) => {
-      out.push({
-        id: id(),
-        title: `עומס פעילות — ${v.name}`,
-        severity: "נמוכה",
-        module: "מתנדבים",
-        rule: `${v.hours} שעות החודש (מעל הסף 100)`,
         createdAt: "השבוע",
       });
     });

@@ -1,4 +1,8 @@
-import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useParams,
+} from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,7 +25,6 @@ type ProjectInfo = {
 type FormData = {
   name: string;
   availability: string;
-  hours: string;
   skills: string;
   phone: string;
   email: string;
@@ -38,7 +41,6 @@ function VolunteerRegistrationPage() {
   const [formData, setFormData] = useState<FormData>({
     name: "",
     availability: "",
-    hours: "0",
     skills: "",
     phone: "",
     email: "",
@@ -62,7 +64,12 @@ function VolunteerRegistrationPage() {
           return;
         }
 
-        const projectInfo = (links as any).projects;
+        const linkedProjects = (
+          links as unknown as { projects: ProjectInfo | ProjectInfo[] | null }
+        ).projects;
+        const projectInfo = Array.isArray(linkedProjects)
+          ? linkedProjects[0]
+          : linkedProjects;
         if (!projectInfo) {
           setError("הפרויקט לא נמצא.");
           setLoading(false);
@@ -81,7 +88,7 @@ function VolunteerRegistrationPage() {
   }, [token]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -120,7 +127,6 @@ function VolunteerRegistrationPage() {
           registration_token: token,
           name: formData.name,
           availability: formData.availability,
-          hours: parseFloat(formData.hours) || 0,
           skills: formData.skills
             .split(",")
             .map((s) => s.trim())
@@ -136,7 +142,6 @@ function VolunteerRegistrationPage() {
       setFormData({
         name: "",
         availability: "",
-        hours: "0",
         skills: "",
         phone: "",
         email: "",
@@ -193,7 +198,7 @@ function VolunteerRegistrationPage() {
           <h1 className="text-3xl font-bold mb-2">הצטרפות כמתנדב/ת</h1>
           <p className="text-muted-foreground mb-2">פרויקט: {project.name}</p>
           <p className="text-sm text-muted-foreground mb-8">
-            אנא מלא את הטופס הבא בכדי להירשם לפרויקט.
+            תודה על עניינך להצטרף! אנא מלא את הטופס הבא כדי להתחיל.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -235,20 +240,6 @@ function VolunteerRegistrationPage() {
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="example@email.com"
-                  disabled={submitting}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="hours">שעות לשבוע</Label>
-                <Input
-                  id="hours"
-                  name="hours"
-                  type="number"
-                  value={formData.hours}
-                  onChange={handleChange}
-                  placeholder="0"
-                  min="0"
                   disabled={submitting}
                 />
               </div>

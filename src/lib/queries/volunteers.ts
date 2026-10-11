@@ -8,7 +8,6 @@ export type VolunteerRecord = {
   availability: string;
   projectId?: string;
   project: string;
-  hours: number;
   status: "פעיל" | "בהפסקה" | "ארכיון";
   skills: string[];
   phone?: string;
@@ -28,7 +27,6 @@ type VolunteerRow = {
   name: string;
   availability: string;
   project_id: string | null;
-  hours: number;
   status: string;
   skills: string[];
   phone: string | null;
@@ -46,7 +44,6 @@ function toVolunteerRecord(row: VolunteerRow): VolunteerRecord {
     availability: row.availability,
     projectId: row.project_id ?? undefined,
     project: row.projects?.name ?? "",
-    hours: row.hours,
     status: row.status as VolunteerRecord["status"],
     skills: row.skills ?? [],
     phone: row.phone ?? undefined,
@@ -62,7 +59,6 @@ function toRow(patch: Partial<VolunteerRecord>): Record<string, unknown> {
   if (patch.name !== undefined) row.name = patch.name;
   if (patch.availability !== undefined) row.availability = patch.availability;
   if (patch.projectId !== undefined) row.project_id = patch.projectId ?? null;
-  if (patch.hours !== undefined) row.hours = patch.hours;
   if (patch.status !== undefined) row.status = patch.status;
   if (patch.skills !== undefined) row.skills = patch.skills;
   if (patch.phone !== undefined) row.phone = patch.phone ?? null;
@@ -71,7 +67,8 @@ function toRow(patch: Partial<VolunteerRecord>): Record<string, unknown> {
   return row;
 }
 
-const SELECT = "*, projects(id, name)";
+const SELECT =
+  "id, id_number, name, availability, project_id, status, skills, phone, email, notes, created_at, projects(id, name)";
 
 export const volunteerKeys = {
   all: ["volunteers"] as const,

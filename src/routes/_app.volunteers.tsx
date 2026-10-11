@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Award, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
 import {
   DataTable,
@@ -34,11 +34,6 @@ const columns: Column<VolunteerRecord>[] = [
   },
   { key: "availability", header: "זמינות" },
   { key: "project", header: "פרויקט משויך" },
-  {
-    key: "hours",
-    header: "שעות התנדבות",
-    render: (r) => <span className="tabular-nums">{r.hours}</span>,
-  },
   {
     key: "skills",
     header: "כישורים",
@@ -88,21 +83,15 @@ function VolunteersPage() {
   // Calculate real aggregations
   const activeVolunteers =
     volunteers?.filter((v) => v.status === "פעיל").length ?? 0;
-  const totalHours =
-    volunteers?.reduce((sum, v) => sum + (v.hours ?? 0), 0) ?? 0;
   const activeProjects = new Set(
     volunteers?.filter((v) => v.project).map((v) => v.project),
   ).size;
-  const topVolunteer = volunteers?.reduce(
-    (max, v) => (!max || v.hours > max.hours ? v : max),
-    undefined,
-  );
 
   return (
     <>
       <PageHeader
         title="ניהול מתנדבים"
-        description="מאגר מתנדבים, שיוך לפרויקטים, מעקב שעות וכישורים."
+        description="מאגר מתנדבים, שיוך לפרויקטים וכישורים."
         actions={
           <EntityFormDialog
             triggerLabel="הוסף מתנדב"
@@ -140,7 +129,6 @@ function VolunteersPage() {
                   phone: v.phone || undefined,
                   availability: v.availability,
                   projectId: def?.id,
-                  hours: 0,
                   status: "פעיל",
                   skills: v.skills
                     ? v.skills
@@ -160,32 +148,15 @@ function VolunteersPage() {
           />
         }
       />
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">מתנדבים פעילים</div>
           <div className="text-xl font-bold mt-1">{activeVolunteers}</div>
         </div>
         <div className="card-elevated p-4">
-          <div className="text-xs text-muted-foreground">סה״כ שעות</div>
-          <div className="text-xl font-bold mt-1">
-            {totalHours.toLocaleString()}
-          </div>
-        </div>
-        <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">פרויקטים פעילים</div>
           <div className="text-xl font-bold mt-1">{activeProjects}</div>
         </div>
-        {topVolunteer && (
-          <div className="card-elevated p-4 bg-soft-gradient flex items-center gap-3">
-            <Award className="h-8 w-8 text-brand-deep" />
-            <div>
-              <div className="text-xs text-muted-foreground">
-                מתנדב/ת מובילה
-              </div>
-              <div className="text-sm font-bold">{topVolunteer.name}</div>
-            </div>
-          </div>
-        )}
       </div>
       {isLoading ? (
         <div className="card-elevated flex items-center justify-center gap-2 p-16 text-muted-foreground">
