@@ -7,6 +7,7 @@ export type PendingVolunteerRecord = {
   id: string;
   projectId: string;
   name: string;
+  idNumber?: string;
   availability: string;
   status: "פעיל" | "בהפסקה" | "ארכיון";
   skills: string[];
@@ -42,6 +43,7 @@ type PendingVolunteerRow = {
   id: string;
   project_id: string;
   name: string;
+  id_number: string | null;
   availability: string;
   status: string;
   skills: string[];
@@ -80,6 +82,7 @@ function toPendingVolunteerRecord(
     id: row.id,
     projectId: row.project_id,
     name: row.name,
+    idNumber: row.id_number ?? undefined,
     availability: row.availability,
     status: row.status as PendingVolunteerRecord["status"],
     skills: row.skills ?? [],
@@ -187,32 +190,45 @@ export function useApprovePendingVolunteer() {
 
       const pending = pendingData as PendingVolunteerRow;
 
-      // Create new volunteer in volunteers table
-      const { data: volunteerData, error: createError } = await supabase
-        .from("volunteers")
-        .insert({
-          name: pending.name,
-          availability: pending.availability,
-          status: pending.status,
-          skills: pending.skills,
-          phone: pending.phone,
-          email: pending.email,
-          notes: pending.notes,
-        })
-        .select()
-        .single();
-
-      if (createError) throw createError;
-
-      const volunteer = volunteerData as { id: string };
+      let volunteer: { id: string } | null = null;
+      if (pending.id_number) {
+        const { data: existing, error: existingError } = await supabase
+          .from("volunteers")
+          .select("id")
+          .eq("id_number", pending.id_number)
+          .maybeSingle();
+        if (existingError) throw existingError;
+        volunteer = existing;
+      }
+      if (!volunteer) {
+        const { data: volunteerData, error: createError } = await supabase
+          .from("volunteers")
+          .insert({
+            name: pending.name,
+            id_number: pending.id_number,
+            availability: pending.availability,
+            status: pending.status,
+            skills: pending.skills,
+            phone: pending.phone,
+            email: pending.email,
+            notes: pending.notes,
+          })
+          .select("id")
+          .single();
+        if (createError) throw createError;
+        volunteer = volunteerData;
+      }
 
       // Create M2M link in project_volunteers
       const { error: linkError } = await supabase
         .from("project_volunteers")
-        .insert({
-          project_id: projectId,
-          volunteer_id: volunteer.id,
-        });
+        .upsert(
+          {
+            project_id: projectId,
+            volunteer_id: volunteer.id,
+          },
+          { onConflict: "project_id,volunteer_id", ignoreDuplicates: true },
+        );
 
       if (linkError) throw linkError;
 

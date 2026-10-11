@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { PHONE_PATTERN } from "@/lib/edit-forms";
+import { validateIsraeliId } from "@/lib/validation";
 
 export const Route = createFileRoute("/register/volunteer/$token")({
   component: VolunteerRegistrationPage,
@@ -24,6 +25,7 @@ type ProjectInfo = {
 
 type FormData = {
   name: string;
+  idNumber: string;
   availability: string;
   skills: string;
   phone: string;
@@ -40,6 +42,7 @@ function VolunteerRegistrationPage() {
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>({
     name: "",
+    idNumber: "",
     availability: "",
     skills: "",
     phone: "",
@@ -107,8 +110,18 @@ function VolunteerRegistrationPage() {
       return;
     }
 
-    if (formData.phone.trim() && !PHONE_PATTERN.test(formData.phone)) {
+    if (!validateIsraeliId(formData.idNumber)) {
+      toast.error("יש להזין תעודת זהות תקינה בת 9 ספרות");
+      return;
+    }
+
+    if (!PHONE_PATTERN.test(formData.phone)) {
       toast.error("טלפון חייב להכיל 10 ספרות");
+      return;
+    }
+
+    if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      toast.error("יש להזין כתובת דוא״ל תקינה");
       return;
     }
 
@@ -126,6 +139,7 @@ function VolunteerRegistrationPage() {
           project_id: project.id,
           registration_token: token,
           name: formData.name,
+          id_number: formData.idNumber,
           availability: formData.availability,
           skills: formData.skills
             .split(",")
@@ -141,6 +155,7 @@ function VolunteerRegistrationPage() {
       toast.success("ההרשמה התקבלה בהצלחה! נציג הארגון יבדוק אותה בקרוב.");
       setFormData({
         name: "",
+        idNumber: "",
         availability: "",
         skills: "",
         phone: "",
@@ -198,7 +213,7 @@ function VolunteerRegistrationPage() {
           <h1 className="text-3xl font-bold mb-2">הצטרפות כמתנדב/ת</h1>
           <p className="text-muted-foreground mb-2">פרויקט: {project.name}</p>
           <p className="text-sm text-muted-foreground mb-8">
-            תודה על עניינך להצטרף! אנא מלא את הטופס הבא כדי להתחיל.
+            אנא מלא את הטופס הבא בכדי להירשם לפרויקט.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -217,7 +232,7 @@ function VolunteerRegistrationPage() {
               </div>
 
               <div>
-                <Label htmlFor="phone">טלפון</Label>
+                <Label htmlFor="phone">טלפון *</Label>
                 <Input
                   id="phone"
                   name="phone"
@@ -226,13 +241,28 @@ function VolunteerRegistrationPage() {
                   onChange={handleChange}
                   placeholder="0501234567"
                   disabled={submitting}
+                  required
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="email">דוא״ל</Label>
+                <Label htmlFor="idNumber">תעודת זהות *</Label>
+                <Input
+                  id="idNumber"
+                  name="idNumber"
+                  inputMode="numeric"
+                  maxLength={9}
+                  value={formData.idNumber}
+                  onChange={handleChange}
+                  placeholder="9 ספרות"
+                  required
+                  disabled={submitting}
+                />
+              </div>
+              <div>
+                <Label htmlFor="email">דוא״ל *</Label>
                 <Input
                   id="email"
                   name="email"
@@ -241,6 +271,7 @@ function VolunteerRegistrationPage() {
                   onChange={handleChange}
                   placeholder="example@email.com"
                   disabled={submitting}
+                  required
                 />
               </div>
             </div>
@@ -257,7 +288,7 @@ function VolunteerRegistrationPage() {
                 disabled={submitting}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                אנא ציין את השעות והימים שאתה/ה זמין/ה
+                אנא ציין את הימים והמועדים שבהם אתה/ה זמין/ה
               </p>
             </div>
 

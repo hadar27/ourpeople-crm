@@ -8,12 +8,21 @@ export type VolunteerRecord = {
   availability: string;
   projectId?: string;
   project: string;
+  projects: VolunteerProject[];
   status: "פעיל" | "בהפסקה" | "ארכיון";
   skills: string[];
   phone?: string;
   email?: string;
   notes?: string;
   createdAt?: string;
+};
+
+export type VolunteerProject = {
+  id: string;
+  name: string;
+  startDate?: string;
+  endDate?: string;
+  status: string;
 };
 
 export type ProjectVolunteerAssignment = {
@@ -36,14 +45,60 @@ type VolunteerRow = {
   projects: { id: string; name: string } | null;
 };
 
-function toVolunteerRecord(row: VolunteerRow): VolunteerRecord {
+type ProjectAssignmentRow = {
+  volunteer_id: string;
+  projects:
+    | {
+        id: string;
+        name: string;
+        start_date: string | null;
+        end_date: string | null;
+        status: string;
+      }
+    | {
+        id: string;
+        name: string;
+        start_date: string | null;
+        end_date: string | null;
+        status: string;
+      }[]
+    | null;
+};
+
+function assignmentProject(row: ProjectAssignmentRow): VolunteerProject | null {
+  const value = Array.isArray(row.projects) ? row.projects[0] : row.projects;
+  return value
+    ? {
+        id: value.id,
+        name: value.name,
+        startDate: value.start_date ?? undefined,
+        endDate: value.end_date ?? undefined,
+        status: value.status,
+      }
+    : null;
+}
+
+function toVolunteerRecord(
+  row: VolunteerRow,
+  assignedProjects: VolunteerProject[] = [],
+): VolunteerRecord {
+  const legacyProject = row.projects
+    ? { id: row.projects.id, name: row.projects.name, status: "" }
+    : null;
+  const projects = [...assignedProjects];
+  if (
+    legacyProject &&
+    !projects.some((project) => project.id === legacyProject.id)
+  )
+    projects.push(legacyProject);
   return {
     id: row.id,
     idNumber: row.id_number ?? undefined,
     name: row.name,
     availability: row.availability,
     projectId: row.project_id ?? undefined,
-    project: row.projects?.name ?? "",
+    project: projects.map((project) => project.name).join(", "),
+    projects,
     status: row.status as VolunteerRecord["status"],
     skills: row.skills ?? [],
     phone: row.phone ?? undefined,
@@ -80,16 +135,36 @@ export const volunteerKeys = {
   assignments: () => [...volunteerKeys.all, "assignments"] as const,
 };
 
+async function loadAssignedProjects(volunteerId?: string) {
+  let query = supabase
+    .from("project_volunteers")
+    .select("volunteer_id, projects(id, name, start_date, end_date, status)");
+  if (volunteerId) query = query.eq("volunteer_id", volunteerId);
+  const { data, error } = await query;
+  if (error) throw error;
+  const projectsByVolunteer = new Map<string, VolunteerProject[]>();
+  for (const row of data as unknown as ProjectAssignmentRow[]) {
+    const project = assignmentProject(row);
+    if (!project) continue;
+    const current = projectsByVolunteer.get(row.volunteer_id) ?? [];
+    current.push(project);
+    projectsByVolunteer.set(row.volunteer_id, current);
+  }
+  return projectsByVolunteer;
+}
+
 export function useVolunteers() {
   return useQuery({
     queryKey: volunteerKeys.list(),
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("volunteers")
-        .select(SELECT)
-        .order("name");
+      const [{ data, error }, projectsByVolunteer] = await Promise.all([
+        supabase.from("volunteers").select(SELECT).order("name"),
+        loadAssignedProjects(),
+      ]);
       if (error) throw error;
-      return (data as unknown as VolunteerRow[]).map(toVolunteerRecord);
+      return (data as unknown as VolunteerRow[]).map((row) =>
+        toVolunteerRecord(row, projectsByVolunteer.get(row.id) ?? []),
+      );
     },
   });
 }
@@ -149,6 +224,9 @@ export function useAssignVolunteerToProject() {
         queryKey: volunteerKeys.forProject(values.projectId),
       });
       queryClient.invalidateQueries({ queryKey: volunteerKeys.list() });
+      queryClient.invalidateQueries({
+        queryKey: volunteerKeys.detail(values.volunteerId),
+      });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
@@ -158,13 +236,17 @@ export function useVolunteer(id: string | undefined) {
   return useQuery({
     queryKey: volunteerKeys.detail(id),
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("volunteers")
-        .select(SELECT)
-        .eq("id", id)
-        .maybeSingle();
+      const [{ data, error }, projectsByVolunteer] = await Promise.all([
+        supabase.from("volunteers").select(SELECT).eq("id", id).maybeSingle(),
+        loadAssignedProjects(id),
+      ]);
       if (error) throw error;
-      return data ? toVolunteerRecord(data as unknown as VolunteerRow) : null;
+      return data
+        ? toVolunteerRecord(
+            data as unknown as VolunteerRow,
+            projectsByVolunteer.get(id!) ?? [],
+          )
+        : null;
     },
     enabled: !!id,
   });

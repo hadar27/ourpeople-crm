@@ -213,6 +213,12 @@ export function ApproveRegistrationsModal({
                       </div>
 
                       <div className="grid grid-cols-2 gap-2 text-sm">
+                        {volunteer.idNumber && (
+                          <div>
+                            <span className="text-muted-foreground">ת.ז.:</span>{" "}
+                            {volunteer.idNumber}
+                          </div>
+                        )}
                         <div>
                           <span className="text-muted-foreground">זמינות:</span>{" "}
                           {volunteer.availability}

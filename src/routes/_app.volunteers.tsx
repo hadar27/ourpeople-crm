@@ -11,6 +11,7 @@ import { useProjects } from "@/lib/queries/projects";
 import {
   useVolunteers,
   useCreateVolunteer,
+  useAssignVolunteerToProject,
   type VolunteerRecord,
 } from "@/lib/queries/volunteers";
 import {
@@ -19,6 +20,7 @@ import {
 } from "@/components/module-edit-dialogs";
 import { ModuleAccessDenied } from "@/components/module-access-denied";
 import { useCanView } from "@/lib/permissions";
+import { validateIsraeliId } from "@/lib/validation";
 
 const UNASSIGNED = "ללא שיוך";
 
@@ -33,7 +35,25 @@ const columns: Column<VolunteerRecord>[] = [
     render: (r) => <span className="font-medium">{r.name}</span>,
   },
   { key: "availability", header: "זמינות" },
-  { key: "project", header: "פרויקט משויך" },
+  {
+    key: "project",
+    header: "פרויקטים משויכים",
+    render: (r) =>
+      r.projects.length ? (
+        <div className="flex flex-wrap gap-1">
+          {r.projects.map((project) => (
+            <span
+              key={project.id}
+              className="rounded-full bg-secondary px-2 py-0.5 text-xs text-brand-deep"
+            >
+              {project.name}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <span className="text-muted-foreground">ללא שיוך</span>
+      ),
+  },
   {
     key: "skills",
     header: "כישורים",
@@ -77,6 +97,7 @@ function VolunteersPage() {
   const { data: volunteers, isLoading, isError, refetch } = useVolunteers();
   const { data: projects } = useProjects();
   const createVolunteer = useCreateVolunteer();
+  const assignVolunteer = useAssignVolunteerToProject();
   if (!canAccess) return <ModuleAccessDenied title="ניהול מתנדבים" />;
   const projectOptions = [...(projects ?? []).map((p) => p.name), UNASSIGNED];
 
@@ -84,7 +105,7 @@ function VolunteersPage() {
   const activeVolunteers =
     volunteers?.filter((v) => v.status === "פעיל").length ?? 0;
   const activeProjects = new Set(
-    volunteers?.filter((v) => v.project).map((v) => v.project),
+    volunteers?.flatMap((v) => v.projects.map((project) => project.id)),
   ).size;
 
   return (
@@ -100,7 +121,16 @@ function VolunteersPage() {
             successMessage="מתנדב חדש נוסף בהצלחה"
             fields={[
               { name: "fullName", label: "שם מלא", required: true },
+              {
+                name: "idNumber",
+                label: "ת.ז.",
+                required: true,
+                maxLength: 9,
+                validate: (value) =>
+                  validateIsraeliId(value) || "ת.ז. לא תקינה",
+              },
               { name: "phone", label: "טלפון", type: "tel", required: true },
+              { name: "email", label: "דוא״ל", type: "email", required: true },
               {
                 name: "availability",
                 label: "זמינות",
@@ -124,9 +154,11 @@ function VolunteersPage() {
             onCreate={async (v) => {
               const def = (projects ?? []).find((p) => p.name === v.project);
               try {
-                await createVolunteer.mutateAsync({
+                const volunteer = await createVolunteer.mutateAsync({
                   name: v.fullName,
+                  idNumber: v.idNumber,
                   phone: v.phone || undefined,
+                  email: v.email,
                   availability: v.availability,
                   projectId: def?.id,
                   status: "פעיל",
@@ -137,6 +169,11 @@ function VolunteersPage() {
                         .filter(Boolean)
                     : [],
                 });
+                if (def)
+                  await assignVolunteer.mutateAsync({
+                    projectId: def.id,
+                    volunteerId: volunteer.id,
+                  });
                 return { ok: true };
               } catch (err) {
                 return {
