@@ -1062,7 +1062,7 @@ function FinancePage() {
           <thead className="text-muted-foreground">
             <tr className="border-b text-right">
               <th className="py-3">פרויקט</th>
-              <th>קטגוריה</th>
+              <th>פירוט</th>
               <th>ספק</th>
               <th>תאריך</th>
               <th>סטטוס</th>
