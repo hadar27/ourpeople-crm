@@ -141,7 +141,7 @@ export const volunteerFields: FormField[] = [
     label: "סטטוס",
     type: "select",
     required: true,
-    options: ["פעיל", "בהפסקה", "ארכיון"],
+    options: ["פעיל", "לא פעיל"],
   },
   {
     name: "skills",
