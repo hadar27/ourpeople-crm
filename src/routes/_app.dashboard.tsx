@@ -128,8 +128,8 @@ function Dashboard() {
   const activeVolunteers = volunteerList.filter(
     (v) => v.status === "פעיל",
   ).length;
-  const onBreakVolunteers = volunteerList.filter(
-    (v) => v.status === "בהפסקה",
+  const inactiveVolunteers = volunteerList.filter(
+    (v) => v.status === "לא פעיל",
   ).length;
 
   const activeProjects = projectList.filter((p) => p.status === "פעיל").length;
@@ -186,7 +186,7 @@ function Dashboard() {
           <StatCard
             label="מתנדבים פעילים"
             value={String(activeVolunteers)}
-            delta={`${onBreakVolunteers} בהפסקה`}
+            delta={`${inactiveVolunteers} לא פעילים`}
             icon={<HeartHandshake className="h-5 w-5" />}
           />
         )}
