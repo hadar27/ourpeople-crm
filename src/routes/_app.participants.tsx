@@ -75,7 +75,7 @@ const baseFilters: FilterConfig<ParticipantRecord>[] = [
     key: "paymentStatus",
     label: "סטטוס תשלום",
     type: "multi-select",
-    options: ["לא נדרש תשלום", "לא שולם", "שולם חלקית", "שולם"],
+    options: ["לא נדרש תשלום", "לא שולם", "שולם"],
   },
 ];
 
@@ -117,8 +117,6 @@ function ParticipantsPage() {
               const entries = paymentsFor(participant);
               if (entries.some((entry) => entry.paymentStatus === "לא שולם"))
                 return "לא שולם";
-              if (entries.some((entry) => entry.paymentStatus === "שולם חלקית"))
-                return "שולם חלקית";
               return entries.some((entry) => entry.paymentStatus === "שולם")
                 ? "שולם"
                 : "לא נדרש תשלום";
@@ -134,11 +132,7 @@ function ParticipantsPage() {
     (p) => new Date(p.registrationDate) >= sevenDaysAgo,
   ).length;
   const needPayment = list.filter((participant) =>
-    paymentsFor(participant).some(
-      (entry) =>
-        entry.paymentStatus === "לא שולם" ||
-        entry.paymentStatus === "שולם חלקית",
-    ),
+    paymentsFor(participant).some((entry) => entry.paymentStatus === "לא שולם"),
   ).length;
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const recent = list.filter(
@@ -173,7 +167,7 @@ function ParticipantsPage() {
               if (def?.type === "בתשלום") {
                 const pay = v["paymentStatus"];
                 if (!pay || pay === "לא נדרש תשלום") {
-                  return "בפרויקט בתשלום יש לבחור אם התשלום שולם, שולם חלקית או לא שולם";
+                  return "בפרויקט בתשלום יש לבחור אם התשלום שולם או לא שולם";
                 }
               }
               return null;
