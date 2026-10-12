@@ -9,7 +9,7 @@ export type VolunteerRecord = {
   projectId?: string;
   project: string;
   projects: VolunteerProject[];
-  status: "פעיל" | "בהפסקה" | "ארכיון";
+  status: "פעיל" | "לא פעיל";
   skills: string[];
   phone?: string;
   email?: string;
