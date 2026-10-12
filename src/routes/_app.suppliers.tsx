@@ -1,18 +1,33 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { PageHeader, StatusBadge } from "@/components/page-header";
-import { DataTable, type Column, type FilterConfig } from "@/components/data-table";
+import {
+  DataTable,
+  type Column,
+  type FilterConfig,
+} from "@/components/data-table";
 import { EntityFormDialog } from "@/components/entity-form-dialog";
-import { useSuppliers, useCreateSupplier, type SupplierRecord } from "@/lib/queries/suppliers";
+import {
+  useSuppliers,
+  useCreateSupplier,
+  type SupplierRecord,
+} from "@/lib/queries/suppliers";
 import { useExpenses } from "@/lib/queries/expenses";
-import { SupplierEditButton, SupplierDeleteButton } from "@/components/module-edit-dialogs";
+import {
+  SupplierEditButton,
+  SupplierDeleteButton,
+} from "@/components/module-edit-dialogs";
 
 export const Route = createFileRoute("/_app/suppliers")({
   component: SuppliersPage,
 });
 
 const columns: Column<SupplierRecord>[] = [
-  { key: "name", header: "שם הספק", render: (r) => <span className="font-medium">{r.name}</span> },
+  {
+    key: "name",
+    header: "שם הספק",
+    render: (r) => <span className="font-medium">{r.name}</span>,
+  },
   { key: "category", header: "קטגוריה" },
   { key: "contact", header: "איש קשר" },
   {
@@ -31,7 +46,11 @@ const columns: Column<SupplierRecord>[] = [
       </span>
     ),
   },
-  { key: "status", header: "סטטוס", render: (r) => <StatusBadge value={r.status} /> },
+  {
+    key: "status",
+    header: "סטטוס",
+    render: (r) => <StatusBadge value={r.status} />,
+  },
 ];
 
 const filters: FilterConfig<SupplierRecord>[] = [
@@ -41,7 +60,12 @@ const filters: FilterConfig<SupplierRecord>[] = [
     type: "multi-select",
     options: ["מזון", "ציוד", "הסעות", "תקשורת", "שיווק", "אחר"],
   },
-  { key: "status", label: "סטטוס", type: "multi-select", options: ["שולם", "לא שולם"] },
+  {
+    key: "status",
+    label: "סטטוס",
+    type: "multi-select",
+    options: ["שולם", "לא שולם"],
+  },
 ];
 
 function SuppliersPage() {
@@ -49,9 +73,17 @@ function SuppliersPage() {
   const { data: expenses } = useExpenses();
   const createSupplier = useCreateSupplier();
 
-  const paidSuppliers = (suppliers ?? []).filter((s) => s.status === "שולם").length;
-  const activeContracts = (suppliers ?? []).reduce((sum, s) => sum + s.contracts, 0);
-  const openInvoicesTotal = (suppliers ?? []).reduce((sum, s) => sum + s.openInvoices, 0);
+  const paidSuppliers = (suppliers ?? []).filter(
+    (s) => s.status === "שולם",
+  ).length;
+  const activeContracts = (suppliers ?? []).reduce(
+    (sum, s) => sum + s.contracts,
+    0,
+  );
+  const openInvoicesTotal = (suppliers ?? []).reduce(
+    (sum, s) => sum + s.openInvoices,
+    0,
+  );
   const outstandingBalance = (expenses ?? [])
     .filter((e) => e.supplierId && e.status !== "שולם")
     .reduce((sum, e) => sum + e.amount, 0);
@@ -79,7 +111,15 @@ function SuppliersPage() {
               { name: "contact", label: "איש קשר", required: true },
               { name: "phone", label: "טלפון", type: "tel", required: true },
               { name: "email", label: "אימייל", type: "email" },
-              { name: "taxId", label: "ח.פ. / עוסק", placeholder: "123456789" },
+              {
+                name: "taxId",
+                label: "ח.פ./ת.ז.",
+                required: true,
+                maxLength: 9,
+                pattern: /^\d{9}$/,
+                patternMessage: "יש להזין בדיוק 9 ספרות",
+                placeholder: "123456789",
+              },
               { name: "notes", label: "הערות", type: "textarea", colSpan: 2 },
             ]}
             onCreate={async (v) => {
@@ -90,13 +130,16 @@ function SuppliersPage() {
                   contact: v.contact,
                   phone: v.phone || undefined,
                   email: v.email || undefined,
-                  taxId: v.taxId || undefined,
+                  taxId: v.taxId,
                   notes: v.notes || undefined,
                   status: "שולם",
                 });
                 return { ok: true };
               } catch (err) {
-                return { ok: false, error: err instanceof Error ? err.message : "השמירה נכשלה" };
+                return {
+                  ok: false,
+                  error: err instanceof Error ? err.message : "השמירה נכשלה",
+                };
               }
             }}
           />
@@ -113,11 +156,15 @@ function SuppliersPage() {
         </div>
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">חשבוניות פתוחות</div>
-          <div className="text-xl font-bold mt-1 text-amber-600">{openInvoicesTotal}</div>
+          <div className="text-xl font-bold mt-1 text-amber-600">
+            {openInvoicesTotal}
+          </div>
         </div>
         <div className="card-elevated p-4">
           <div className="text-xs text-muted-foreground">יתרת תשלום</div>
-          <div className="text-xl font-bold mt-1">₪{outstandingBalance.toLocaleString()}</div>
+          <div className="text-xl font-bold mt-1">
+            ₪{outstandingBalance.toLocaleString()}
+          </div>
         </div>
       </div>
       {isLoading ? (
@@ -126,8 +173,13 @@ function SuppliersPage() {
         </div>
       ) : isError ? (
         <div className="card-elevated flex flex-col items-center gap-3 p-16 text-center">
-          <div className="text-sm text-muted-foreground">אירעה שגיאה בטעינת הספקים.</div>
-          <button onClick={() => refetch()} className="text-sm text-brand hover:underline">
+          <div className="text-sm text-muted-foreground">
+            אירעה שגיאה בטעינת הספקים.
+          </div>
+          <button
+            onClick={() => refetch()}
+            className="text-sm text-brand hover:underline"
+          >
             נסה שוב
           </button>
         </div>
