@@ -16,13 +16,17 @@ export function PageHeader({
   return (
     <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{title}</h1>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+          {title}
+        </h1>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {actions}
         <div className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2 py-1">
           <CalendarDays className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground whitespace-nowrap">חודש קלנדרי</span>
+          <span className="text-xs text-muted-foreground whitespace-nowrap">
+            חודש קלנדרי
+          </span>
           <Input
             type="month"
             value={month}
@@ -68,7 +72,9 @@ export function StatCard({
         ? "bg-soft-gradient"
         : "bg-card";
   return (
-    <div className={`rounded-xl border border-border p-5 shadow-soft ${toneClass}`}>
+    <div
+      className={`rounded-xl border border-border p-5 shadow-soft ${toneClass}`}
+    >
       <div className="flex items-start justify-between">
         <div>
           <div
@@ -110,7 +116,6 @@ export function StatusBadge({ value }: { value: string }) {
     "ממתין לתשלום": "bg-amber-50 text-amber-700 border-amber-200",
     "ממתין לאישור": "bg-amber-50 text-amber-700 border-amber-200",
     חלקי: "bg-amber-50 text-amber-700 border-amber-200",
-    "שולם חלקית": "bg-amber-50 text-amber-700 border-amber-200",
     בהפסקה: "bg-amber-50 text-amber-700 border-amber-200",
     טיוטה: "bg-muted text-muted-foreground border-border",
     בתכנון: "bg-secondary text-brand-deep border-border",
