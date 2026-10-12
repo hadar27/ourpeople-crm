@@ -323,7 +323,14 @@ export const supplierFields: FormField[] = [
     ],
   },
   { name: "address", label: "כתובת" },
-  { name: "taxId", label: "ח.פ. / עוסק", maxLength: 9 },
+  {
+    name: "taxId",
+    label: "ח.פ./ת.ז.",
+    required: true,
+    maxLength: 9,
+    pattern: /^\d{9}$/,
+    patternMessage: "יש להזין בדיוק 9 ספרות",
+  },
   {
     name: "paymentTerms",
     label: "תנאי תשלום",
