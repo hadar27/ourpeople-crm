@@ -127,11 +127,7 @@ function ParticipantProfile() {
   const paidFully =
     participant.paymentStatus === "שולם" ||
     participant.paymentStatus === "לא נדרש תשלום";
-  const balance = paidFully
-    ? 0
-    : participant.paymentStatus === "שולם חלקית"
-      ? Math.round(price / 2)
-      : price;
+  const balance = paidFully ? 0 : price;
 
   return (
     <>
