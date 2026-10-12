@@ -483,7 +483,7 @@ function ParticipantRegistrationPage() {
                   name="address"
                   value={formData.address}
                   onChange={handleChange}
-                  placeholder="רחוב וביתבן"
+                  placeholder="רחוב ועיר"
                   disabled={submitting}
                 />
               </div>
