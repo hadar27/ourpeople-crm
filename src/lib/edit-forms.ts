@@ -85,7 +85,7 @@ export const participantFields: FormField[] = [
     label: "סטטוס רישום",
     type: "select",
     required: true,
-    options: ["מאושר", "ממתין לתשלום", "ממתין לאישור", "טיוטה"],
+    options: ["מאושר", "ממתין לתשלום", "ממתין לאישור"],
   },
   {
     name: "paymentStatus",
