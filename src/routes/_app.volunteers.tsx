@@ -139,6 +139,13 @@ function VolunteersPage() {
                 options: ["בוקר", "צהריים", "ערב", "סופי שבוע", "גמיש"],
               },
               {
+                name: "status",
+                label: "סטטוס",
+                type: "select",
+                required: true,
+                options: ["פעיל", "לא פעיל"],
+              },
+              {
                 name: "project",
                 label: "פרויקט משויך",
                 type: "select",
@@ -161,7 +168,7 @@ function VolunteersPage() {
                   email: v.email,
                   availability: v.availability,
                   projectId: def?.id,
-                  status: "פעיל",
+                  status: v.status as VolunteerRecord["status"],
                   skills: v.skills
                     ? v.skills
                         .split(",")
