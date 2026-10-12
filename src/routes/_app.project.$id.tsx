@@ -297,6 +297,21 @@ function ProjectDetail() {
     );
   };
 
+  const renderParticipantPreviewRow = (participant: ParticipantRecord) => (
+    <li key={participant.id}>
+      <Link
+        to="/participants/$participantId"
+        params={{ participantId: participant.id }}
+        className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 hover:bg-surface-muted transition-colors"
+      >
+        <span className="truncate text-sm font-medium">{participant.name}</span>
+        <span className="shrink-0 text-xs text-muted-foreground">
+          {participant.status}
+        </span>
+      </Link>
+    </li>
+  );
+
   return (
     <>
       <Link
@@ -852,14 +867,16 @@ function ProjectDetail() {
               <EmptyState text="אין נרשמים משויכים" />
             ) : (
               <ul className="space-y-2">
-                {projectParticipants.slice(0, 4).map(renderParticipantRow)}
+                {projectParticipants
+                  .slice(0, 4)
+                  .map(renderParticipantPreviewRow)}
               </ul>
             )}
-            {projectParticipants.length > 4 && (
+            {projectParticipants.length > 0 && (
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm" className="w-full mt-3">
-                    הצג את כל הנרשמים ({projectParticipants.length})
+                    פתח את רשימת הנרשמים ({projectParticipants.length})
                   </Button>
                 </DialogTrigger>
                 <DialogContent
