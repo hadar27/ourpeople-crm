@@ -25,7 +25,7 @@ export type PendingParticipantRecord = {
   phone: string;
   email?: string;
   status: "מאושר" | "ממתין לתשלום" | "ממתין לאישור";
-  paymentStatus: "שולם" | "שולם חלקית" | "לא שולם" | "לא נדרש תשלום";
+  paymentStatus: "שולם" | "לא שולם" | "לא נדרש תשלום";
   paymentAcknowledged: boolean;
   agreedPrice: number;
   registrationDate: string;
