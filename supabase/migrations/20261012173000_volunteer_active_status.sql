@@ -1,4 +1,4 @@
--- Keep volunteer status intentionally binary across the application.
+-- Keep volunteer status intentionally binary across the application UI.
 -- Existing paused/archived records become inactive before the new checks apply.
 
 alter table public.volunteers
