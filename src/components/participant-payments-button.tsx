@@ -28,7 +28,7 @@ export function ParticipantPaymentsButton({
         label: `${entry.projectName} — ₪${entry.amount.toLocaleString()}`,
         type: "select" as const,
         required: true,
-        options: ["לא שולם", "שולם חלקית", "שולם"],
+        options: ["לא שולם", "שולם"],
       }))}
       initialValues={Object.fromEntries(
         paidEntries.map((entry) => [entry.projectId, entry.paymentStatus]),
