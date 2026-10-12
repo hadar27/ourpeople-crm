@@ -9,7 +9,7 @@ export type PendingVolunteerRecord = {
   name: string;
   idNumber?: string;
   availability: string;
-  status: "פעיל" | "בהפסקה" | "ארכיון";
+  status: "פעיל" | "לא פעיל";
   skills: string[];
   phone?: string;
   email?: string;
