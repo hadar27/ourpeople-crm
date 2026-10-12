@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Wallet,
@@ -62,6 +62,55 @@ export const Route = createFileRoute("/_app/finance")({
   component: FinancePage,
 });
 
+const FINANCE_ROWS_PER_PAGE = 6;
+
+function FinanceTablePagination({
+  page,
+  totalItems,
+  onPageChange,
+}: {
+  page: number;
+  totalItems: number;
+  onPageChange: (page: number) => void;
+}) {
+  const totalPages = Math.max(1, Math.ceil(totalItems / FINANCE_ROWS_PER_PAGE));
+  if (totalItems <= FINANCE_ROWS_PER_PAGE) return null;
+
+  const firstItem = (page - 1) * FINANCE_ROWS_PER_PAGE + 1;
+  const lastItem = Math.min(page * FINANCE_ROWS_PER_PAGE, totalItems);
+
+  return (
+    <div className="mt-4 flex flex-col gap-3 border-t pt-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+      <span className="text-muted-foreground">
+        מציג {firstItem}–{lastItem} מתוך {totalItems} רשומות
+      </span>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={page === 1}
+          onClick={() => onPageChange(page - 1)}
+        >
+          הקודם
+        </Button>
+        <span className="min-w-24 text-center">
+          עמוד {page} מתוך {totalPages}
+        </span>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={page === totalPages}
+          onClick={() => onPageChange(page + 1)}
+        >
+          הבא
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function FinancePage() {
   const canAccess = useCanView("finance");
   const { data: income } = useIncomes();
@@ -85,7 +134,14 @@ function FinancePage() {
   const releaseBudget = useReleaseProjectBudget();
   const updateProjectBudget = useUpdateProjectBudget();
   const [historyProjectId, setHistoryProjectId] = useState<string | null>(null);
+  const [incomePage, setIncomePage] = useState(1);
+  const [expensePage, setExpensePage] = useState(1);
   const { month } = useCalendarMonth();
+
+  useEffect(() => {
+    setIncomePage(1);
+    setExpensePage(1);
+  }, [month]);
 
   if (!canAccess) return <ModuleAccessDenied title="כספים ותקציבים" />;
 
@@ -95,9 +151,9 @@ function FinancePage() {
   const donationList = (donations ?? []).filter((item) =>
     isInCalendarMonth(item.date, month),
   );
-  const expenseList = (expenses ?? []).filter((item) =>
-    isInCalendarMonth(item.date, month),
-  );
+  const expenseList = (expenses ?? [])
+    .filter((item) => isInCalendarMonth(item.date, month))
+    .sort((first, second) => second.date.localeCompare(first.date));
   const projectList = projects ?? [];
   const approvedProjectList = projectList.filter(
     (project) => project.approvalStatus === "מאושר",
@@ -185,6 +241,25 @@ function FinancePage() {
       record: item,
     })),
   ].sort((first, second) => second.date.localeCompare(first.date));
+
+  const incomePageCount = Math.max(
+    1,
+    Math.ceil(detailedIncome.length / FINANCE_ROWS_PER_PAGE),
+  );
+  const currentIncomePage = Math.min(incomePage, incomePageCount);
+  const paginatedIncome = detailedIncome.slice(
+    (currentIncomePage - 1) * FINANCE_ROWS_PER_PAGE,
+    currentIncomePage * FINANCE_ROWS_PER_PAGE,
+  );
+  const expensePageCount = Math.max(
+    1,
+    Math.ceil(expenseList.length / FINANCE_ROWS_PER_PAGE),
+  );
+  const currentExpensePage = Math.min(expensePage, expensePageCount);
+  const paginatedExpenses = expenseList.slice(
+    (currentExpensePage - 1) * FINANCE_ROWS_PER_PAGE,
+    currentExpensePage * FINANCE_ROWS_PER_PAGE,
+  );
 
   const formatCurrency = (value: number) => `₪${value.toLocaleString()}`;
 
@@ -927,7 +1002,7 @@ function FinancePage() {
             </tr>
           </thead>
           <tbody>
-            {detailedIncome.map((item) => (
+            {paginatedIncome.map((item) => (
               <tr
                 key={`${item.category}-${item.id}`}
                 className="border-b last:border-0"
@@ -974,6 +1049,11 @@ function FinancePage() {
             )}
           </tbody>
         </table>
+        <FinanceTablePagination
+          page={currentIncomePage}
+          totalItems={detailedIncome.length}
+          onPageChange={setIncomePage}
+        />
       </section>
 
       <section className="card-elevated p-5 overflow-x-auto">
@@ -991,7 +1071,7 @@ function FinancePage() {
             </tr>
           </thead>
           <tbody>
-            {expenseList.map((expense) => {
+            {paginatedExpenses.map((expense) => {
               const project = projectList.find(
                 (item) => item.id === expense.projectId,
               );
@@ -1154,8 +1234,23 @@ function FinancePage() {
                 </tr>
               );
             })}
+            {expenseList.length === 0 && (
+              <tr>
+                <td
+                  colSpan={canManageFinance ? 7 : 6}
+                  className="py-8 text-center text-muted-foreground"
+                >
+                  אין הוצאות להצגה
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
+        <FinanceTablePagination
+          page={currentExpensePage}
+          totalItems={expenseList.length}
+          onPageChange={setExpensePage}
+        />
       </section>
 
       <Dialog
