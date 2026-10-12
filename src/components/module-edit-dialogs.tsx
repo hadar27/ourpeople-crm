@@ -136,7 +136,7 @@ export function ParticipantEditButton({
           selectedProject?.type === "בתשלום" &&
           v.paymentStatus === "לא נדרש תשלום"
         ) {
-          return "בפרויקט בתשלום יש לבחור אם התשלום שולם, שולם חלקית או לא שולם.";
+          return "בפרויקט בתשלום יש לבחור אם התשלום שולם או לא שולם.";
         }
         return null;
       }}
