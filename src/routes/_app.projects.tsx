@@ -71,6 +71,11 @@ function ProjectsPage() {
                 required: true,
               },
               {
+                name: "manager",
+                label: "מנהל/ת פרויקט",
+                required: true,
+              },
+              {
                 name: "paymentType",
                 label: "האם הפרויקט בתשלום?",
                 type: "select",
@@ -145,7 +150,7 @@ function ProjectsPage() {
                   volunteers: 0,
                   targetParticipants: Number(v.targetParticipants),
                   requiredVolunteers: Number(v.requiredVolunteers),
-                  manager: "",
+                  manager: v.manager,
                   status: "בתכנון",
                   startDate: v.startDate || undefined,
                   endDate: v.endDate || undefined,
