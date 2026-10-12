@@ -2,8 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
 export type RegistrationStatus = "מאושר" | "ממתין לתשלום" | "ממתין לאישור";
-export type ParticipantPayment =
-  "שולם" | "שולם חלקית" | "לא שולם" | "לא נדרש תשלום";
+export type ParticipantPayment = "שולם" | "לא שולם" | "לא נדרש תשלום";
 export type RegistrationSource =
   "טופס דיגיטלי" | "QR" | "אתר" | "צוות פנימי" | "ייבוא Excel" | "API";
 
