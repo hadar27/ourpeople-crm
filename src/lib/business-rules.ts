@@ -1,3 +1,4 @@
+import { useTasks, type TaskRecord } from "./queries/tasks";
 // Business-rule engine: derives operational alerts from the current data.
 // Pure rules — no AI.
 import type { ProjectRecord } from "./queries/projects";
@@ -252,3 +253,72 @@ export const moduleRoute: Record<string, string> = {
   מוטבים: "/families",
   "קשרי תורמים": "/donors",
 };
+
+/** The alerts center shows only current project operations that require action. */
+export function generateProjectAlerts(
+  projects: ProjectRecord[],
+  tasks: TaskRecord[],
+  today = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Asia/Jerusalem",
+  }).format(new Date()),
+): Alert[] {
+  const out: Alert[] = [];
+  const openProjects = projects.filter(
+    (project) =>
+      project.approvalStatus === "מאושר" && project.status !== "הסתיים",
+  );
+  const projectById = new Map(
+    openProjects.map((project) => [project.id, project]),
+  );
+
+  for (const project of openProjects) {
+    if (project.budget > 0 && project.spent / project.budget >= 0.9) {
+      out.push({
+        id: `budget-${project.id}`,
+        title: `ניצול תקציב של 90% ומעלה — ${project.name}`,
+        severity: project.spent >= project.budget ? "גבוהה" : "בינונית",
+        module: "פרויקטים",
+        rule: `ניצול ${Math.round((project.spent / project.budget) * 100)}% · הוצאות ₪${project.spent.toLocaleString()} מתוך ₪${project.budget.toLocaleString()}`,
+        createdAt: today,
+      });
+    }
+    const required = project.requiredVolunteers ?? 0;
+    if (project.volunteers < required) {
+      out.push({
+        id: `volunteers-${project.id}`,
+        title: `חוסר מתנדבים בפרויקט "${project.name}"`,
+        severity: required - project.volunteers >= 10 ? "גבוהה" : "בינונית",
+        module: "פרויקטים",
+        rule: `נדרשים ${required}, משויכים ${project.volunteers}, חסרים ${required - project.volunteers}`,
+        createdAt: today,
+      });
+    }
+  }
+
+  for (const task of tasks) {
+    const project = projectById.get(task.projectId);
+    if (
+      project &&
+      task.column !== "done" &&
+      task.endDate &&
+      /^\d{4}-\d{2}-\d{2}$/.test(task.endDate) &&
+      task.endDate < today
+    ) {
+      out.push({
+        id: `task-${task.id}`,
+        title: `משימה באיחור — ${task.title}`,
+        severity: "בינונית",
+        module: "פרויקטים",
+        rule: `${project.name} · תאריך יעד ${task.endDate} · אחראי ${task.assignee}`,
+        createdAt: task.endDate,
+      });
+    }
+  }
+  return out;
+}
+
+export function useProjectAlerts(): Alert[] {
+  const { data: projects } = useProjects();
+  const { data: tasks } = useTasks();
+  return generateProjectAlerts(projects ?? [], tasks ?? []);
+}

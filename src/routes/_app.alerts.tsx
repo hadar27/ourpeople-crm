@@ -2,19 +2,24 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AlertTriangle, CheckCircle2, Bell } from "lucide-react";
 import { useState } from "react";
 import { PageHeader } from "@/components/page-header";
-import { useAlerts, moduleRoute } from "@/lib/business-rules";
+import { useProjectAlerts, moduleRoute } from "@/lib/business-rules";
 import { toast } from "sonner";
-import { isInCalendarMonth, useCalendarMonth } from "@/components/calendar-month-filter";
+import {
+  isInCalendarMonth,
+  useCalendarMonth,
+} from "@/components/calendar-month-filter";
 
 export const Route = createFileRoute("/_app/alerts")({
   component: AlertsPage,
 });
 
 function AlertsPage() {
-  const all = useAlerts();
+  const all = useProjectAlerts();
   const [resolved, setResolved] = useState<Set<string>>(new Set());
   const { month } = useCalendarMonth();
-  const open = all.filter((a) => !resolved.has(a.id) && isInCalendarMonth(a.createdAt, month));
+  const open = all.filter(
+    (a) => !resolved.has(a.id) && isInCalendarMonth(a.createdAt, month),
+  );
 
   return (
     <>
@@ -24,7 +29,9 @@ function AlertsPage() {
       />
       <div className="card-elevated p-5">
         <div className="flex items-center justify-between mb-4">
-          <div className="text-lg font-semibold">התראות פתוחות ({open.length})</div>
+          <div className="text-lg font-semibold">
+            התראות פתוחות ({open.length})
+          </div>
           {resolved.size > 0 && (
             <button
               onClick={() => {
@@ -41,7 +48,9 @@ function AlertsPage() {
           <div className="text-center py-12">
             <CheckCircle2 className="h-12 w-12 mx-auto text-emerald-500 mb-3" />
             <div className="text-lg font-semibold">הכל תקין!</div>
-            <div className="text-sm text-muted-foreground mt-1">אין התראות פתוחות במערכת.</div>
+            <div className="text-sm text-muted-foreground mt-1">
+              אין התראות פתוחות במערכת.
+            </div>
           </div>
         ) : (
           <ul className="space-y-3">
@@ -58,8 +67,11 @@ function AlertsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold">{a.title}</div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      מודול: <span className="font-medium text-foreground">{a.module}</span> · חוק:{" "}
-                      {a.rule} · נוצר ב-{a.createdAt}
+                      מודול:{" "}
+                      <span className="font-medium text-foreground">
+                        {a.module}
+                      </span>{" "}
+                      · חוק: {a.rule} · נוצר ב-{a.createdAt}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

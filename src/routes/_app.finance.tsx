@@ -828,6 +828,7 @@ function FinancePage() {
           <thead className="text-muted-foreground">
             <tr className="border-b text-right">
               <th className="py-3">פרויקט</th>
+              <th>סטטוס</th>
               <th>תקציב ראשוני</th>
               <th>תוספות שאושרו</th>
               <th>סה״כ מאושר</th>
@@ -853,6 +854,9 @@ function FinancePage() {
               return (
                 <tr key={project.id} className="border-b last:border-0">
                   <td className="py-3 font-medium">{project.name}</td>
+                  <td>
+                    <StatusBadge value={project.status} />
+                  </td>
                   <td>{formatCurrency(project.initialBudget)}</td>
                   <td>{formatCurrency(project.approvedAdditions)}</td>
                   <td>{formatCurrency(totalApproved)}</td>
