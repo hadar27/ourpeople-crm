@@ -492,7 +492,6 @@ export function ProjectEditButton({
     <RecordEditDialog
       triggerLabel={triggerLabel}
       title={`עריכת פרויקט — ${record.name}`}
-      description={`עדכון פרטי הפרויקט ${record.id}. משימות, תרומות והוצאות משויכות נשמרות.`}
       fields={projectFields.filter((field) => field.name !== "budget")}
       initialValues={{
         name: record.name,

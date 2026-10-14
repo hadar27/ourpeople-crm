@@ -22,6 +22,18 @@ export const Route = createFileRoute("/_app/projects")({
   component: ProjectsPage,
 });
 
+function compareProjectStartDates(
+  a: { startDate?: string; name: string },
+  b: { startDate?: string; name: string },
+) {
+  if (!a.startDate && !b.startDate) return a.name.localeCompare(b.name, "he");
+  if (!a.startDate) return 1;
+  if (!b.startDate) return -1;
+  return (
+    a.startDate.localeCompare(b.startDate) || a.name.localeCompare(b.name, "he")
+  );
+}
+
 function ProjectsPage() {
   const { data: projects, isLoading, isError, refetch } = useProjects();
   const { data: tasksData } = useTasks();
@@ -40,14 +52,14 @@ function ProjectsPage() {
               (statusFilter === "all" || project.status === statusFilter),
         )
         .filter((project) => isInCalendarMonth(project.startDate, month))
-        .sort((a, b) => a.name.localeCompare(b.name, "he")),
+        .sort(compareProjectStartDates),
     [projects, statusFilter, month],
   );
   const pendingProjects = useMemo(
     () =>
       (projects ?? [])
         .filter((project) => project.approvalStatus === "ממתין לאישור")
-        .sort((a, b) => a.name.localeCompare(b.name, "he")),
+        .sort(compareProjectStartDates),
     [projects],
   );
 
@@ -60,7 +72,6 @@ function ProjectsPage() {
           <EntityFormDialog
             triggerLabel="הוסף פרויקט"
             title="יצירת פרויקט חדש"
-            description="הגדרת פרויקט חדש עם תקציב, יעדים ולוחות זמנים."
             successMessage="הפרויקט נשלח לאישור מנהל הכספים"
             fields={[
               { name: "name", label: "שם פרויקט", required: true, colSpan: 2 },

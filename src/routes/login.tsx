@@ -68,9 +68,9 @@ function LoginPage() {
             מערכת מידע פנימית לניהול תורמים, מתנדבים, פרויקטים, כספים ופעילות העמותה.
           </p>
           <div className="mt-8 grid grid-cols-3 gap-4 text-center">
-            <Stat n="12K+" t="נרשמים" />
-            <Stat n="850" t="מתנדבים" />
-            <Stat n="₪14M" t="גיוס שנתי" />
+            <Stat n="300K+" t="מקבלי סיוע" />
+            <Stat n="30+" t="פרויקטים שהושלמו" />
+            <Stat n="$1.5M" t="חולקו לסיוע" />
           </div>
         </div>
         <div className="relative text-xs text-white/70 flex items-center gap-2">
