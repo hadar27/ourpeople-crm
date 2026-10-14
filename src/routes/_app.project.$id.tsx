@@ -1125,7 +1125,7 @@ function ProjectDetail() {
       {/* Gantt is intentionally the final section in the project page. */}
       <div className="card-elevated p-5 mt-6">
         <div className="flex items-center justify-between mb-4">
-          <div className="text-lg font-semibold">לוח זמני פרויקט (Gantt)</div>
+          <div className="text-lg font-semibold">לוח זמני פרויקט</div>
         </div>
         {ganttItems.length === 0 ? (
           <div className="text-center py-8 text-sm text-muted-foreground">

@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { PHONE_PATTERN } from "@/lib/edit-forms";
-import { validateIsraeliId } from "@/lib/validation";
+import { normalizeNumericField, validateIsraeliId } from "@/lib/validation";
 
 export const Route = createFileRoute("/register/volunteer/$token")({
   component: VolunteerRegistrationPage,
@@ -94,7 +94,10 @@ function VolunteerRegistrationPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: normalizeNumericField(name, value),
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -236,6 +239,9 @@ function VolunteerRegistrationPage() {
                 <Input
                   id="phone"
                   name="phone"
+                  maxLength={10}
+                  inputMode="numeric"
+                  pattern="[0-9]{10}"
                   type="tel"
                   value={formData.phone}
                   onChange={handleChange}
@@ -254,6 +260,7 @@ function VolunteerRegistrationPage() {
                   name="idNumber"
                   inputMode="numeric"
                   maxLength={9}
+                  pattern="[0-9]{9}"
                   value={formData.idNumber}
                   onChange={handleChange}
                   placeholder="9 ספרות"

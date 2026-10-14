@@ -717,6 +717,110 @@ function FinancePage() {
       </section>
 
       <section className="card-elevated p-5 mb-6 overflow-x-auto">
+        <h2 className="text-lg font-semibold mb-4">בקשות תקציב נוסף</h2>
+        <table className="w-full min-w-[900px] text-sm">
+          <thead className="text-muted-foreground">
+            <tr className="border-b text-right">
+              <th className="py-3">פרויקט</th>
+              <th>סכום מבוקש</th>
+              <th>סיבה</th>
+              <th>מבקש/ת</th>
+              <th>סטטוס</th>
+              <th>סכום שאושר</th>
+              {canManageFinance && <th>החלטה</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {requestList.map((request) => (
+              <tr key={request.id} className="border-b last:border-0">
+                <td className="py-3 font-medium">{request.projectName}</td>
+                <td>{formatCurrency(request.requestedAmount)}</td>
+                <td>{request.reason}</td>
+                <td>{request.requestedBy}</td>
+                <td>
+                  <StatusBadge value={request.status} />
+                </td>
+                <td>{formatCurrency(request.approvedAmount)}</td>
+                {canManageFinance && (
+                  <td>
+                    {request.status === "ממתינה" ? (
+                      <div className="flex gap-2">
+                        <EntityFormDialog
+                          triggerLabel="אישור"
+                          title="אישור בקשת תקציב"
+                          description={`ניתן לאשר את מלוא הסכום או סכום חלקי מתוך ${formatCurrency(request.requestedAmount)}.`}
+                          successMessage="הבקשה עודכנה והתקציב הוקצה"
+                          fields={[
+                            {
+                              name: "approvedAmount",
+                              label: "סכום לאישור",
+                              type: "number",
+                              required: true,
+                            },
+                          ]}
+                          customValidate={(values) => {
+                            const amount = Number(values.approvedAmount);
+                            if (amount <= 0 || amount > request.requestedAmount)
+                              return "סכום האישור אינו תקין.";
+                            if (amount > availablePool)
+                              return "אין מספיק כסף זמין בקופה.";
+                            return null;
+                          }}
+                          onCreate={async (values) => {
+                            try {
+                              await reviewRequest.mutateAsync({
+                                requestId: request.id,
+                                approvedAmount: Number(values.approvedAmount),
+                                reviewer: currentUser?.name ?? "מנהלת כספים",
+                              });
+                              return { ok: true };
+                            } catch (error) {
+                              return {
+                                ok: false,
+                                error:
+                                  error instanceof Error
+                                    ? error.message
+                                    : "האישור נכשל",
+                              };
+                            }
+                          }}
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            reviewRequest.mutate({
+                              requestId: request.id,
+                              approvedAmount: 0,
+                              reviewer: currentUser?.name ?? "מנהלת כספים",
+                            })
+                          }
+                        >
+                          דחייה
+                        </Button>
+                      </div>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                )}
+              </tr>
+            ))}
+            {requestList.length === 0 && (
+              <tr>
+                <td
+                  colSpan={7}
+                  className="py-8 text-center text-muted-foreground"
+                >
+                  אין בקשות תקציב
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </section>
+
+      <section className="card-elevated p-5 mb-6 overflow-x-auto">
         <div className="mb-4">
           <h2 className="text-lg font-semibold">ניהול תקציב לכל פרויקט</h2>
         </div>
@@ -878,110 +982,6 @@ function FinancePage() {
                 </tr>
               );
             })}
-          </tbody>
-        </table>
-      </section>
-
-      <section className="card-elevated p-5 mb-6 overflow-x-auto">
-        <h2 className="text-lg font-semibold mb-4">בקשות תקציב נוסף</h2>
-        <table className="w-full min-w-[900px] text-sm">
-          <thead className="text-muted-foreground">
-            <tr className="border-b text-right">
-              <th className="py-3">פרויקט</th>
-              <th>סכום מבוקש</th>
-              <th>סיבה</th>
-              <th>מבקש/ת</th>
-              <th>סטטוס</th>
-              <th>סכום שאושר</th>
-              {canManageFinance && <th>החלטה</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {requestList.map((request) => (
-              <tr key={request.id} className="border-b last:border-0">
-                <td className="py-3 font-medium">{request.projectName}</td>
-                <td>{formatCurrency(request.requestedAmount)}</td>
-                <td>{request.reason}</td>
-                <td>{request.requestedBy}</td>
-                <td>
-                  <StatusBadge value={request.status} />
-                </td>
-                <td>{formatCurrency(request.approvedAmount)}</td>
-                {canManageFinance && (
-                  <td>
-                    {request.status === "ממתינה" ? (
-                      <div className="flex gap-2">
-                        <EntityFormDialog
-                          triggerLabel="אישור"
-                          title="אישור בקשת תקציב"
-                          description={`ניתן לאשר את מלוא הסכום או סכום חלקי מתוך ${formatCurrency(request.requestedAmount)}.`}
-                          successMessage="הבקשה עודכנה והתקציב הוקצה"
-                          fields={[
-                            {
-                              name: "approvedAmount",
-                              label: "סכום לאישור",
-                              type: "number",
-                              required: true,
-                            },
-                          ]}
-                          customValidate={(values) => {
-                            const amount = Number(values.approvedAmount);
-                            if (amount <= 0 || amount > request.requestedAmount)
-                              return "סכום האישור אינו תקין.";
-                            if (amount > availablePool)
-                              return "אין מספיק כסף זמין בקופה.";
-                            return null;
-                          }}
-                          onCreate={async (values) => {
-                            try {
-                              await reviewRequest.mutateAsync({
-                                requestId: request.id,
-                                approvedAmount: Number(values.approvedAmount),
-                                reviewer: currentUser?.name ?? "מנהלת כספים",
-                              });
-                              return { ok: true };
-                            } catch (error) {
-                              return {
-                                ok: false,
-                                error:
-                                  error instanceof Error
-                                    ? error.message
-                                    : "האישור נכשל",
-                              };
-                            }
-                          }}
-                        />
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            reviewRequest.mutate({
-                              requestId: request.id,
-                              approvedAmount: 0,
-                              reviewer: currentUser?.name ?? "מנהלת כספים",
-                            })
-                          }
-                        >
-                          דחייה
-                        </Button>
-                      </div>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                )}
-              </tr>
-            ))}
-            {requestList.length === 0 && (
-              <tr>
-                <td
-                  colSpan={7}
-                  className="py-8 text-center text-muted-foreground"
-                >
-                  אין בקשות תקציב
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
       </section>

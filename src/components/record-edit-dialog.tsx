@@ -1,3 +1,8 @@
+import {
+  numericFieldLength,
+  normalizeNumericField,
+  validateNumericField,
+} from "@/lib/validation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Pencil, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
@@ -81,6 +86,11 @@ export function RecordEditDialog({
   );
 
   const setField = (name: string, val: string) => {
+    val = normalizeNumericField(
+      name,
+      val,
+      fields.find((field) => field.name === name)?.type,
+    );
     setValues((v) => ({ ...v, [name]: val }));
     setConfirmed(false);
     setSaveError(null);
@@ -93,7 +103,9 @@ export function RecordEditDialog({
       const v = (values[f.name] ?? "").trim();
       const required =
         typeof f.required === "function" ? f.required(values) : f.required;
+      const numericError = validateNumericField(f.name, v, f.type);
       if (required && !v) next[f.name] = "שדה חובה";
+      else if (numericError) next[f.name] = numericError;
       else if (v && f.type === "email" && !/^\S+@\S+\.\S+$/.test(v))
         next[f.name] = "אימייל לא תקין";
       else if (
@@ -232,7 +244,12 @@ export function RecordEditDialog({
                     id={`edit-${f.name}`}
                     type={f.type ?? "text"}
                     placeholder={f.placeholder}
-                    maxLength={f.maxLength}
+                    maxLength={
+                      numericFieldLength(f.name, f.type) ?? f.maxLength
+                    }
+                    inputMode={
+                      numericFieldLength(f.name, f.type) ? "numeric" : undefined
+                    }
                     max={f.max}
                     value={values[f.name] ?? ""}
                     onChange={(e) => setField(f.name, e.target.value)}

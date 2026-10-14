@@ -19,7 +19,11 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
-import { isMinor, validateIsraeliId } from "@/lib/validation";
+import {
+  isMinor,
+  normalizeNumericField,
+  validateIsraeliId,
+} from "@/lib/validation";
 import { PHONE_PATTERN } from "@/lib/edit-forms";
 
 export const Route = createFileRoute("/register/participant/$token")({
@@ -131,7 +135,10 @@ function ParticipantRegistrationPage() {
         [name]: (e.target as HTMLInputElement).checked,
       }));
     } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+      setFormData((prev) => ({
+        ...prev,
+        [name]: normalizeNumericField(name, value),
+      }));
     }
   };
 
@@ -349,6 +356,9 @@ function ParticipantRegistrationPage() {
                   <Input
                     id="idNumber"
                     name="idNumber"
+                    maxLength={9}
+                    inputMode="numeric"
+                    pattern="[0-9]{9}"
                     value={formData.idNumber}
                     onChange={handleChange}
                     placeholder="123456789"
@@ -364,6 +374,9 @@ function ParticipantRegistrationPage() {
                   <Input
                     id="phone"
                     name="phone"
+                    maxLength={10}
+                    inputMode="numeric"
+                    pattern="[0-9]{10}"
                     type="tel"
                     value={formData.phone}
                     onChange={handleChange}
@@ -440,6 +453,9 @@ function ParticipantRegistrationPage() {
                   <Input
                     id="parentPhone"
                     name="parentPhone"
+                    maxLength={10}
+                    inputMode="numeric"
+                    pattern="[0-9]{10}"
                     type="tel"
                     value={formData.parentPhone}
                     onChange={handleChange}
